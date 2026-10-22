@@ -1,0 +1,9 @@
+# Normalise line endings so Windows and macOS laptops don't fight over diffs.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+mvnw text eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.drawio text eol=lf
