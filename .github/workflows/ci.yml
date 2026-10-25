@@ -13,21 +13,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check for pom.xml
+        id: check-pom
+        run: |
+          if [ -f backend/core-api/pom.xml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Java 21
+        if: steps.check-pom.outputs.exists == 'true'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
 
-      - name: Build & test (skip if no pom.xml yet)
+      - name: Build & test
+        if: steps.check-pom.outputs.exists == 'true'
         run: |
-          if [ -f backend/core-api/pom.xml ]; then
-            cd backend/core-api
-            mvn -B verify --no-transfer-progress
-          else
-            echo "No pom.xml yet – skipping backend build"
-          fi
+          cd backend/core-api
+          mvn -B verify --no-transfer-progress
+
+      - name: Skip notice
+        if: steps.check-pom.outputs.exists == 'false'
+        run: echo "No pom.xml yet – skipping backend build"
 
   frontend:
     name: Frontend – build & test
@@ -35,20 +46,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check for package.json
+        id: check-pkg
+        run: |
+          if [ -f frontend/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Node 20
+        if: steps.check-pkg.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache-dependency-path: frontend/package-lock.json
           cache: npm
 
-      - name: Build & test (skip if no package.json yet)
+      - name: Build & test
+        if: steps.check-pkg.outputs.exists == 'true'
         run: |
-          if [ -f frontend/package.json ]; then
-            cd frontend
-            npm ci
-            npm run build
-            npm test -- --run 2>/dev/null || true
-          else
-            echo "No package.json yet – skipping frontend build"
-          fi
+          cd frontend
+          npm ci
+          npm run build
+          npm test -- --run 2>/dev/null || true
+
+      - name: Skip notice
+        if: steps.check-pkg.outputs.exists == 'false'
+        run: echo "No package.json yet – skipping frontend build"
