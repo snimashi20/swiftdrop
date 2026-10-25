@@ -42,7 +42,7 @@ Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, J
 ### Prerequisites
 
 - Java 21 (LTS) and Maven
-- Node.js 20+
+- Node.js 22 (LTS)
 - Docker Desktop
 
 ### Run it
@@ -108,15 +108,15 @@ TBD — one seeded account per role (`CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATC
 
 ## Team
 
-| Member | Owns |
-| --- | --- |
-| M1 (leader) | Leadership, RabbitMQ events, notifications |
-| M2 | Google login, profiles, admin users, receipts |
-| M3 | Parcel booking and history, Docker, CI, coverage |
-| M4 | Zones and pricing, AI assistant bonus |
-| M5 | Status lifecycle and live tracking |
-| M6 | Dispatcher, workload, reports |
-| M7 | Courier app |
-| M8 | Foundation, JWT login, security |
-| M9 | Merchants and the merchant API |
-| M10 | Webhooks and retry, Kubernetes bonus |
+| Member | Name | Owns |
+| --- | --- | --- |
+| M1 (leader) | Sithmi | Leadership, RabbitMQ events, notifications |
+| M2 | Sadeepa | Google login, profiles, admin users, receipts |
+| M3 | Isuri | Parcel booking and history, Docker, CI, coverage |
+| M4 | Naviru | Zones and pricing, AI assistant bonus |
+| M5 | Nethmini | Status lifecycle and live tracking |
+| M6 | Lamya | Dispatcher, workload, reports |
+| M7 | Pamithra | Courier app |
+| M8 | Dinira | Foundation, JWT login, security |
+| M9 | Binuwara | Merchants and the merchant API |
+| M10 | Sandavi | Webhooks and retry, Kubernetes bonus |
