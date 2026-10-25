@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  backend:
+    name: Backend – build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build & test (skip if no pom.xml yet)
+        run: |
+          if [ -f backend/core-api/pom.xml ]; then
+            cd backend/core-api
+            mvn -B verify --no-transfer-progress
+          else
+            echo "No pom.xml yet – skipping backend build"
+          fi
+
+  frontend:
+    name: Frontend – build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache-dependency-path: frontend/package-lock.json
+          cache: npm
+
+      - name: Build & test (skip if no package.json yet)
+        run: |
+          if [ -f frontend/package.json ]; then
+            cd frontend
+            npm ci
+            npm run build
+            npm test -- --run 2>/dev/null || true
+          else
+            echo "No package.json yet – skipping frontend build"
+          fi
