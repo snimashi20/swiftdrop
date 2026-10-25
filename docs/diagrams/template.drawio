@@ -1,0 +1,114 @@
+<mxfile host="app.diagrams.net" version="24.0.0">
+  <diagram name="Template" id="swiftdrop-template">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══ PAGE TITLE ═══ -->
+        <mxCell id="title" value="SwiftDrop — [Diagram Name]" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="327" y="30" width="1000" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="subtitle" value="Author: [Member] · Date: [YYYY-MM-DD] · Version: 1.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontFamily=Helvetica;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="327" y="82" width="1000" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ COLOUR PALETTE LEGEND ═══ -->
+        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="30" y="30" width="270" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Colour Palette" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="30" y="38" width="270" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Primary -->
+        <mxCell id="c1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="50" y="80" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c1l" value="#1E3A5F — Primary (services, headers)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="100" y="80" width="185" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Accent -->
+        <mxCell id="c2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F97316;strokeColor=#EA6C0A;" vertex="1" parent="1">
+          <mxGeometry x="50" y="120" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2l" value="#F97316 — Accent (triggers, events)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="100" y="120" width="185" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Success -->
+        <mxCell id="c3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;" vertex="1" parent="1">
+          <mxGeometry x="50" y="160" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c3l" value="#22C55E — Success / Delivered" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="100" y="160" width="185" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Warning -->
+        <mxCell id="c4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c4l" value="#EAB308 — Warning / In Transit" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="100" y="200" width="185" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Error -->
+        <mxCell id="c5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#EF4444;" vertex="1" parent="1">
+          <mxGeometry x="50" y="240" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c5l" value="#EF4444 — Error / Failed" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="100" y="240" width="185" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Neutral -->
+        <mxCell id="c6" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="50" y="280" width="40" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c6l" value="#6B7280 — Neutral (queues, notes)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="100" y="280" width="185" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ EXAMPLE SHAPES (draw your diagram below) ═══ -->
+        <mxCell id="ex-label" value="Draw your diagram in the space below. Delete this row when done." style="text;html=1;strokeColor=none;fillColor=#FEF9C3;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontFamily=Helvetica;fontColor=#92400E;strokeColor=#EAB308;" vertex="1" parent="1">
+          <mxGeometry x="327" y="140" width="1000" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Example Actor -->
+        <mxCell id="ex-actor" value="Actor" style="shape=mxgraph.flowchart.start_2;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontFamily=Helvetica;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="230" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ex-actor-l" value="Actor" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontFamily=Helvetica;fontSize=10;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="365" y="285" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Example System Box -->
+        <mxCell id="ex-sys" value="System / Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontSize=12;fontFamily=Helvetica;fontColor=#1E3A5F;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="220" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Example Arrow -->
+        <mxCell id="ex-arrow" value="action / message" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;rounded=1;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" edge="1" source="ex-actor" target="ex-sys" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Example Queue -->
+        <mxCell id="ex-queue" value="queue.name" style="shape=mxgraph.cisco.servers.standard_server;html=1;dashed=0;outline=0;labelPosition=bottom;align=center;fillColor=#F3F4F6;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=10;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="810" y="225" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Example Arrow 2 -->
+        <mxCell id="ex-arrow2" value="publishes" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#F97316;fontFamily=Helvetica;fontSize=10;fontColor=#F97316;dashed=1;" edge="1" source="ex-sys" target="ex-queue" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Example Note -->
+        <mxCell id="ex-note" value="&lt;b&gt;Note:&lt;/b&gt; Use dashed orange arrows for async / event flows. Use solid navy arrows for sync REST calls." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#FEF9C3;strokeColor=#EAB308;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="520" y="340" width="340" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
