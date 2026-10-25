@@ -15,6 +15,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -30,6 +31,7 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+      start_period: 30s
 
   mailpit:
     image: axllent/mailpit
@@ -37,6 +39,11 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
