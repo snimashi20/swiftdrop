@@ -1,0 +1,2 @@
+-- Placeholder migration — each member adds their own tables with
+-- Flyway naming: V<yyyyMMddHHmm>__<module>_<what>.sql
