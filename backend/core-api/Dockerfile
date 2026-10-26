@@ -9,6 +9,8 @@ RUN mvn -q package -DskipTests
 # ---- Stage 2: run it with a small Java image ----
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+RUN groupadd --system swiftdrop && useradd --system --gid swiftdrop --no-create-home swiftdrop
 COPY --from=build /app/target/*.jar app.jar
+USER swiftdrop
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
