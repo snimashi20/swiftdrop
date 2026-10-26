@@ -17,7 +17,7 @@ CREATE TABLE parcels (
 
     size                VARCHAR(1)     NOT NULL,
     weight_kg           NUMERIC(6,2)   NOT NULL,
-    fee                 NUMERIC(10,2)  NOT NULL,
+    fee                 NUMERIC(10,2)  NOT NULL DEFAULT 0.00,
 
     created_at          TIMESTAMPTZ    NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ    NOT NULL DEFAULT now()
