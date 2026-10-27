@@ -1,0 +1,50 @@
+@startuml courier_use_case
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam actorStyle awesome
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+skinparam rectangle {
+    BackgroundColor #FAFAFB
+    BorderColor #B0BEC5
+    FontSize 14
+}
+
+skinparam usecase {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 12
+    ArrowColor #37474F
+}
+
+actor "Courier\n(Delivery Person)" as Courier
+
+rectangle "SwiftDrop System — Courier Module (M7)" {
+    usecase "Login & Authenticate\n(JWT Authentication)" as UC_Login
+    usecase "View Today's Assigned Parcels\n(GET /api/v1/courier/deliveries/today)" as UC_ViewToday
+    usecase "Filter Deliveries by Status\n(Active / Delivered / Failed)" as UC_Filter
+    usecase "View Parcel & Delivery Details\n(Address, Masked Contact, Notes)" as UC_ViewDetail
+    usecase "Update Delivery Status\n(PICKED_UP / IN_TRANSIT / OUT_FOR_DELIVERY)" as UC_UpdateStatus
+    usecase "Complete Delivery with Proof\n(POST /api/v1/courier/deliveries/{id}/deliver)" as UC_Deliver
+    usecase "Upload Proof Photo\n(Optional JPEG/PNG, Max 5MB)" as UC_UploadPhoto
+    usecase "Mark Delivery as Failed\n(POST /api/v1/courier/deliveries/{id}/fail)" as UC_Fail
+    usecase "Select Failure Reason\n(Recipient Not Available, Wrong Address, etc.)" as UC_SelectReason
+}
+
+' Primary Actor associations
+Courier --> UC_Login
+Courier --> UC_ViewToday
+Courier --> UC_ViewDetail
+Courier --> UC_UpdateStatus
+Courier --> UC_Deliver
+Courier --> UC_Fail
+
+' Relationships between use cases
+UC_ViewToday ..> UC_Filter : <<extend>>
+UC_Deliver ..> UC_UploadPhoto : <<include>>
+UC_Deliver ..> UC_UpdateStatus : <<invokes M5 Status Engine>>
+UC_Fail ..> UC_SelectReason : <<include>>
+UC_Fail ..> UC_UpdateStatus : <<invokes M5 Status Engine>>
+
+@enduml
