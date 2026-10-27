@@ -73,6 +73,21 @@ public class Parcel {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+        @Column(name = "assigned_courier_id")
+    private Long assignedCourierId;
+
+    @Column(name = "assigned_at")
+    private Instant assignedAt;
+
+    @Column(name = "delivery_instructions", length = 500)
+    private String deliveryInstructions;
+
+    @Column(name = "failure_reason", length = 50)
+    private String failureReason;
+
+    @Column(name = "failure_note", length = 500)
+    private String failureNote;
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
