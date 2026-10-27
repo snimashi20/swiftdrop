@@ -1,6 +1,6 @@
 package com.swiftdrop.tracking.service;
 
-import com.swiftdrop.tracking.domain.ParcelStatus;
+import com.swiftdrop.parcel.domain.ParcelStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

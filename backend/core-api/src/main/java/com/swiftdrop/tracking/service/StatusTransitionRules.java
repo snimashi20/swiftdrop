@@ -1,18 +1,18 @@
 package com.swiftdrop.tracking.service;
 
-import com.swiftdrop.tracking.domain.ParcelStatus;
+import com.swiftdrop.parcel.domain.ParcelStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
-import static com.swiftdrop.tracking.domain.ParcelStatus.CREATED;
-import static com.swiftdrop.tracking.domain.ParcelStatus.DELIVERED;
-import static com.swiftdrop.tracking.domain.ParcelStatus.FAILED;
-import static com.swiftdrop.tracking.domain.ParcelStatus.IN_TRANSIT;
-import static com.swiftdrop.tracking.domain.ParcelStatus.OUT_FOR_DELIVERY;
-import static com.swiftdrop.tracking.domain.ParcelStatus.PICKED_UP;
+import static com.swiftdrop.parcel.domain.ParcelStatus.CREATED;
+import static com.swiftdrop.parcel.domain.ParcelStatus.DELIVERED;
+import static com.swiftdrop.parcel.domain.ParcelStatus.FAILED;
+import static com.swiftdrop.parcel.domain.ParcelStatus.IN_TRANSIT;
+import static com.swiftdrop.parcel.domain.ParcelStatus.OUT_FOR_DELIVERY;
+import static com.swiftdrop.parcel.domain.ParcelStatus.PICKED_UP;
 
 @Component
 public class StatusTransitionRules {

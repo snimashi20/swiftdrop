@@ -1,5 +1,6 @@
 package com.swiftdrop.tracking.domain;
 
+import com.swiftdrop.parcel.domain.ParcelStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

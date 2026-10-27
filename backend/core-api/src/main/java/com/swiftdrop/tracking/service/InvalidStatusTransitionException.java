@@ -1,7 +1,7 @@
 package com.swiftdrop.tracking.service;
 
 import com.swiftdrop.common.exception.ConflictException;
-import com.swiftdrop.tracking.domain.ParcelStatus;
+import com.swiftdrop.parcel.domain.ParcelStatus;
 
 public class InvalidStatusTransitionException extends ConflictException {
 
