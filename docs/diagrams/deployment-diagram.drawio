@@ -1,0 +1,354 @@
+<mxfile host="app.diagrams.net" version="24.0.0">
+  <diagram name="Deployment Diagram" id="swiftdrop-deployment">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══ PAGE TITLE ═══ -->
+        <mxCell id="title" value="SwiftDrop — Deployment Architecture Diagram (Docker &amp; Kubernetes)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="320" y="30" width="1250" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="subtitle" value="Author: Sandavi (M10) · Helper: Isuri (M3) · Target: Docker Compose &amp; Kubernetes (Minikube / Helm) · Date: 2026-10-27 · Version: 1.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontFamily=Helvetica;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="320" y="70" width="1250" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ COLOUR PALETTE LEGEND ═══ -->
+        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="30" y="30" width="260" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Colour Palette" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="30" y="38" width="260" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Primary -->
+        <mxCell id="c1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="50" y="75" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c1l" value="#1E3A5F — Primary (Services &amp; Apps)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="75" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Accent -->
+        <mxCell id="c2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F97316;strokeColor=#EA6C0A;" vertex="1" parent="1">
+          <mxGeometry x="50" y="110" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c2l" value="#F97316 — Accent (Events &amp; AMQP Broker)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="110" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Success -->
+        <mxCell id="c3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;" vertex="1" parent="1">
+          <mxGeometry x="50" y="145" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c3l" value="#22C55E — Success (HTTP 200, Webhooks)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="145" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Warning -->
+        <mxCell id="c4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;" vertex="1" parent="1">
+          <mxGeometry x="50" y="180" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c4l" value="#EAB308 — Warning (Retry &amp; In-Flight)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="180" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Error -->
+        <mxCell id="c5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#EF4444;" vertex="1" parent="1">
+          <mxGeometry x="50" y="215" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c5l" value="#EF4444 — Error (Dead-Letter DLQ)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="215" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Neutral -->
+        <mxCell id="c6" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="50" y="250" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c6l" value="#6B7280 — Neutral (Volumes, Config)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="250" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend-note" value="&lt;b&gt;Line Style Rules:&lt;/b&gt;&lt;br/&gt;— Solid Navy: Sync HTTP / REST / TCP&lt;br/&gt;-- - Orange Dashed: Async AMQP Events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontSize=9;fontFamily=Helvetica;align=left;spacingLeft=6;" vertex="1" parent="1">
+          <mxGeometry x="45" y="285" width="230" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 1: EXTERNAL ACTORS & CLIENTS                        -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <mxCell id="sec1-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="110" width="1540" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="sec1-title" value="EXTERNAL CLIENTS &amp; CONSUMERS" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontStyle=1;fontFamily=Helvetica;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="335" y="115" width="300" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Actor: Browser Users -->
+        <mxCell id="act-users" value="&lt;b&gt;Web Users&lt;/b&gt;&lt;br/&gt;Customer · Courier · Dispatcher · Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=11;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="350" y="145" width="250" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Actor: Merchant Online Store -->
+        <mxCell id="act-merchant" value="&lt;b&gt;Merchant E-Commerce Store&lt;/b&gt;&lt;br/&gt;Sends Orders (API Key) / Receives Webhooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=11;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="640" y="145" width="270" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Actor: Mobile Courier -->
+        <mxCell id="act-courier" value="&lt;b&gt;Mobile Courier App&lt;/b&gt;&lt;br/&gt;PWA / Mobile Browser (Photo Proof)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=11;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="950" y="145" width="220" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Actor: Google OAuth -->
+        <mxCell id="act-google" value="&lt;b&gt;Google OAuth 2.0&lt;/b&gt;&lt;br/&gt;accounts.google.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;fontFamily=Helvetica;fontSize=11;fontColor=#854D0E;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="145" width="200" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Actor: Developer / Admin Browser -->
+        <mxCell id="act-ops" value="&lt;b&gt;Dev &amp; Testing Tools&lt;/b&gt;&lt;br/&gt;Postman · Mailpit Web · RabbitMQ UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=11;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="145" width="230" height="55" as="geometry" />
+        </mxCell>
+
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 2: DOCKER COMPOSE RUNTIME ENVIRONMENT               -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <mxCell id="dock-env" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E3A5F;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="320" y="250" width="1540" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="dock-title" value="DOCKER COMPOSE ENVIRONMENT (docker-compose.yml · bridge network: swiftdrop-network)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="340" y="260" width="800" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Container 1: Frontend (Nginx + React) -->
+        <mxCell id="cnt-frontend" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="350" y="300" width="270" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-fe-header" value="&lt;b&gt;container: frontend&lt;/b&gt;&lt;br/&gt;Nginx 1.25 Alpine + React SPA Build" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="350" y="300" width="270" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-fe-body" value="• Ports: &lt;b&gt;80:80&lt;/b&gt; (HTTP)&lt;br/&gt;• Serves Vite React bundle&lt;br/&gt;• Reverse proxy &lt;b&gt;/api/v1&lt;/b&gt; → core-api:8080&lt;br/&gt;• Reverse proxy &lt;b&gt;/ws&lt;/b&gt; → core-api:8080&lt;br/&gt;• Static fallback for React Router" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="355" y="340" width="260" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Container 2: Core-API (Modular Monolith) -->
+        <mxCell id="cnt-core" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="670" y="300" width="370" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-core-header" value="&lt;b&gt;container: core-api&lt;/b&gt;&lt;br/&gt;Spring Boot 4.0.9 (Java 21) · Modular Monolith" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="670" y="300" width="370" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-core-body" value="• Port: &lt;b&gt;8080:8080&lt;/b&gt;&lt;br/&gt;• REST APIs (/api/v1/*) + WebSocket (/ws)&lt;br/&gt;• Modules: auth, parcel, pricing, tracking, dispatch,&lt;br/&gt;  merchant, &lt;b&gt;webhook (M10)&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;b&gt;M10 Webhook Engine:&lt;/b&gt;&lt;br/&gt;• @RabbitListener on &lt;b&gt;webhook.parcel-status&lt;/b&gt;&lt;br/&gt;• HMAC-SHA256 signer (X-SwiftDrop-Signature)&lt;br/&gt;• Exponential backoff retry (10s, 30s, 2m, max 5)&lt;br/&gt;• Route poison messages to Dead-Letter Queue&lt;br/&gt;• Manual Resend API endpoint" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="675" y="345" width="360" height="245" as="geometry" />
+        </mxCell>
+
+        <!-- Container 3: Mock Merchant Store (M10 Component) -->
+        <mxCell id="cnt-mock" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="350" y="520" width="270" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-mock-header" value="&lt;b&gt;container: mock-merchant-store (M10)&lt;/b&gt;&lt;br/&gt;Spring Boot 4.0.9 (Java 21) · Demo Receiver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#22C55E;strokeColor=#22C55E;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="350" y="520" width="270" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-mock-body" value="• Port: &lt;b&gt;8085:8085&lt;/b&gt;&lt;br/&gt;• Receiver URL: &lt;b&gt;/api/webhooks/orders&lt;/b&gt;&lt;br/&gt;• Validates &lt;b&gt;X-SwiftDrop-Signature&lt;/b&gt;&lt;br/&gt;• Simulates store server failures (stop / 500)&lt;br/&gt;  to demonstrate retries during live demo&lt;br/&gt;• Web UI dashboard listing received webhooks" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#065F46;" vertex="1" parent="1">
+          <mxGeometry x="355" y="560" width="260" height="135" as="geometry" />
+        </mxCell>
+
+        <!-- Container 4: Notification Service -->
+        <mxCell id="cnt-notif" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="300" width="290" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-notif-header" value="&lt;b&gt;container: notification-service (M1)&lt;/b&gt;&lt;br/&gt;Spring Boot 4.0.9 · Email &amp; Mock SMS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="300" width="290" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-notif-body" value="• Port: &lt;b&gt;8081:8081&lt;/b&gt;&lt;br/&gt;• Consumes: &lt;b&gt;notification.parcel-status&lt;/b&gt;&lt;br/&gt;• Sends HTML emails via SMTP to Mailpit&lt;br/&gt;• Logs mock SMS with masked phone numbers&lt;br/&gt;• REST API for customer notification bell" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="340" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Container 5: AI Assistant (Bonus) -->
+        <mxCell id="cnt-ai" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="520" width="290" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-ai-header" value="&lt;b&gt;container: ai-assistant (Bonus M4)&lt;/b&gt;&lt;br/&gt;Spring Boot 4.0.9 + Spring AI / Gemini" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="520" width="290" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-ai-body" value="• Port: &lt;b&gt;8082:8082&lt;/b&gt;&lt;br/&gt;• Tool calling: calls Core-API tracking &amp; quotes&lt;br/&gt;• Exposes MCP tools for chatbot chat widget" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="560" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Infrastructure 1: RabbitMQ -->
+        <mxCell id="cnt-rabbit" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA6C0A;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="300" width="390" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-rb-header" value="&lt;b&gt;container: rabbitmq:3.13-management&lt;/b&gt;&lt;br/&gt;Message Broker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EA6C0A;strokeColor=#EA6C0A;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="300" width="390" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-rb-body" value="• Ports: &lt;b&gt;5672:5672&lt;/b&gt; (AMQP), &lt;b&gt;15672:15672&lt;/b&gt; (Web UI)&lt;br/&gt;• Topic Exchange: &lt;b&gt;swiftdrop.parcel.events&lt;/b&gt;&lt;br/&gt;• Routing Key: &lt;b&gt;parcel.status.changed&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Queues &amp; Dead-Letters:&lt;/b&gt;&lt;br/&gt;• &lt;b&gt;webhook.parcel-status&lt;/b&gt; → &lt;i&gt;webhook.parcel-status.dlq&lt;/i&gt; (M10)&lt;br/&gt;• &lt;b&gt;notification.parcel-status&lt;/b&gt; → &lt;i&gt;notification.parcel-status.dlq&lt;/i&gt; (M1)&lt;br/&gt;• Volume: &lt;b&gt;rabbitmq_data:/var/lib/rabbitmq&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#7C2D12;" vertex="1" parent="1">
+          <mxGeometry x="1435" y="340" width="380" height="185" as="geometry" />
+        </mxCell>
+
+        <!-- Infrastructure 2: PostgreSQL -->
+        <mxCell id="cnt-postgres" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="670" y="650" width="370" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-pg-header" value="&lt;b&gt;container: postgres:16-alpine&lt;/b&gt;&lt;br/&gt;Primary Relational Database" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="670" y="650" width="370" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-pg-body" value="• Port: &lt;b&gt;5432:5432&lt;/b&gt;&lt;br/&gt;• Database: &lt;b&gt;swiftdrop&lt;/b&gt; | User: &lt;b&gt;swiftdrop&lt;/b&gt;&lt;br/&gt;• Versioned Flyway Migrations (including &lt;b&gt;V202610271000&lt;/b&gt;)&lt;br/&gt;• Stores: users, merchants, parcels, status_history, &lt;b&gt;webhook_endpoints&lt;/b&gt;,&lt;br/&gt;  &lt;b&gt;webhook_deliveries&lt;/b&gt;&lt;br/&gt;• Volume: &lt;b&gt;postgres_data:/var/lib/postgresql/data&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="675" y="690" width="360" height="105" as="geometry" />
+        </mxCell>
+
+        <!-- Infrastructure 3: Mailpit -->
+        <mxCell id="cnt-mailpit" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="570" width="390" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-mp-header" value="&lt;b&gt;container: axllent/mailpit&lt;/b&gt;&lt;br/&gt;Mock SMTP &amp; Email Inspection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="570" width="390" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-mp-body" value="• Ports: &lt;b&gt;1025:1025&lt;/b&gt; (SMTP), &lt;b&gt;8025:8025&lt;/b&gt; (Web UI)&lt;br/&gt;• Captures all notification emails sent during dev/demo&lt;br/&gt;• Zero outbound email costs; verified live in browser" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1435" y="610" width="380" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- Proof Volume Box -->
+        <mxCell id="vol-proofs" value="&lt;b&gt;Named Volume: courier_proofs&lt;/b&gt;&lt;br/&gt;/var/swiftdrop/uploads/proofs (Shared Multipart Photos)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;fontSize=10;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="690" width="290" height="50" as="geometry" />
+        </mxCell>
+
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- ARROWS & DATA CONNECTIONS IN DOCKER                        -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <!-- Web Users -> Frontend (Port 80) -->
+        <mxCell id="arr-u-fe" value="HTTP:80" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1E3A5F;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;" edge="1" source="act-users" target="cnt-frontend" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend -> Core-API (Proxy) -->
+        <mxCell id="arr-fe-core" value="Reverse Proxy:8080&#xa;(/api/v1 &amp; /ws)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1E3A5F;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;" edge="1" source="cnt-frontend" target="cnt-core" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Core-API -> PostgreSQL (JDBC) -->
+        <mxCell id="arr-core-pg" value="JDBC:5432 (JPA / Flyway)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1E3A5F;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;" edge="1" source="cnt-core" target="cnt-postgres" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Core-API -> RabbitMQ (Publish Status Event) -->
+        <mxCell id="arr-core-rb" value="Publish Event&#xa;parcel.status.changed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;dashed=1;strokeColor=#EA6C0A;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#EA6C0A;" edge="1" source="cnt-core" target="cnt-rabbit" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1060" y="380" />
+              <mxPoint x="1060" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- RabbitMQ -> Core-API (Webhook Consumer) -->
+        <mxCell id="arr-rb-whk" value="Consume: webhook.parcel-status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;dashed=1;strokeColor=#EA6C0A;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#EA6C0A;" edge="1" source="cnt-rabbit" target="cnt-core" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1410" y="450" />
+              <mxPoint x="1050" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-API -> Mock Merchant Store (Webhook POST with HMAC) -->
+        <mxCell id="arr-core-mock" value="HTTP POST /api/webhooks/orders&#xa;[X-SwiftDrop-Signature]" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#22C55E;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#065F46;" edge="1" source="cnt-core" target="cnt-mock" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="640" y="580" />
+              <mxPoint x="640" y="580" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- RabbitMQ -> Notification Service -->
+        <mxCell id="arr-rb-notif" value="Consume: notification.parcel-status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;dashed=1;strokeColor=#EA6C0A;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;fontColor=#EA6C0A;" edge="1" source="cnt-rabbit" target="cnt-notif" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Notification Service -> Mailpit (SMTP) -->
+        <mxCell id="arr-notif-mp" value="SMTP:1025" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1E3A5F;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;" edge="1" source="cnt-notif" target="cnt-mailpit" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- AI Assistant -> Core-API -->
+        <mxCell id="arr-ai-core" value="REST:8080&#xa;GET /tracking &amp; /pricing" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1E3A5F;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;" edge="1" source="cnt-ai" target="cnt-core" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Google OAuth Callback -> Core-API -->
+        <mxCell id="arr-g-core" value="OAuth 2.0 Auth Code" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#854D0E;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;dashed=1;" edge="1" source="act-google" target="cnt-core" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1310" y="270" />
+              <mxPoint x="880" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 3: KUBERNETES DEPLOYMENT TOPOLOGY (M10 BONUS)         -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <mxCell id="k8s-env" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#0284C7;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="870" width="1540" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-title" value="KUBERNETES TARGET ARCHITECTURE &amp; TOPOLOGY (Minikube / Helm Chart — M10 Bonus Feature)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#0369A1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="880" width="850" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Ingress Controller -->
+        <mxCell id="k8s-ing" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#0284C7;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="350" y="920" width="280" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-ing-header" value="&lt;b&gt;NGINX Ingress Controller&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0284C7;strokeColor=#0284C7;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="350" y="920" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-ing-body" value="• &lt;b&gt;swiftdrop.local&lt;/b&gt; → frontend-svc (port 80)&lt;br/&gt;• &lt;b&gt;swiftdrop.local/api&lt;/b&gt; → core-api-svc (port 8080)&lt;br/&gt;• &lt;b&gt;swiftdrop.local/ws&lt;/b&gt; → core-api-svc (port 8080)&lt;br/&gt;• &lt;b&gt;mock-store.local&lt;/b&gt; → mock-merchant-svc (8085)&lt;br/&gt;• &lt;b&gt;mailpit.local&lt;/b&gt; → mailpit-svc (port 8025)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#0369A1;" vertex="1" parent="1">
+          <mxGeometry x="355" y="955" width="270" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Deployments Box -->
+        <mxCell id="k8s-dep-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="660" y="920" width="410" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-dep-header" value="&lt;b&gt;Stateless Workloads (Kubernetes Deployments)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="660" y="920" width="410" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-dep-body" value="• &lt;b&gt;frontend-deployment&lt;/b&gt;: 2 Replicas | Service: frontend-svc (ClusterIP:80)&lt;br/&gt;• &lt;b&gt;core-api-deployment&lt;/b&gt;: 2 Replicas | Service: core-api-svc (ClusterIP:8080)&lt;br/&gt;  - Liveness &amp; Readiness probes on /actuator/health&lt;br/&gt;• &lt;b&gt;notification-deployment&lt;/b&gt;: 1 Replica | Service: notification-svc (8081)&lt;br/&gt;• &lt;b&gt;mock-merchant-deployment&lt;/b&gt;: 1 Replica | Service: mock-merchant-svc (8085)&lt;br/&gt;• &lt;b&gt;ai-assistant-deployment&lt;/b&gt;: 1 Replica | Service: ai-assistant-svc (8082)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="665" y="955" width="400" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- StatefulSets Box -->
+        <mxCell id="k8s-sts-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA6C0A;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="920" width="370" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-sts-header" value="&lt;b&gt;Stateful Workloads (Kubernetes StatefulSets)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EA6C0A;strokeColor=#EA6C0A;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="920" width="370" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-sts-body" value="• &lt;b&gt;postgres-statefulset&lt;/b&gt;: 1 Replica (PostgreSQL 16)&lt;br/&gt;  - Service: postgres-svc (ClusterIP:5432)&lt;br/&gt;  - VolumeClaimTemplate: 5Gi PVC (HostPath / Standard SC)&lt;br/&gt;• &lt;b&gt;rabbitmq-statefulset&lt;/b&gt;: 1 Replica (RabbitMQ Management)&lt;br/&gt;  - Service: rabbitmq-svc (ClusterIP:5672, 15672)&lt;br/&gt;  - VolumeClaimTemplate: 2Gi PVC&lt;br/&gt;• &lt;b&gt;mailpit-deployment&lt;/b&gt;: 1 Replica | Service: mailpit-svc (1025, 8025)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#7C2D12;" vertex="1" parent="1">
+          <mxGeometry x="1105" y="955" width="360" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- ConfigMaps & Secrets Box -->
+        <mxCell id="k8s-cfg-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="920" width="340" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-cfg-header" value="&lt;b&gt;Configuration &amp; Security Resources&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B7280;strokeColor=#6B7280;fontColor=#FFFFFF;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="920" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s-cfg-body" value="• &lt;b&gt;ConfigMap: swiftdrop-config&lt;/b&gt;&lt;br/&gt;  - DB_HOST=postgres-svc, RABBITMQ_HOST=rabbitmq-svc&lt;br/&gt;  - MAIL_HOST=mailpit-svc, ACTIVE_PROFILE=k8s&lt;br/&gt;• &lt;b&gt;Secret: swiftdrop-secrets&lt;/b&gt; (Base64 Encoded)&lt;br/&gt;  - DB_PASSWORD, JWT_SECRET, GOOGLE_CLIENT_SECRET&lt;br/&gt;• &lt;b&gt;Helm Packaging (charts/swiftdrop)&lt;/b&gt;:&lt;br/&gt;  - values.yaml parameterized for Minikube local &amp; Cloud" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1505" y="955" width="330" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- K8s Footer Note -->
+        <mxCell id="k8s-note" value="&lt;b&gt;Deployment Verification on Minikube:&lt;/b&gt; Execute &lt;code&gt;helm install swiftdrop ./deploy/helm/swiftdrop&lt;/code&gt; &amp; enable ingress with &lt;code&gt;minikube addons enable ingress&lt;/code&gt;. Maps to M10 bonus specification." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#0284C7;fontSize=11;fontFamily=Helvetica;align=center;fontColor=#0369A1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="1200" width="1490" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
