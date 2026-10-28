@@ -1,0 +1,104 @@
+<mxfile host="app.diagrams.net" version="24.0.0">
+  <diagram name="Webhook Retry Activity" id="swiftdrop-webhook-retry">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══ PAGE TITLE ═══ -->
+        <mxCell id="title" value="SwiftDrop — Webhook Delivery &amp; Exponential Backoff Retry Activity Diagram" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="320" y="25" width="1250" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="subtitle" value="Author: Sandavi (M10) · Module: com.swiftdrop.webhook · Partner: Sithmi (M1) · Date: 2026-10-27 · Version: 1.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontFamily=Helvetica;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="320" y="65" width="1250" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ═══ COLOUR PALETTE LEGEND ═══ -->
+        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="30" y="25" width="260" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Colour Palette" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="30" y="33" width="260" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Primary -->
+        <mxCell id="c1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;" vertex="1" parent="1">
+          <mxGeometry x="50" y="70" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c1l" value="#1E3A5F — Actions &amp; Processing" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="70" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Accent -->
+        <mxCell id="c2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F97316;strokeColor=#EA6C0A;" vertex="1" parent="1">
+          <mxGeometry x="50" y="105" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c2l" value="#F97316 — RabbitMQ Events &amp; Queues" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="105" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Success -->
+        <mxCell id="c3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;" vertex="1" parent="1">
+          <mxGeometry x="50" y="140" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c3l" value="#22C55E — Status: SUCCESS (HTTP 2xx)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="140" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Warning -->
+        <mxCell id="c4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;" vertex="1" parent="1">
+          <mxGeometry x="50" y="175" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c4l" value="#EAB308 — Status: RETRYING (Backoff)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="175" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Error -->
+        <mxCell id="c5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#EF4444;" vertex="1" parent="1">
+          <mxGeometry x="50" y="210" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c5l" value="#EF4444 — Status: FAILED &amp; Dead-Letter" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="210" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Neutral -->
+        <mxCell id="c6" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="50" y="245" width="35" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="c6l" value="#6B7280 — Database &amp; Audit Logs" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="95" y="245" width="185" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend-rules" value="&lt;b&gt;Retry Policy (Demo Config):&lt;/b&gt;&lt;br/&gt;• Attempt 1: Immediate dispatch&lt;br/&gt;• Attempt 2: 10s delay&lt;br/&gt;• Attempt 3: 30s delay&lt;br/&gt;• Attempt 4 &amp; 5: 120s delay&lt;br/&gt;• Max Attempts: 5 &amp;rarr; DLQ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontSize=9;fontFamily=Helvetica;align=left;spacingLeft=6;" vertex="1" parent="1">
+          <mxGeometry x="45" y="280" width="230" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- SWIMLANES / ACTORS                                            -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <!-- Lane 1: RabbitMQ Broker -->
+        <mxCell id="lane-rmq" value="&lt;b&gt;RabbitMQ Message Broker&lt;/b&gt;&lt;br/&gt;(swiftdrop.parcel.events / queues)" style="swimlane;startSize=40;fillColor=#FFF7ED;strokeColor=#EA6C0A;fontColor=#7C2D12;fontSize=12;fontFamily=Helvetica;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="105" width="340" height="1140" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 2: Webhook Engine (Core-API) -->
+        <mxCell id="lane-core" value="&lt;b&gt;Webhook Engine (core-api: M10)&lt;/b&gt;&lt;br/&gt;(WebhookEventListener &amp; DispatcherService)" style="swimlane;startSize=40;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=12;fontFamily=Helvetica;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="105" width="460" height="1140" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 3: Database & Repositories -->
+        <mxCell id="lane-db" value="&lt;b&gt;PostgreSQL Database&lt;/b&gt;&lt;br/&gt;(webhook_endpoints &amp; webhook_deliveries)" style="swimlane;startSize=40;fillColor=#F8FAFC;strokeColor=#6B7280;fontColor=#374151;fontSize=12;fontFamily=Helvetica;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="105" width="370" height="1140" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 4: Merchant Server / Mock Store -->
+        <mxCell id="lane-merchant" value="&lt;b&gt;Merchant Endpoint / Mock Store&lt;/b&gt;&lt;br/&gt;(mock-merchant-store:8085)" style="swimlane;startSize=40;fillColor=#F0FDF4;strokeColor=#22C55E;fontColor=#065F46;fontSize=12;fontFamily=Helvetica;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="105" width="370" height="1140" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
