@@ -3,13 +3,13 @@
 CREATE TABLE zones (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
-    district VARCHAR(100) NOT NULL,
+    district VARCHAR(100) NOT NULL UNIQUE,
     is_active BOOLEAN DEFAULT TRUE NOT NULL
 );
 
 CREATE TABLE pricing_rules (
     id BIGSERIAL PRIMARY KEY,
-    zone_id BIGINT REFERENCES zones(id),
+    zone_id BIGINT UNIQUE REFERENCES zones(id),
     size_factor_s DECIMAL(10,2) DEFAULT 1.00 NOT NULL,
     size_factor_m DECIMAL(10,2) DEFAULT 1.50 NOT NULL,
     size_factor_l DECIMAL(10,2) DEFAULT 2.00 NOT NULL,
@@ -26,6 +26,6 @@ INSERT INTO zones (name, district) VALUES
 ('Galle Zone', 'Galle'),
 ('Jaffna Zone', 'Jaffna');
 
--- Default pricing rule (attached to Colombo as default)
+-- Seed a pricing rule for ALL zones (M3's suggestion)
 INSERT INTO pricing_rules (zone_id, base_fee, per_kg_fee, inter_zone_surcharge) 
-VALUES (1, 300.00, 100.00, 250.00);
+SELECT id, 300.00, 100.00, 250.00 FROM zones;

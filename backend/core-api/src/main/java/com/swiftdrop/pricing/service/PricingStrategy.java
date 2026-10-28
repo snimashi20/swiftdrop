@@ -5,5 +5,5 @@ import com.swiftdrop.pricing.domain.PricingRule;
 import java.math.BigDecimal;
 
 public interface PricingStrategy {
-    BigDecimal calculateFee(PricingRule rule, ParcelSize size, double weightKg, boolean isInterZone);
+    BigDecimal calculateFee(PricingRule rule, ParcelSize size, BigDecimal weightKg, boolean isInterZone);
 }

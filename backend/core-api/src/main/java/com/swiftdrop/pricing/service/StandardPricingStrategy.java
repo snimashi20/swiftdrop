@@ -10,14 +10,15 @@ import java.math.RoundingMode;
 public class StandardPricingStrategy implements PricingStrategy {
 
     @Override
-    public BigDecimal calculateFee(PricingRule rule, ParcelSize size, double weightKg, boolean isInterZone) {
-        BigDecimal base = rule.getBaseFee();
-        BigDecimal weight = BigDecimal.valueOf(weightKg);
+    public BigDecimal calculateFee(PricingRule rule, ParcelSize size, BigDecimal weightKg, boolean isInterZone) {
         
-        // Base fee + (weight * per kg fee)
-        BigDecimal total = base.add(weight.multiply(rule.getPerKgFee()));
+        if (weightKg == null || weightKg.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Weight must be greater than zero");
+        }
 
-        // Apply size factor
+        BigDecimal base = rule.getBaseFee();
+        BigDecimal total = base.add(weightKg.multiply(rule.getPerKgFee()));
+
         BigDecimal sizeFactor = switch (size) {
             case S -> rule.getSizeFactorS();
             case M -> rule.getSizeFactorM();
@@ -25,7 +26,6 @@ public class StandardPricingStrategy implements PricingStrategy {
         };
         total = total.multiply(sizeFactor);
 
-        // Apply inter-zone surcharge if applicable
         if (isInterZone) {
             total = total.add(rule.getInterZoneSurcharge());
         }
