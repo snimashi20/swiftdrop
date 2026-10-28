@@ -1,5 +1,7 @@
 package com.swiftdrop.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,5 +27,13 @@ public class AddressDto {
     private String district;
 
     private String postalCode;
-    private boolean isDefault;
+
+    @JsonProperty("isDefault")
+    @JsonAlias({"default", "isDefault"})
+    @Builder.Default
+    private Boolean isDefault = false;
+
+    public boolean isDefault() {
+        return Boolean.TRUE.equals(isDefault);
+    }
 }
