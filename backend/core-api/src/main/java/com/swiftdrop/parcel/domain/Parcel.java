@@ -76,7 +76,7 @@ public class Parcel {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-        @Column(name = "assigned_courier_id")
+    @Column(name = "assigned_courier_id")
     private Long assignedCourierId;
 
     @Column(name = "assigned_at")
