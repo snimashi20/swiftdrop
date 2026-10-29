@@ -25,6 +25,7 @@ logs/
 application-local.yml
 application-local.yaml
 application-local.properties
+docker-compose.override.yml
 
 # ---------- Node / React ----------
 node_modules/
