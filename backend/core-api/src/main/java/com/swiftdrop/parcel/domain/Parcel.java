@@ -67,14 +67,8 @@ public class Parcel {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal fee = BigDecimal.ZERO;
 
-        @Column(name = "assigned_courier_id")
-    private Long assignedCourierId;
-
     @Column(name = "assigned_by_user_id")
     private Long assignedByUserId;
-
-    @Column(name = "assigned_at")
-    private Instant assignedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
