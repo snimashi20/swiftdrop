@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import '../tracking.css';
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
 import { coordsFor } from '../cities';
 import { progressFor, splitAt } from '../geo';
