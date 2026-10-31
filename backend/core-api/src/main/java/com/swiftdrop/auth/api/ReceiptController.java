@@ -5,6 +5,9 @@ import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.auth.service.ReceiptService;
 import com.swiftdrop.common.exception.ForbiddenException;
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.repository.ParcelRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,30 +18,27 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/receipts")
+@RequiredArgsConstructor
 public class ReceiptController {
 
     private final ReceiptService receiptService;
     private final UserRepository userRepository;
-
-    public ReceiptController(ReceiptService receiptService, UserRepository userRepository) {
-        this.receiptService = receiptService;
-        this.userRepository = userRepository;
-    }
+    private final ParcelRepository parcelRepository;
 
     /**
      * GET /api/v1/receipts/{trackingNumber}
-     * Delivery Receipt PDF එක Download කරගැනීම (IDOR Security Check සහිතව)
+     * Delivery Receipt PDF download with IDOR protection
      */
     @GetMapping("/{trackingNumber}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<byte[]> downloadReceipt(@PathVariable String trackingNumber) {
         User currentUser = getAuthenticatedUser();
 
-        // Simulated Parcel Lookup (Parcel module implementation සමඟ පහසුවෙන් integrate
-        // කළ හැක)
-        // IDOR Defense: Authenticated User ට අදාළ Receipt එක download කිරීමට අවසර
-        // තිබේදැයි බලයි
-        boolean isOwner = true; // In production: parcel.getCustomer().getId().equals(currentUser.getId());
+        Parcel parcel = parcelRepository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new NotFoundException("Parcel not found for tracking number: " + trackingNumber));
+
+        // IDOR Defense: Only the parcel owner or an ADMIN may download the receipt
+        boolean isOwner = parcel.getCustomerId() != null && parcel.getCustomerId().equals(currentUser.getId());
         boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
 
         if (!isOwner && !isAdmin) {
@@ -47,13 +47,20 @@ public class ReceiptController {
                             + trackingNumber);
         }
 
+        String recipientName = parcel.getReceiverName() != null ? parcel.getReceiverName() : "Recipient";
+        String destinationCity = parcel.getDropoff() != null && parcel.getDropoff().getCity() != null
+                ? parcel.getDropoff().getCity()
+                : "N/A";
+        double weightKg = parcel.getWeightKg() != null ? parcel.getWeightKg().doubleValue() : 1.0;
+        double price = parcel.getFee() != null ? parcel.getFee().doubleValue() : 0.0;
+
         byte[] pdfBytes = receiptService.generateDeliveryReceipt(
-                trackingNumber,
+                parcel.getTrackingNumber(),
                 currentUser.getFullName(),
-                "Receiver Name",
-                "Colombo",
-                2.5,
-                750.00);
+                recipientName,
+                destinationCity,
+                weightKg,
+                price);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt-" + trackingNumber + ".pdf")

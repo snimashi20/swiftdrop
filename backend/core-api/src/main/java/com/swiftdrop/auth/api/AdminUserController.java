@@ -5,6 +5,7 @@ import com.swiftdrop.auth.dto.CreateStaffRequestDto;
 import com.swiftdrop.auth.dto.StatusToggleDto;
 import com.swiftdrop.auth.dto.UserResponseDto;
 import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import jakarta.validation.Valid;
@@ -31,7 +32,7 @@ public class AdminUserController {
 
     /**
      * GET /api/v1/admin/users
-     * System එකේ සියලුම Users ලා ලබා ගැනීම
+     * Retrieve all users in the system
      */
     @GetMapping
     public ResponseEntity<List<UserResponseDto>> getAllUsers() {
@@ -44,7 +45,7 @@ public class AdminUserController {
 
     /**
      * PATCH /api/v1/admin/users/{id}/status
-     * User කෙනෙකුගේ Account Status එක Enable/Disable කිරීම
+     * Enable or disable a user account
      */
     @PatchMapping("/{id}/status")
     public ResponseEntity<UserResponseDto> toggleUserStatus(
@@ -62,10 +63,15 @@ public class AdminUserController {
 
     /**
      * POST /api/v1/admin/users/staff
-     * Admin විසින් අලුතින් Courier / Dispatcher Accounts සෑදීම
+     * Create Courier or Dispatcher staff account (restricted to COURIER or DISPATCHER)
      */
     @PostMapping("/staff")
     public ResponseEntity<UserResponseDto> createStaffAccount(@Valid @RequestBody CreateStaffRequestDto requestDto) {
+        String role = requestDto.getRole() != null ? requestDto.getRole().trim().toUpperCase() : "";
+        if (!"COURIER".equals(role) && !"DISPATCHER".equals(role)) {
+            throw new BadRequestException("Staff role must be either COURIER or DISPATCHER");
+        }
+
         if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
             throw new ConflictException("User already exists with email: " + requestDto.getEmail());
         }
@@ -74,7 +80,7 @@ public class AdminUserController {
         staffUser.setEmail(requestDto.getEmail());
         staffUser.setFullName(requestDto.getFullName());
         staffUser.setPhoneNumber(requestDto.getPhoneNumber());
-        staffUser.setRole(requestDto.getRole().toUpperCase());
+        staffUser.setRole(role);
         staffUser.setPasswordHash(passwordEncoder.encode(requestDto.getPassword()));
         staffUser.setProvider("LOCAL");
         staffUser.setEnabled(true);

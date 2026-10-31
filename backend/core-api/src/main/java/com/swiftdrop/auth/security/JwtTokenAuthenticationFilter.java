@@ -2,11 +2,13 @@ package com.swiftdrop.auth.security;
 
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,10 +20,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
 
+    private final JwtService jwtService;
     private final UserRepository userRepository;
 
     @Override
@@ -34,10 +38,15 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7).trim();
 
-            if (token.startsWith("SWIFTDROP_MOCK_JWT_USER_")) {
+            if (jwtService.validateToken(token)) {
                 try {
-                    Long userId = Long.parseLong(token.substring("SWIFTDROP_MOCK_JWT_USER_".length()));
-                    Optional<User> userOpt = userRepository.findById(userId);
+                    Claims claims = jwtService.extractClaims(token);
+                    String email = claims.get("email", String.class);
+                    if (email == null) {
+                        email = claims.getSubject();
+                    }
+
+                    Optional<User> userOpt = userRepository.findByEmail(email);
 
                     if (userOpt.isPresent()) {
                         User user = userOpt.get();
@@ -49,9 +58,12 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
                                             List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
                                     );
                             SecurityContextHolder.getContext().setAuthentication(authentication);
+                        } else {
+                            log.warn("Authenticated user {} is disabled", email);
                         }
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.error("Failed to authenticate user from JWT token: {}", e.getMessage());
                 }
             }
         }
