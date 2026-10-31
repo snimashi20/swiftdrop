@@ -1,7 +1,5 @@
 package com.swiftdrop.merchant.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.swiftdrop.merchant.domain.ApiKey;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.merchant.domain.MerchantStatus;
@@ -56,6 +54,10 @@ class ApiKeyAuthenticationFilterMockMvcTest {
         }
     }
 
+    // ISO-8601 pattern: e.g. "2026-10-31T17:09:00.123456Z"
+    private static final String ISO8601_REGEX =
+            "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z";
+
     @Mock
     private ApiKeyService apiKeyService;
 
@@ -63,11 +65,9 @@ class ApiKeyAuthenticationFilterMockMvcTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
-        ApiKeyAuthenticationEntryPoint authenticationEntryPoint = new ApiKeyAuthenticationEntryPoint(objectMapper);
-        ApiKeyAccessDeniedHandler accessDeniedHandler = new ApiKeyAccessDeniedHandler(objectMapper);
+        // Both handlers now have a single no-arg constructor; no ObjectMapper arg needed.
+        ApiKeyAuthenticationEntryPoint authenticationEntryPoint = new ApiKeyAuthenticationEntryPoint();
+        ApiKeyAccessDeniedHandler accessDeniedHandler = new ApiKeyAccessDeniedHandler();
         ApiKeyAuthenticationFilter apiKeyAuthenticationFilter = new ApiKeyAuthenticationFilter(
                 apiKeyService,
                 authenticationEntryPoint,
@@ -113,14 +113,17 @@ class ApiKeyAuthenticationFilterMockMvcTest {
     }
 
     @Test
-    @DisplayName("Missing API key returns 401 with INVALID_API_KEY code")
-    void missingKey_returns401() throws Exception {
+    @DisplayName("Missing API key returns 401 – full body with ISO-8601 timestamp")
+    void missingKey_returns401_withTimestampAndAllFields() throws Exception {
         mockMvc.perform(get("/api/v1/merchant-api/test"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.code").value("INVALID_API_KEY"))
                 .andExpect(jsonPath("$.message").value("Invalid or missing API key"))
-                .andExpect(jsonPath("$.path").value("/api/v1/merchant-api/test"));
+                .andExpect(jsonPath("$.path").value("/api/v1/merchant-api/test"))
+                // timestamp must be a string matching ISO-8601, NOT a numeric epoch
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesRegex(ISO8601_REGEX)));
     }
 
     @Test
@@ -161,8 +164,8 @@ class ApiKeyAuthenticationFilterMockMvcTest {
     }
 
     @Test
-    @DisplayName("Pending merchant returns 403 with MERCHANT_NOT_APPROVED code")
-    void pendingMerchant_returns403() throws Exception {
+    @DisplayName("Pending merchant returns 403 – full body with ISO-8601 timestamp")
+    void pendingMerchant_returns403_withTimestampAndAllFields() throws Exception {
         String testKey = "sdk_pending_dummy_key_1234567890123456789";
         String testHash = "pendingHash";
 
@@ -188,7 +191,10 @@ class ApiKeyAuthenticationFilterMockMvcTest {
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.code").value("MERCHANT_NOT_APPROVED"))
                 .andExpect(jsonPath("$.message").value("Merchant is not approved"))
-                .andExpect(jsonPath("$.path").value("/api/v1/merchant-api/test"));
+                .andExpect(jsonPath("$.path").value("/api/v1/merchant-api/test"))
+                // timestamp must be a string matching ISO-8601, NOT a numeric epoch
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesRegex(ISO8601_REGEX)));
     }
 
     @Test

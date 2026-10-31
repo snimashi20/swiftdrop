@@ -1,10 +1,8 @@
 package com.swiftdrop.merchant.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swiftdrop.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,11 +12,18 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.Instant;
 
+/**
+ * Returns a 403 JSON error when a merchant whose status is not APPROVED
+ * reaches the {@code /api/v1/merchant-api/**} filter chain.
+ *
+ * <p>Uses {@link SecurityJsonMapper#INSTANCE} – a self-contained, correctly
+ * configured ObjectMapper (JavaTimeModule + ISO-8601 timestamps) – so the
+ * serialised body is identical to what
+ * {@link com.swiftdrop.common.exception.GlobalExceptionHandler} produces,
+ * without introducing any Spring dependency on this class.
+ */
 @Component
-@RequiredArgsConstructor
 public class ApiKeyAccessDeniedHandler implements AccessDeniedHandler {
-
-    private final ObjectMapper objectMapper;
 
     @Override
     public void handle(
@@ -38,6 +43,6 @@ public class ApiKeyAccessDeniedHandler implements AccessDeniedHandler {
                 request.getRequestURI()
         );
 
-        objectMapper.writeValue(response.getOutputStream(), errorResponse);
+        SecurityJsonMapper.INSTANCE.writeValue(response.getOutputStream(), errorResponse);
     }
 }

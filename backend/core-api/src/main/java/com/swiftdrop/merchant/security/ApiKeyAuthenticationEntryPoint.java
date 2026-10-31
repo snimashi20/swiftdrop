@@ -1,10 +1,8 @@
 package com.swiftdrop.merchant.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swiftdrop.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
@@ -14,11 +12,18 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.Instant;
 
+/**
+ * Returns a 401 JSON error when no valid API key is present on the
+ * {@code /api/v1/merchant-api/**} filter chain.
+ *
+ * <p>Uses {@link SecurityJsonMapper#INSTANCE} – a self-contained, correctly
+ * configured ObjectMapper (JavaTimeModule + ISO-8601 timestamps) – so the
+ * serialised body is identical to what
+ * {@link com.swiftdrop.common.exception.GlobalExceptionHandler} produces,
+ * without introducing any Spring dependency on this class.
+ */
 @Component
-@RequiredArgsConstructor
 public class ApiKeyAuthenticationEntryPoint implements AuthenticationEntryPoint {
-
-    private final ObjectMapper objectMapper;
 
     @Override
     public void commence(
@@ -38,6 +43,6 @@ public class ApiKeyAuthenticationEntryPoint implements AuthenticationEntryPoint 
                 request.getRequestURI()
         );
 
-        objectMapper.writeValue(response.getOutputStream(), errorResponse);
+        SecurityJsonMapper.INSTANCE.writeValue(response.getOutputStream(), errorResponse);
     }
 }
