@@ -10,5 +10,7 @@ public class QuoteResponse {
     private BigDecimal fee;
     private String pickupZone;
     private String dropoffZone;
+    private Long pickupZoneId;
+    private Long dropoffZoneId;
     private boolean isInterZone;
 }
