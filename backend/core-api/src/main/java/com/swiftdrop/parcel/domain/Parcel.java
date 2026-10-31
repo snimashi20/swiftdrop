@@ -91,6 +91,9 @@ public class Parcel {
     @Column(name = "failure_note", length = 500)
     private String failureNote;
 
+    @Column(name = "pickup_zone_id")
+    private Long pickupZoneId;
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
