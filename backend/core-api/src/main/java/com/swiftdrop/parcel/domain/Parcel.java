@@ -67,20 +67,29 @@ public class Parcel {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal fee = BigDecimal.ZERO;
 
-        @Column(name = "assigned_courier_id")
-    private Long assignedCourierId;
-
     @Column(name = "assigned_by_user_id")
     private Long assignedByUserId;
-
-    @Column(name = "assigned_at")
-    private Instant assignedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "assigned_courier_id")
+    private Long assignedCourierId;
+
+    @Column(name = "assigned_at")
+    private Instant assignedAt;
+
+    @Column(name = "delivery_instructions", length = 500)
+    private String deliveryInstructions;
+
+    @Column(name = "failure_reason", length = 50)
+    private String failureReason;
+
+    @Column(name = "failure_note", length = 500)
+    private String failureNote;
 
     @PrePersist
     void onCreate() {
