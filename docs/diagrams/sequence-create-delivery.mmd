@@ -1,0 +1,43 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#EFF6FF','primaryBorderColor':'#1E3A5F','primaryTextColor':'#1E3A5F','lineColor':'#1E3A5F','actorBkg':'#1E3A5F','actorTextColor':'#FFFFFF','actorBorder':'#1E3A5F','signalColor':'#1E3A5F','signalTextColor':'#1E3A5F','noteBkgColor':'#FEF9C3','noteBorderColor':'#EAB308','noteTextColor':'#374151','activationBkgColor':'#EFF6FF','activationBorderColor':'#1E3A5F','sequenceNumberColor':'#FFFFFF','labelBoxBkgColor':'#1E3A5F','labelTextColor':'#FFFFFF','loopTextColor':'#374151','labelBoxBorderColor':'#1E3A5F'}}}%%
+sequenceDiagram
+    autonumber
+    participant C as Customer
+    participant FE as React booking page
+    participant PC as ParcelController
+    participant PS as ParcelService
+    participant PR as PricingService (M4)
+    participant TG as TrackingNumberGenerator
+    participant SS as ParcelStatusService (M5)
+    participant DB as PostgreSQL
+    participant MQ as RabbitMQ
+
+    Note over C,MQ: Step 1 - fill the form, see the fee first
+    C->>FE: Enter addresses, receiver, size (S/M/L), weight
+    FE->>PR: POST /api/v1/pricing/quote {pickupDistrict, dropoffDistrict, size, weightKg}
+    PR-->>FE: 200 {fee, pickupZone, dropoffZone, interZone}
+    FE-->>C: Show fee preview
+
+    Note over C,MQ: Step 2 - confirm the booking (one transaction)
+    C->>FE: Click Confirm
+    FE->>PC: POST /api/v1/parcels (JWT, body validated with @Valid)
+    PC->>PS: createParcel(request, customerId from JWT)
+    PS->>PR: calculateQuote(QuoteRequest)
+    PR-->>PS: QuoteResponse (fee)
+    PS->>TG: generate()
+    TG-->>PS: trackingNumber (SD + 10 chars)
+    PS->>DB: INSERT parcels (status = CREATED, fee, trackingNumber)
+    DB-->>PS: saved Parcel
+    PS->>SS: recordCreated(parcel, "CUSTOMER", userId)
+    SS->>DB: INSERT status_history (old = null, new = CREATED)
+    SS->>SS: raise ParcelStatusChangedEvent (oldStatus = null)
+    PS-->>PC: ParcelResponse (DTO)
+    PC-->>FE: 201 Created + tracking number
+    FE-->>C: Show tracking number
+
+    Note over SS,MQ: After the database commit only
+    SS-)MQ: publish parcel.status.changed (notification + webhook queues, WebSocket push)
+
+    alt Validation fails (missing field, bad phone, weight <= 0)
+        PC-->>FE: 400 error JSON {timestamp, status, code, message, path}
+        FE-->>C: Show field errors
+    end
