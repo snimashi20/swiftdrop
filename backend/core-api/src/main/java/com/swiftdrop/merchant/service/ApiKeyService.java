@@ -136,4 +136,15 @@ public class ApiKeyService {
     public Optional<ApiKey> findActiveKeyByHash(String keyHash) {
         return apiKeyRepository.findByKeyHashAndActiveTrue(keyHash);
     }
+
+    /**
+     * Updates the last_used_at timestamp for the given API key.
+     */
+    @Transactional
+    public void recordKeyUsage(Long apiKeyId) {
+        apiKeyRepository.findById(apiKeyId).ifPresent(key -> {
+            key.setLastUsedAt(Instant.now());
+            apiKeyRepository.save(key);
+        });
+    }
 }
