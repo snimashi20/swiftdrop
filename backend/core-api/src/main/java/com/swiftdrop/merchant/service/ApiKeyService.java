@@ -81,7 +81,7 @@ public class ApiKeyService {
                 .build();
 
         ApiKey saved = apiKeyRepository.save(apiKey);
-        log.info("Generated new API key id={} with prefix={} for merchantId={}", saved.getId(), keyPrefix, merchantId);
+        log.info("Generated new API key id={} for merchantId={}", saved.getId(), merchantId);
 
         return apiKeyMapper.toGeneratedResponse(saved, rawKey);
     }
