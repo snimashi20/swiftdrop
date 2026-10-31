@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Parcel Status Update</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2563eb;">SwiftDrop — Parcel Status Update</h2>
+    <p>Hi,</p>
+    <p th:if="${oldStatus == null}">Your parcel <strong th:text="${trackingNumber}">TRK123</strong> has been created.</p>
+    <p th:if="${oldStatus != null and newStatus == 'CANCELLED'}">Your parcel <strong th:text="${trackingNumber}">TRK123</strong> has been cancelled.</p>
+    <p th:if="${oldStatus != null and newStatus != 'CANCELLED'}">Your parcel <strong th:text="${trackingNumber}">TRK123</strong> status has changed:</p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+        <tr th:if="${oldStatus != null}">
+            <td style="padding: 8px; border: 1px solid #e5e7eb;">Previous status</td>
+            <td style="padding: 8px; border: 1px solid #e5e7eb;" th:text="${oldStatus}">PICKED_UP</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #e5e7eb;">New status</td>
+            <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: bold;"
+                th:style="${newStatus == 'CANCELLED'} ? 'padding: 8px; border: 1px solid #e5e7eb; font-weight: bold; color: #dc2626;' : 'padding: 8px; border: 1px solid #e5e7eb; font-weight: bold; color: #16a34a;'"
+                th:text="${newStatus}">IN_TRANSIT</td>
+        </tr>
+    </table>
+    <p th:if="${note != null and !note.isEmpty()}">Note: <span th:text="${note}"></span></p>
+    <p style="color: #6b7280; font-size: 12px; margin-top: 32px;">
+        This is an automated notification from SwiftDrop. Please do not reply to this email.
+    </p>
+</body>
+</html>
