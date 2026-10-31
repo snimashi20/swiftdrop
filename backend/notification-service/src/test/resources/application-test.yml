@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16:///swiftdrop
+    username: test
+    password: test
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  mail:
+    host: localhost
+    port: 1025
+
+app:
+  jwt:
+    secret: test-secret-key-for-unit-tests-only-min-32-chars!!
+  mail:
+    from: test@swiftdrop.local
