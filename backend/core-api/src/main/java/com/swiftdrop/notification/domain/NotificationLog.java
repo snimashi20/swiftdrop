@@ -19,7 +19,7 @@ public class NotificationLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private UUID eventId;
 
     @Column(nullable = false)
@@ -28,7 +28,7 @@ public class NotificationLog {
     @Column(nullable = false, length = 12)
     private String trackingNumber;
 
-    @Column(nullable = false, length = 30)
+    @Column(length = 30)
     private String oldStatus;
 
     @Column(nullable = false, length = 30)
