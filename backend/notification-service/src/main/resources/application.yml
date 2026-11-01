@@ -23,6 +23,9 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false # failed messages go to the dead-letter queue instead of looping
 
   mail:
     host: ${MAIL_HOST:localhost}

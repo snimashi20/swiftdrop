@@ -6,11 +6,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
   rabbitmq:
     host: localhost
     port: 5672
     username: guest
     password: guest
+    listener:
+      simple:
+        default-requeue-rejected: false
   mail:
     host: localhost
     port: 1025
