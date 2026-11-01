@@ -18,6 +18,7 @@ class StatusTransitionRulesTest {
     @ParameterizedTest
     @CsvSource({
             "CREATED,PICKED_UP",
+            "CREATED,CANCELLED",
             "PICKED_UP,IN_TRANSIT",
             "PICKED_UP,FAILED",
             "IN_TRANSIT,OUT_FOR_DELIVERY",
@@ -36,16 +37,33 @@ class StatusTransitionRulesTest {
             "DELIVERED,IN_TRANSIT",
             "DELIVERED,FAILED",
             "DELIVERED,CREATED",
+            "DELIVERED,CANCELLED",
             "CREATED,DELIVERED",
             "CREATED,FAILED",
             "CREATED,CREATED",
             "IN_TRANSIT,PICKED_UP",
             "PICKED_UP,DELIVERED",
-            "FAILED,DELIVERED"
+            "FAILED,DELIVERED",
+            "PICKED_UP,CANCELLED",
+            "IN_TRANSIT,CANCELLED",
+            "OUT_FOR_DELIVERY,CANCELLED",
+            "FAILED,CANCELLED",
+            "CANCELLED,CREATED",
+            "CANCELLED,PICKED_UP",
+            "CANCELLED,FAILED",
+            "CANCELLED,CANCELLED"
     })
     void refusesInvalidTransitions(ParcelStatus from, ParcelStatus to) {
         assertFalse(rules.canTransition(from, to));
         assertThrows(InvalidStatusTransitionException.class, () -> rules.validate(from, to));
+    }
+
+    @Test
+    void cancelledAndDeliveredAreFinal() {
+        for (ParcelStatus next : ParcelStatus.values()) {
+            assertFalse(rules.canTransition(ParcelStatus.CANCELLED, next));
+            assertFalse(rules.canTransition(ParcelStatus.DELIVERED, next));
+        }
     }
 
     @Test
