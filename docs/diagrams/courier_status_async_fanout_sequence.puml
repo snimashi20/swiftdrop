@@ -1,0 +1,76 @@
+@startuml courier_status_async_fanout_sequence
+title SwiftDrop — Status Change Notification & Webhook Flow (Asynchronous)\n<size:11>Author: Pamithra (M7) · Date: 2026-10-31 · Version: 1.0</size>
+
+autonumber
+skinparam responseMessageBelowArrow true
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+skinparam sequence {
+    ArrowColor #263238
+    ActorBorderColor #1976D2
+    LifeLineBorderColor #78909C
+    LifeLineBackgroundColor #ECEFF1
+    ParticipantBorderColor #1E88E5
+    ParticipantBackgroundColor #E3F2FD
+    DatabaseBorderColor #43A047
+    DatabaseBackgroundColor #E8F5E9
+    QueueBorderColor #FB8C00
+    QueueBackgroundColor #FFF3E0
+}
+
+participant "EventPublisher\n(@TransactionalEventListener)" as Publisher
+queue "RabbitMQ Exchange\n(swiftdrop.parcel.events)" as Exchange
+queue "notification.parcel-status\n(queue)" as NotifQueue
+participant "Notification Service\n(Spring Boot M1)" as NotifService
+queue "webhook.parcel-status\n(queue)" as WebhookQueue
+participant "Webhook Sender\n(core-api M10)" as WebhookSender
+participant "Merchant Store\n(Webhook Receiver)" as Merchant
+queue "Dead-Letter Queue\n(webhook.parcel-status.dlq)" as DLQ
+
+== After Database Transaction Commits (phase = AFTER_COMMIT) ==
+
+Publisher -> Exchange: Publish ParcelStatusChangedEvent\n(routing key: parcel.status.changed)
+activate Exchange
+
+Exchange -> NotifQueue: Route event (binding: parcel.status.#)
+Exchange -> WebhookQueue: Route event (binding: parcel.status.#)
+deactivate Exchange
+
+par Notification Service (email + mock SMS)
+    NotifQueue -> NotifService: @RabbitListener consumes event
+    activate NotifService
+    NotifService -> NotifService: Build HTML email with Thymeleaf
+    NotifService -> NotifService: Send email to Mailpit (port 1025)
+    NotifService -> NotifService: Mask customer phone and save SMS to notification_log
+    deactivate NotifService
+else Webhook Sender (merchant notification)
+    WebhookQueue -> WebhookSender: @RabbitListener consumes event
+    activate WebhookSender
+    WebhookSender -> WebhookSender: Sign payload with HMAC-SHA256
+    WebhookSender -> Merchant: HTTP POST /webhooks/parcel-status\n(Header: X-SwiftDrop-Signature)
+    activate Merchant
+    
+    alt Merchant responds 200 OK
+        Merchant --> WebhookSender: 200 OK
+        WebhookSender -> WebhookSender: Mark SUCCESS in webhook_deliveries
+    else Merchant server down or error (500 / timeout)
+        Merchant --> WebhookSender: HTTP 500 / Timeout
+        deactivate Merchant
+        WebhookSender -> WebhookSender: Retry with exponential backoff (10s, 30s, 120s)
+        
+        alt Retries <= 5
+            WebhookSender -> WebhookQueue: Re-queue with delay
+        else Retries exceeded (> 5)
+            WebhookSender -> DLQ: Send to Dead-Letter Queue (swiftdrop.parcel.dlx)
+            activate DLQ
+            DLQ --> WebhookSender: Saved for manual check
+            deactivate DLQ
+            WebhookSender -> WebhookSender: Mark FAILED in webhook_deliveries
+        end
+    end
+    deactivate WebhookSender
+end
+
+@enduml
