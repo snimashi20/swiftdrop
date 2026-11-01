@@ -37,8 +37,6 @@ Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, J
 
 ## Getting started
 
-> ⚠️ **Placeholder — these steps are filled in by M3 once `docker-compose.yml` lands.**
-
 ### Prerequisites
 
 - Java 21 (LTS) and Maven
@@ -58,16 +56,21 @@ cp .env.example .env
 docker compose up
 ```
 
-| Service | URL |
-| --- | --- |
-| Frontend | TBD |
-| Core API (Swagger UI) | TBD `/swagger-ui.html` |
-| RabbitMQ management | TBD |
-| Mailpit inbox | TBD |
+| Service | Port | URL | Description |
+| --- | --- | --- | --- |
+| **Frontend** | 3000 / 5173 | `http://localhost:3000` (Docker) / `http://localhost:5173` (Dev) | React + TypeScript SPA |
+| **Core API (Swagger UI)** | 8080 | `http://localhost:8080/swagger-ui.html` | OpenAPI documentation & interactive client |
+| **Core API (REST)** | 8080 | `http://localhost:8080/api/v1` | Core modular monolith REST endpoints |
+| **RabbitMQ Management** | 15672 | `http://localhost:15672` | AMQP dashboard (credentials: `guest`/`guest`) |
+| **Mailpit Inbox** | 8025 | `http://localhost:8025` | Local developer mailbox for testing email receipts & notifications |
+| **Notification Service** | 8081 | `http://localhost:8081` | Standalone email/SMS notification consumer |
 
-### Demo accounts
+### Demo Accounts & Testing
 
-TBD — one seeded account per role (`CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATCHER`, `ADMIN`).
+Default roles: `CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATCHER`, `ADMIN`.
+- **Google OAuth Login:** Use "Continue with Google" on `http://localhost:5173/login` or `http://localhost:8080/oauth2/authorization/google`.
+- **Admin Endpoints:** Accessible under `/api/v1/admin/**` (requires `ROLE_ADMIN`).
+- **Swagger Documentation:** Explore all REST routes at `http://localhost:8080/swagger-ui.html`.
 
 ---
 

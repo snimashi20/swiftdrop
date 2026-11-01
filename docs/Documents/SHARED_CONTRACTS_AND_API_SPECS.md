@@ -117,6 +117,15 @@ Flyway migration scripts must be added to `backend/core-api/src/main/resources/d
 $$\text{V}\langle yyyyMMddHHmm \rangle\text{\_\_}\langle \text{module}\rangle\text{\_}\langle \text{description}\rangle\text{.sql}$$
 
 ### Current Applied Migrations:
-1. `V202610250001__init.sql`: Initial setup
-2. `V202610261100__sadeepa_users_and_profiles.sql`: Creates `users` and `user_addresses` tables
-3. `V202610261500__isuri_parcels.sql`: Creates `parcels` table with tracking number and indices
+1. `V202610250001__init.sql`: Initial schema setup
+2. `V202610261000__nethmini_status_history.sql`: Parcel status history table
+3. `V202610261100__sadeepa_users_and_profiles.sql`: Creates `users` and `user_addresses` tables
+4. `V202610261500__isuri_parcels.sql`: Creates `parcels` table with tracking number and indices
+5. `V202610261600__binuwara_merchants.sql`: Merchants, API keys, and merchant orders
+6. `V202610261700__naviru_pricing.sql`: Delivery pricing rules and zones
+7. `V202610261800__lamya_courier_profile.sql`: Courier profiles and dispatcher workload tracking
+8. `V202610262300__sithmi_notification_log.sql`: Notification logs for SMS and email
+9. `V202610271000__sandavi_webhook_tables.sql`: Webhook endpoints and delivery logs
+10. `V202610281200__courier_delivery_proof.sql`: Courier proof of delivery uploads
+11. `V202610311500__isuri_parcels_pickup_zone.sql`: Pickup zone association for parcels
+12. `V202610311800__sithmi_fix_notification_log.sql`: Notification log schema fix
