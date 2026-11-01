@@ -5,8 +5,8 @@ import com.swiftdrop.auth.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -17,11 +17,20 @@ import java.io.IOException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final String frontendBaseUrl;
+
+    public OAuth2AuthenticationSuccessHandler(
+            UserRepository userRepository,
+            JwtService jwtService,
+            @Value("${app.frontend-base-url}") String frontendBaseUrl) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.frontendBaseUrl = frontendBaseUrl;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -33,7 +42,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         Boolean emailVerified = oAuth2User.getAttribute("email_verified");
         if (Boolean.FALSE.equals(emailVerified)) {
             log.warn("OAuth2 sign-in rejected: Google account email is not verified");
-            getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173/login?error=email_not_verified");
+            getRedirectStrategy().sendRedirect(request, response, loginErrorUrl("email_not_verified"));
             return;
         }
 
@@ -43,7 +52,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         if (email == null || email.isBlank()) {
             log.warn("OAuth2 sign-in rejected: No email found in OAuth2 attributes");
-            getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173/login?error=missing_email");
+            getRedirectStrategy().sendRedirect(request, response, loginErrorUrl("missing_email"));
             return;
         }
 
@@ -68,16 +77,24 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 });
 
         if (!user.isEnabled()) {
-            getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173/login?error=account_disabled");
+            getRedirectStrategy().sendRedirect(request, response, loginErrorUrl("account_disabled"));
             return;
         }
 
         String jwtToken = jwtService.generateToken(user.getId(), user.getEmail(), user.getFullName(), user.getRole());
 
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth/callback")
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl)
+                .path("/oauth/callback")
                 .queryParam("token", jwtToken)
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+
+    private String loginErrorUrl(String error) {
+        return UriComponentsBuilder.fromUriString(frontendBaseUrl)
+                .path("/login")
+                .queryParam("error", error)
+                .build().toUriString();
     }
 }
