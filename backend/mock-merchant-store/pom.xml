@@ -15,7 +15,7 @@
 	<description>SwiftDrop mock merchant store receiver for webhook testing &amp; demo</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 	</properties>
 
 	<dependencies>
