@@ -1,5 +1,7 @@
 package com.swiftdrop.dispatch.service;
 
+import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
@@ -39,22 +41,28 @@ public class DispatchService {
 
     private final DispatchParcelRepository parcelRepository;
     private final CourierProfileRepository courierRepository;
+    private final UserRepository userRepository;
+    private final ZoneLookup zoneLookup;
 
     /**
      * Parcels with no courier that are not finished, oldest first.
      * The district filter matches the pickup district (one zone = one district).
      */
     @Transactional(readOnly = true)
-    public Page<UnassignedParcelResponse> listUnassigned(String district, LocalDate from, LocalDate to,
-                                                         Pageable pageable) {
+    public Page<UnassignedParcelResponse> listUnassigned(Long zoneId, String district, LocalDate from,
+                                                         LocalDate to, Pageable pageable) {
         var terminal = TerminalStatuses.values();
+        // A zone id is turned into its district (one zone = one district).
+        final String districtFilter = zoneId == null
+                ? district
+                : zoneLookup.districtOf(zoneId).orElseThrow(() -> new NotFoundException("Zone not found"));
         Specification<Parcel> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isNull(root.get("assignedCourierId")));
             predicates.add(cb.not(root.get("status").in(terminal)));
-            if (district != null && !district.isBlank()) {
+            if (districtFilter != null && !districtFilter.isBlank()) {
                 predicates.add(cb.equal(cb.lower(root.get("pickup").get("district")),
-                        district.trim().toLowerCase()));
+                        districtFilter.trim().toLowerCase()));
             }
             if (from != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.<Instant>get("createdAt"),
@@ -98,6 +106,25 @@ public class DispatchService {
         return toAssignment(saved);
     }
 
+    /**
+     * Suggests the least busy ACTIVE courier in the zone that covers the parcel's pickup district.
+     * The dispatcher can still choose another courier.
+     */
+    @Transactional(readOnly = true)
+    public CourierWorkloadResponse suggestCourier(Long parcelId) {
+        Parcel parcel = parcelRepository.findById(parcelId)
+                .orElseThrow(() -> new NotFoundException("Parcel not found"));
+        if (TerminalStatuses.isTerminal(parcel.getStatus())) {
+            throw new ConflictException("Parcel can no longer be assigned");
+        }
+        String district = parcel.getPickup() == null ? null : parcel.getPickup().getDistrict();
+        Long zoneId = zoneLookup.zoneIdOfDistrict(district)
+                .orElseThrow(() -> new NotFoundException("No delivery zone covers this parcel's pickup area"));
+        return workload(zoneId, true).stream()
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("No active courier in this zone"));
+    }
+
     /** Couriers with their number of active deliveries, least busy first. */
     @Transactional(readOnly = true)
     public List<CourierWorkloadResponse> workload(Long zoneId, Boolean active) {
@@ -109,6 +136,18 @@ public class DispatchService {
                         c.getZoneId(), c.isActive(), loads.getOrDefault(c.getId(), 0L)))
                 .sorted(Comparator.comparingLong(CourierWorkloadResponse::activeDeliveries))
                 .toList();
+    }
+
+    /**
+     * The JWT filter puts the user's e-mail in the Spring principal, so the id of the
+     * logged-in dispatcher is looked up by e-mail. Returns null when it cannot be found.
+     */
+    @Transactional(readOnly = true)
+    public Long resolveUserId(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return userRepository.findByEmail(email).map(User::getId).orElse(null);
     }
 
     private List<CourierProfile> findCouriers(Long zoneId, Boolean active) {
