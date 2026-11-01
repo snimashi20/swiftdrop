@@ -77,7 +77,11 @@ class NotificationEventFlowTest {
         Long customerId = createCustomer("0771234567");
         ParcelStatusChangedEvent event = event(customerId, "SD7K2M9QX4LP");
 
-        rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, RabbitConfig.ROUTING_KEY, event);
+        // Same type header core-api's JacksonJsonMessageConverter attaches; the consumer must not depend on it.
+        rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, RabbitConfig.ROUTING_KEY, event, message -> {
+            message.getMessageProperties().setHeader("__TypeId__", "com.swiftdrop.common.event.ParcelStatusChangedEvent");
+            return message;
+        });
 
         await().atMost(Duration.ofSeconds(15)).until(() -> sentRows(event.eventId()) == 2);
 
