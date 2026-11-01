@@ -4,7 +4,8 @@ export type ParcelStatus =
   | 'IN_TRANSIT'
   | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
-  | 'FAILED';
+  | 'FAILED'
+  | 'CANCELLED';
 
 export interface TimelineEntry {
   status: ParcelStatus;
@@ -27,5 +28,4 @@ export interface TrackingUpdateMessage {
   trackingNumber: string;
   status: ParcelStatus;
   changedAt: string;
-  note?: string | null;
 }

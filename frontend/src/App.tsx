@@ -6,6 +6,7 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { PlaceholderPage } from "./features/dashboard/PlaceholderPage";
+import { PublicTrackingLayout, TrackLookupPage, TrackingPage } from "./features/tracking";
 import { OAuthCallbackPage } from "./features/webhook/pages/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
 import { UserProfilePage } from "./features/webhook/pages/UserProfilePage";
@@ -23,6 +24,11 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+
+        <Route element={<PublicTrackingLayout />}>
+          <Route path="/track" element={<TrackLookupPage />} />
+          <Route path="/track/:trackingNumber" element={<TrackingPage />} />
+        </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>

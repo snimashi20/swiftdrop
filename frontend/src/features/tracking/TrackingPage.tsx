@@ -9,7 +9,7 @@ import { useLiveTracking } from './useLiveTracking';
 
 function BackLink() {
   return (
-    <Link to="/track" className="text-sm font-medium text-blue-700 hover:underline">
+    <Link to="/track" className="text-sm font-medium text-ink/70 hover:text-ink hover:underline">
       ← Track another parcel
     </Link>
   );
@@ -33,26 +33,26 @@ export default function TrackingPage() {
   }, [expanded]);
 
   return (
-    <div className="space-y-5 p-4 md:p-8">
-      <PageHeader title="Tracking Details" subtitle="Real-time updates of your shipment" />
+    <div className="space-y-5">
+      <PageHeader title="Tracking details" subtitle="Real-time updates of your shipment" />
       <BackLink />
 
       {!valid && (
-        <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+        <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
           That isn’t a valid tracking number. Tracking numbers look like SD7K2M9QX4LP.
         </div>
       )}
 
-      {valid && loading && <p className="text-slate-600">Loading…</p>}
+      {valid && loading && <p className="text-ink/60">Loading…</p>}
 
       {error === 'not-found' && (
-        <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+        <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
           We couldn’t find a parcel with this tracking number. Please check it and try again.
         </div>
       )}
 
       {error === 'failed' && (
-        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
           Tracking is temporarily unavailable. Please try again in a moment.
         </div>
       )}
@@ -66,26 +66,26 @@ export default function TrackingPage() {
             className={
               expanded
                 ? 'fixed inset-0 z-[2000] flex flex-col bg-white'
-                : 'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm'
+                : 'overflow-hidden rounded-2xl border border-ink/10 bg-white'
             }
           >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+            <div className="flex items-center justify-between gap-3 border-b border-ink/10 px-5 py-3">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-semibold text-slate-900">Live Tracking</h2>
-                <span className="flex items-center gap-1.5 text-xs text-slate-600" aria-live="polite">
-                  <span className={`h-2 w-2 rounded-full ${live ? 'bg-green-500' : 'bg-slate-300'}`} />
+                <h2 className="text-lg font-semibold text-ink">Live tracking</h2>
+                <span className="flex items-center gap-1.5 text-xs text-ink/60" aria-live="polite">
+                  <span className={`h-2 w-2 rounded-full ${live ? 'bg-green-500' : 'bg-ink/20'}`} />
                   {live ? 'Live' : 'Connecting…'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-slate-50"
+                className="rounded-xl border border-ink/15 bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/5"
               >
                 {expanded ? 'Close full map' : 'View full map'}
               </button>
             </div>
-            <div className={expanded ? 'min-h-0 flex-1' : 'h-[380px] md:h-[540px]'}>
+            <div className={expanded ? 'min-h-0 flex-1' : 'h-[380px] md:h-[520px]'}>
               <TrackingMap
                 pickupCity={data.pickupCity}
                 dropoffCity={data.dropoffCity}
@@ -95,13 +95,13 @@ export default function TrackingPage() {
                 expanded={expanded}
               />
             </div>
-            <p className="border-t border-slate-200 px-5 py-2 text-xs text-slate-500">
+            <p className="border-t border-ink/10 px-5 py-2 text-xs text-ink/50">
               The truck position is estimated from the parcel status.
             </p>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">Shipment progress</h2>
+          <section className="rounded-2xl border border-ink/10 bg-white p-5">
+            <h2 className="mb-4 text-lg font-semibold text-ink">Shipment progress</h2>
             <StatusTimeline status={data.status} timeline={data.timeline} />
           </section>
         </>
