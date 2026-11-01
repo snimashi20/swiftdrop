@@ -3,6 +3,7 @@ package com.swiftdrop.auth.api;
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.dto.CreateStaffRequestDto;
 import com.swiftdrop.auth.dto.StatusToggleDto;
+import com.swiftdrop.auth.dto.UpdateRoleDto;
 import com.swiftdrop.auth.dto.UserResponseDto;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +37,81 @@ class AdminUserControllerTest {
 
     @InjectMocks
     private AdminUserController adminUserController;
+
+    @Test
+    @DisplayName("Admin gets all users without role filter")
+    void getAllUsers_withoutFilter_returnsAllUsers() {
+        User u1 = new User();
+        u1.setId(1L);
+        u1.setEmail("u1@example.com");
+        u1.setRole("CUSTOMER");
+
+        User u2 = new User();
+        u2.setId(2L);
+        u2.setEmail("u2@example.com");
+        u2.setRole("COURIER");
+
+        when(userRepository.findAll()).thenReturn(List.of(u1, u2));
+
+        ResponseEntity<List<UserResponseDto>> response = adminUserController.getAllUsers(null);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
+        verify(userRepository, times(1)).findAll();
+        verify(userRepository, never()).findByRoleIgnoreCase(any());
+    }
+
+    @Test
+    @DisplayName("Admin gets users filtered by role COURIER")
+    void getAllUsers_withRoleFilter_returnsFilteredUsers() {
+        User u1 = new User();
+        u1.setId(2L);
+        u1.setEmail("courier@example.com");
+        u1.setRole("COURIER");
+
+        when(userRepository.findByRoleIgnoreCase("COURIER")).thenReturn(List.of(u1));
+
+        ResponseEntity<List<UserResponseDto>> response = adminUserController.getAllUsers("COURIER");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("COURIER", response.getBody().get(0).getRole());
+        verify(userRepository, times(1)).findByRoleIgnoreCase("COURIER");
+        verify(userRepository, never()).findAll();
+    }
+
+    @Test
+    @DisplayName("Admin updates user role successfully")
+    void updateUserRole_success() {
+        User user = new User();
+        user.setId(5L);
+        user.setEmail("user@example.com");
+        user.setRole("CUSTOMER");
+
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        UpdateRoleDto roleDto = UpdateRoleDto.builder().role("COURIER").build();
+        ResponseEntity<UserResponseDto> response = adminUserController.updateUserRole(5L, roleDto);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("COURIER", response.getBody().getRole());
+        assertEquals("COURIER", user.getRole());
+    }
+
+    @Test
+    @DisplayName("Updating role for non-existent user throws NotFoundException")
+    void updateUserRole_whenNotFound_throwsNotFoundException() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateRoleDto roleDto = UpdateRoleDto.builder().role("ADMIN").build();
+        assertThrows(NotFoundException.class, () ->
+                adminUserController.updateUserRole(99L, roleDto)
+        );
+    }
 
     @Test
     @DisplayName("Admin creates staff account with valid role COURIER")
