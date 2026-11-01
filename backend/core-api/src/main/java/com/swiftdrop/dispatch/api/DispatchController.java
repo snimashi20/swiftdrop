@@ -49,12 +49,8 @@ public class DispatchController {
         return service.workload(zoneId, active);
     }
 
-    /** TODO(M8): read the user id from the JWT once login is merged; null is stored until then. */
+    /** The principal name is the user's e-mail (see JwtTokenAuthenticationFilter). */
     private Long currentUserId(Authentication authentication) {
-        try {
-            return authentication == null ? null : Long.valueOf(authentication.getName());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return authentication == null ? null : service.resolveUserId(authentication.getName());
     }
 }

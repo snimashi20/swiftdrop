@@ -1,5 +1,7 @@
 package com.swiftdrop.dispatch.service;
 
+import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
@@ -37,6 +39,7 @@ class DispatchServiceTest {
 
     @Mock DispatchParcelRepository parcelRepository;
     @Mock CourierProfileRepository courierRepository;
+    @Mock UserRepository userRepository;
     @InjectMocks DispatchService service;
 
     private static Parcel parcel(long id, ParcelStatus status) {
@@ -131,6 +134,26 @@ class DispatchServiceTest {
         assertThrows(BadRequestException.class, () -> service.assign(5L, 7L, 42L));
         assertNull(p.getAssignedCourierId(), "nothing may be saved for an inactive courier");
         verify(parcelRepository, never()).save(any());
+    }
+
+    // ---------- logged-in user ----------
+
+    @Test
+    void resolveUserId_returnsIdOfUserWithThatEmail() {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(42L);
+        when(userRepository.findByEmail("dispatcher@test.com")).thenReturn(Optional.of(user));
+
+        assertEquals(42L, service.resolveUserId("dispatcher@test.com"));
+    }
+
+    @Test
+    void resolveUserId_returnsNull_whenUserUnknownOrEmailMissing() {
+        when(userRepository.findByEmail("nobody@test.com")).thenReturn(Optional.empty());
+
+        assertNull(service.resolveUserId("nobody@test.com"));
+        assertNull(service.resolveUserId(null));
+        assertNull(service.resolveUserId("  "));
     }
 
     // ---------- workload ----------
