@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Client } from '@stomp/stompjs';
+import { Client, type Frame } from '@stomp/stompjs';
 import { getTracking, isNotFound } from './api';
 import type { TrackingResult, TrackingUpdateMessage } from './types';
 
@@ -72,7 +72,7 @@ export function useLiveTracking(trackingNumber: string) {
       reconnectDelay: 5_000,
       onConnect: () => {
         setLive(true);
-        client.subscribe(topic, (frame) => {
+        client.subscribe(topic, (frame: Frame) => {
           try {
             const msg = JSON.parse(frame.body) as TrackingUpdateMessage;
             setData((prev) => (prev ? applyUpdate(prev, msg) : prev));
