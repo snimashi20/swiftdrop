@@ -16,7 +16,7 @@ spring:
     open-in-view: false
 
   flyway:
-    out-of-order: true
+    enabled: false # core-api owns the shared schema and all migrations
 
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
