@@ -35,7 +35,11 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope: openid, email, profile
+            scope:
+              - openid
+              - email
+              - profile
+            redirect-uri: "${GOOGLE_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}"
 
   servlet:
     multipart:
@@ -47,6 +51,7 @@ app:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
 
 springdoc:
   api-docs:
