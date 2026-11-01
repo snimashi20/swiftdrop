@@ -20,6 +20,8 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.Instant;
 import java.util.List;
@@ -168,6 +170,37 @@ class ApiKeyServiceTest {
             assertThatThrownBy(() -> apiKeyService.generate(1L, longLabel))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("must not exceed 100 characters");
+        }
+
+        @Test
+        @ExtendWith(OutputCaptureExtension.class)
+        @DisplayName("Log output during key generation does not contain raw key or prefix")
+        void generate_doesNotLogRawKeyOrPrefix(CapturedOutput output) {
+            Merchant merchant = Merchant.builder()
+                    .id(1L)
+                    .businessName("Binu Retail")
+                    .status(MerchantStatus.APPROVED)
+                    .build();
+
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(invocation -> {
+                ApiKey toSave = invocation.getArgument(0);
+                toSave.setId(10L);
+                return toSave;
+            });
+
+            ApiKeyGeneratedResponse response = apiKeyService.generate(1L, "Production Key");
+
+            String plainKey = response.apiKey();
+            String prefix = response.keyPrefix();
+
+            assertThat(plainKey).isNotBlank();
+            assertThat(prefix).isNotBlank();
+
+            String logs = output.getAll();
+            assertThat(logs).contains("Generated new API key id=10 for merchantId=1");
+            assertThat(logs).doesNotContain(plainKey);
+            assertThat(logs).doesNotContain(prefix);
         }
     }
 

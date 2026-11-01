@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Customer use case" id="swiftdrop-uc-customer">
+    <mxGraphModel dx="1907" dy="1041" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" value="SwiftDrop — Customer Use Case Diagram" vertex="1">
+          <mxGeometry height="50" width="1000" x="200" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontFamily=Helvetica;fontColor=#6B7280;" value="Author: Isuri (M3) · Date: 2026-10-31 · Version: 1.0" vertex="1">
+          <mxGeometry height="28" width="1000" x="200" y="72" as="geometry" />
+        </mxCell>
+        <mxCell id="sysbox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;verticalAlign=top;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" value="SwiftDrop system" vertex="1">
+          <mxGeometry height="773" width="897" x="302" y="251" as="geometry" />
+        </mxCell>
+        <mxCell id="Customer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E3A5F;strokeColor=#1E3A5F;fontColor=#FFFFFF;fontSize=13;fontStyle=1;fontFamily=Helvetica;" value="Customer" vertex="1">
+          <mxGeometry height="81" width="140" x="60" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="Google" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;fontColor=#374151;fontSize=11;fontFamily=Helvetica;" value="Google OAuth 2.0&amp;#xa;(external)" vertex="1">
+          <mxGeometry height="50" width="186" x="916" y="174" as="geometry" />
+        </mxCell>
+        <mxCell id="signup" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Sign up" vertex="1">
+          <mxGeometry height="50" width="116" x="430" y="291" as="geometry" />
+        </mxCell>
+        <mxCell id="login" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Log in (email + password)" vertex="1">
+          <mxGeometry height="71" width="287" x="865" y="534" as="geometry" />
+        </mxCell>
+        <mxCell id="google" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Log in with Google" vertex="1">
+          <mxGeometry height="50" width="246" x="366" y="461" as="geometry" />
+        </mxCell>
+        <mxCell id="book" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Book a delivery" vertex="1">
+          <mxGeometry height="50" width="209" x="384" y="376" as="geometry" />
+        </mxCell>
+        <mxCell id="quote" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Get fee quote (pricing service)" vertex="1">
+          <mxGeometry height="71" width="244" x="887" y="421" as="geometry" />
+        </mxCell>
+        <mxCell id="confirm" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Confirm booking (get tracking number)" vertex="1">
+          <mxGeometry height="71" width="320" x="849" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="history" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="View my parcels (paging, status filter)" vertex="1">
+          <mxGeometry height="71" width="308" x="334" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="detail" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="View parcel detail" vertex="1">
+          <mxGeometry height="50" width="237" x="890" y="651" as="geometry" />
+        </mxCell>
+        <mxCell id="cancel" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Cancel parcel (only while CREATED)" vertex="1">
+          <mxGeometry height="71" width="312" x="332" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="track" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Track parcel live" vertex="1">
+          <mxGeometry height="50" width="219" x="379" y="755" as="geometry" />
+        </mxCell>
+        <mxCell id="receipt" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Download receipt PDF" vertex="1">
+          <mxGeometry height="50" width="284" x="346" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="profile" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Manage profile and saved addresses" vertex="1">
+          <mxGeometry height="71" width="306" x="335" y="924" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="signup" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="login" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="google" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="book" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="history" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="cancel" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="track" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="receipt" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="Customer" style="html=1;rounded=1;endArrow=none;strokeColor=#1E3A5F;fontFamily=Helvetica;fontSize=10;" target="profile" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="google" style="html=1;rounded=1;endArrow=none;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=10;" target="Google" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="book" style="html=1;rounded=1;endArrow=open;dashed=1;strokeColor=#6B7280;fontColor=#6B7280;fontFamily=Helvetica;fontSize=10;" target="quote" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="book" style="html=1;rounded=1;endArrow=open;dashed=1;strokeColor=#6B7280;fontColor=#6B7280;fontFamily=Helvetica;fontSize=10;" target="confirm" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="history" style="html=1;rounded=1;endArrow=open;dashed=1;strokeColor=#6B7280;fontColor=#6B7280;fontFamily=Helvetica;fontSize=10;" target="detail" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="cancel" style="html=1;rounded=1;endArrow=open;dashed=1;strokeColor=#6B7280;fontColor=#6B7280;fontFamily=Helvetica;fontSize=10;" target="detail" value="«extend»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="google" style="html=1;rounded=1;endArrow=open;dashed=1;strokeColor=#6B7280;fontColor=#6B7280;fontFamily=Helvetica;fontSize=10;" target="login" value="«extend»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
