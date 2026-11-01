@@ -13,6 +13,7 @@ import com.swiftdrop.dispatch.dto.UnassignedParcelResponse;
 import com.swiftdrop.dispatch.repository.CourierLoad;
 import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import com.swiftdrop.dispatch.repository.DispatchParcelRepository;
+import com.swiftdrop.parcel.domain.Address;
 import com.swiftdrop.parcel.domain.Parcel;
 import com.swiftdrop.parcel.domain.ParcelStatus;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ class DispatchServiceTest {
     @Mock DispatchParcelRepository parcelRepository;
     @Mock CourierProfileRepository courierRepository;
     @Mock UserRepository userRepository;
+    @Mock ZoneLookup zoneLookup;
     @InjectMocks DispatchService service;
 
     private static Parcel parcel(long id, ParcelStatus status) {
@@ -193,10 +195,90 @@ class DispatchServiceTest {
         Pageable pageable = PageRequest.of(0, 20);
         when(parcelRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(Page.empty());
 
-        Page<UnassignedParcelResponse> result = service.listUnassigned("Colombo", null, null, pageable);
+        Page<UnassignedParcelResponse> result = service.listUnassigned(null, "Colombo", null, null, pageable);
 
         assertTrue(result.isEmpty());
         verify(parcelRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void listUnassigned_turnsZoneIdIntoDistrict() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(zoneLookup.districtOf(3L)).thenReturn(Optional.of("Colombo"));
+        when(parcelRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(Page.empty());
+
+        service.listUnassigned(3L, null, null, null, pageable);
+
+        verify(zoneLookup).districtOf(3L);
+        verify(parcelRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void listUnassigned_throwsNotFound_whenZoneUnknown() {
+        when(zoneLookup.districtOf(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> service.listUnassigned(99L, null, null, null, PageRequest.of(0, 20)));
+        verifyNoInteractions(parcelRepository);
+    }
+
+    // ---------- suggested courier ----------
+
+    private static Parcel parcelPickedUpIn(String district) {
+        Parcel p = parcel(5L, ParcelStatus.CREATED);
+        Address pickup = new Address();
+        pickup.setDistrict(district);
+        p.setPickup(pickup);
+        return p;
+    }
+
+    @Test
+    void suggestCourier_returnsLeastBusyActiveCourierInZone() {
+        when(parcelRepository.findById(5L)).thenReturn(Optional.of(parcelPickedUpIn("Colombo")));
+        when(zoneLookup.zoneIdOfDistrict("Colombo")).thenReturn(Optional.of(1L));
+        when(courierRepository.findByZoneIdAndActive(eq(1L), eq(true), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(courier(1L, true), courier(2L, true))));
+        when(parcelRepository.countActiveByCourier(any())).thenReturn(List.of(load(1L, 4L), load(2L, 1L)));
+
+        CourierWorkloadResponse result = service.suggestCourier(5L);
+
+        assertEquals(2L, result.courierProfileId());
+        assertEquals(1, result.activeDeliveries());
+    }
+
+    @Test
+    void suggestCourier_throwsNotFound_whenNoZoneCoversThePickupDistrict() {
+        when(parcelRepository.findById(5L)).thenReturn(Optional.of(parcelPickedUpIn("Atlantis")));
+        when(zoneLookup.zoneIdOfDistrict("Atlantis")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.suggestCourier(5L));
+    }
+
+    @Test
+    void suggestCourier_throwsNotFound_whenNoActiveCourierInZone() {
+        when(parcelRepository.findById(5L)).thenReturn(Optional.of(parcelPickedUpIn("Colombo")));
+        when(zoneLookup.zoneIdOfDistrict("Colombo")).thenReturn(Optional.of(1L));
+        when(courierRepository.findByZoneIdAndActive(eq(1L), eq(true), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(parcelRepository.countActiveByCourier(any())).thenReturn(List.of());
+
+        assertThrows(NotFoundException.class, () -> service.suggestCourier(5L));
+    }
+
+    @Test
+    void suggestCourier_throwsConflict_whenParcelAlreadyFinished() {
+        when(parcelRepository.findById(5L)).thenReturn(Optional.of(parcel(5L, ParcelStatus.DELIVERED)));
+
+        assertThrows(ConflictException.class, () -> service.suggestCourier(5L));
+        verifyNoInteractions(zoneLookup);
+    }
+
+    @Test
+    void suggestCourier_throwsNotFound_whenParcelMissing() {
+        when(parcelRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.suggestCourier(99L));
     }
 
     // ---------- terminal statuses ----------
