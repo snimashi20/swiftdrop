@@ -16,13 +16,16 @@ spring:
     open-in-view: false
 
   flyway:
-    out-of-order: true
+    enabled: false # core-api owns the shared schema and all migrations
 
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false # failed messages go to the dead-letter queue instead of looping
 
   mail:
     host: ${MAIL_HOST:localhost}

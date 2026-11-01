@@ -28,11 +28,18 @@ public class DispatchController {
 
     @GetMapping("/parcels/unassigned")
     public Page<UnassignedParcelResponse> unassigned(
+            @RequestParam(required = false) Long zoneId,
             @RequestParam(required = false) String district,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        return service.listUnassigned(district, from, to, pageable);
+        return service.listUnassigned(zoneId, district, from, to, pageable);
+    }
+
+    /** Least busy active courier in the parcel's zone (the dispatcher may still pick another). */
+    @GetMapping("/parcels/{parcelId}/suggested-courier")
+    public CourierWorkloadResponse suggestedCourier(@PathVariable Long parcelId) {
+        return service.suggestCourier(parcelId);
     }
 
     /** Assign a parcel, or reassign it if it already has a courier. */

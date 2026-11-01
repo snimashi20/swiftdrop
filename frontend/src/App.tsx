@@ -10,6 +10,13 @@ import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
+import {
+  CouriersPage,
+  DispatcherDashboardPage,
+  NotificationLogPage,
+  ReportsPage,
+  UnassignedParcelsPage,
+} from "./features/dispatch";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -32,7 +39,13 @@ export function App() {
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
             <Route path="/parcels" element={<PlaceholderPage />} />
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
-              <Route index element={<PlaceholderPage />} />
+              <Route index element={<DispatcherDashboardPage />} />
+              <Route path="unassigned" element={<UnassignedParcelsPage />} />
+              <Route path="couriers" element={<CouriersPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="notifications" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                <Route index element={<NotificationLogPage />} />
+              </Route>
             </Route>
             <Route path="/people" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<PlaceholderPage />} />
