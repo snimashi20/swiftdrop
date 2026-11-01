@@ -1,5 +1,7 @@
 package com.swiftdrop.dispatch.service;
 
+import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
@@ -39,6 +41,7 @@ public class DispatchService {
 
     private final DispatchParcelRepository parcelRepository;
     private final CourierProfileRepository courierRepository;
+    private final UserRepository userRepository;
 
     /**
      * Parcels with no courier that are not finished, oldest first.
@@ -109,6 +112,18 @@ public class DispatchService {
                         c.getZoneId(), c.isActive(), loads.getOrDefault(c.getId(), 0L)))
                 .sorted(Comparator.comparingLong(CourierWorkloadResponse::activeDeliveries))
                 .toList();
+    }
+
+    /**
+     * The JWT filter puts the user's e-mail in the Spring principal, so the id of the
+     * logged-in dispatcher is looked up by e-mail. Returns null when it cannot be found.
+     */
+    @Transactional(readOnly = true)
+    public Long resolveUserId(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return userRepository.findByEmail(email).map(User::getId).orElse(null);
     }
 
     private List<CourierProfile> findCouriers(Long zoneId, Boolean active) {
