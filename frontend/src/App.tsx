@@ -6,10 +6,10 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { PlaceholderPage } from "./features/dashboard/PlaceholderPage";
-import { OAuthCallbackPage } from "./features/webhook/pages/OAuthCallbackPage";
+import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
-import { UserProfilePage } from "./features/webhook/pages/UserProfilePage";
-import { AddressBookPage } from "./features/webhook/pages/AddressBookPage";
+import { UserProfilePage } from "./features/profile/UserProfilePage";
+import { AddressBookPage } from "./features/profile/AddressBookPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
