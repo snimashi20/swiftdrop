@@ -1,6 +1,9 @@
 package com.swiftdrop.courier;
 
 import com.swiftdrop.common.exception.ForbiddenException;
+import com.swiftdrop.courier.domain.FailureReason;
+import com.swiftdrop.courier.dto.DeliverParcelRequest;
+import com.swiftdrop.courier.dto.FailParcelRequest;
 import com.swiftdrop.courier.dto.UpdateStatusRequest;
 import com.swiftdrop.courier.repository.DeliveryProofRepository;
 import com.swiftdrop.courier.service.CourierService;
@@ -76,7 +79,7 @@ public class CourierAuthorizationTest {
     @Test
     @DisplayName("Courier A cannot update status of Courier B's parcel (Must throw ForbiddenException)")
     void courierCannotUpdateAnotherCouriersParcel() {
-        Long courierAId = 101L; // Logged in as Courier A
+        Long courierAId = 101L;
         Long parcelId = 99L;
 
         when(parcelRepository.findById(parcelId)).thenReturn(Optional.of(parcelAssignedToCourierB));
@@ -85,10 +88,73 @@ public class CourierAuthorizationTest {
         request.setStatus("DELIVERED");
         request.setNote("Courier A attempting unauthorized status update");
 
-        // Assert that calling updateStatus throws ForbiddenException (HTTP 403)
         ForbiddenException exception = assertThrows(
                 ForbiddenException.class,
                 () -> courierService.updateStatus(courierAId, parcelId, request)
+        );
+
+        assertEquals("Forbidden: You are not assigned to this parcel delivery", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Courier A cannot mark Courier B's parcel as delivered (Must throw ForbiddenException)")
+    void courierCannotDeliverAnotherCouriersParcel() {
+        Long courierAId = 101L;
+        Long parcelId = 99L;
+
+        when(parcelRepository.findById(parcelId)).thenReturn(Optional.of(parcelAssignedToCourierB));
+
+        DeliverParcelRequest request = new DeliverParcelRequest();
+        request.setRecipientName("Jane Doe");
+
+        ForbiddenException exception = assertThrows(
+                ForbiddenException.class,
+                () -> courierService.deliverParcel(courierAId, parcelId, request, null)
+        );
+
+        assertEquals("Forbidden: You are not assigned to this parcel delivery", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Courier A cannot mark Courier B's parcel as failed (Must throw ForbiddenException)")
+    void courierCannotFailAnotherCouriersParcel() {
+        Long courierAId = 101L;
+        Long parcelId = 99L;
+
+        when(parcelRepository.findById(parcelId)).thenReturn(Optional.of(parcelAssignedToCourierB));
+
+        FailParcelRequest request = new FailParcelRequest();
+        request.setReason(FailureReason.REFUSED);
+        request.setNote("Customer refused package");
+
+        ForbiddenException exception = assertThrows(
+                ForbiddenException.class,
+                () -> courierService.failParcel(courierAId, parcelId, request)
+        );
+
+        assertEquals("Forbidden: You are not assigned to this parcel delivery", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Courier cannot access an unassigned parcel (assignedCourierId == null)")
+    void courierCannotAccessUnassignedParcel() {
+        Long courierAId = 101L;
+        Long unassignedParcelId = 55L;
+
+        Parcel unassignedParcel = new Parcel();
+        unassignedParcel.setId(unassignedParcelId);
+        unassignedParcel.setTrackingNumber("SDUNASSIGNED");
+        unassignedParcel.setStatus(ParcelStatus.CREATED);
+        unassignedParcel.setAssignedCourierId(null); // No courier assigned
+
+        when(parcelRepository.findById(unassignedParcelId)).thenReturn(Optional.of(unassignedParcel));
+
+        UpdateStatusRequest request = new UpdateStatusRequest();
+        request.setStatus("PICKED_UP");
+
+        ForbiddenException exception = assertThrows(
+                ForbiddenException.class,
+                () -> courierService.updateStatus(courierAId, unassignedParcelId, request)
         );
 
         assertEquals("Forbidden: You are not assigned to this parcel delivery", exception.getMessage());

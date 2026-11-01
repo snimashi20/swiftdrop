@@ -6,6 +6,7 @@ import com.swiftdrop.courier.domain.DeliveryProof;
 import com.swiftdrop.courier.dto.*;
 import com.swiftdrop.courier.repository.DeliveryProofRepository;
 import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.domain.ParcelStatus;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import com.swiftdrop.tracking.service.ParcelStatusService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,9 +29,14 @@ public class CourierService {
     private final FileStorageService fileStorageService;
     private final ParcelStatusService parcelStatusService;
 
+    /**
+     * Retrieves today's active or in-progress deliveries for the logged-in courier.
+     * Filters out old finished deliveries from past days.
+     */
     @Transactional(readOnly = true)
     public List<CourierDeliveryResponse> getTodayDeliveries(Long courierId) {
-        List<Parcel> assignedParcels = parcelRepository.findByAssignedCourierId(courierId);
+        Instant startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+        List<Parcel> assignedParcels = parcelRepository.findTodayDeliveriesForCourier(courierId, startOfDay);
         return assignedParcels.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -38,6 +46,7 @@ public class CourierService {
     public CourierDeliveryResponse updateStatus(Long courierId, Long parcelId, UpdateStatusRequest request) {
         Parcel parcel = getAndValidateParcelOwnership(courierId, parcelId);
         parcelStatusService.changeStatus(parcel.getId(), request.getStatus(), "COURIER", request.getNote());
+        parcel.setStatus(ParcelStatus.valueOf(request.getStatus()));
         return mapToResponse(parcel);
     }
 
@@ -60,6 +69,7 @@ public class CourierService {
         parcelStatusService.changeStatus(parcel.getId(), "DELIVERED", "COURIER",
                 "Delivered to " + request.getRecipientName());
 
+        parcel.setStatus(ParcelStatus.DELIVERED);
         return mapToResponse(parcel);
     }
 
@@ -74,12 +84,13 @@ public class CourierService {
         parcelStatusService.changeStatus(parcel.getId(), "FAILED", "COURIER",
                 "Failed: " + request.getReason() + " - " + request.getNote());
 
+        parcel.setStatus(ParcelStatus.FAILED);
         return mapToResponse(parcel);
     }
 
     /**
      * CRITICAL SECURITY CHECK (Graded in marking scheme):
-     * Ensures Courier A cannot view or update Courier B's parcel (403 Forbidden).
+     * Ensures Courier A cannot view or update Courier B's parcel, or an unassigned parcel (403 Forbidden).
      */
     private Parcel getAndValidateParcelOwnership(Long courierId, Long parcelId) {
         Parcel parcel = parcelRepository.findById(parcelId)
