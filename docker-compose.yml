@@ -71,6 +71,13 @@ services:
       FRONTEND_BASE_URL: http://localhost:3000
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
 
   notification-service:
     build: ./backend/notification-service
@@ -81,6 +88,8 @@ services:
       rabbitmq:
         condition: service_healthy
       mailpit:
+        condition: service_healthy
+      core-api:
         condition: service_healthy
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
@@ -94,6 +103,7 @@ services:
       MAIL_PORT: 1025
       MAIL_FROM: ${MAIL_FROM:-noreply@swiftdrop.local}
       JWT_SECRET: ${JWT_SECRET}
+      SPRING_FLYWAY_ENABLED: "false"
     ports:
       - "8081:8081"
 
