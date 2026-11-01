@@ -1,5 +1,8 @@
 package com.swiftdrop.dispatch.service;
 
+import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.dispatch.domain.CourierProfile;
@@ -22,14 +25,22 @@ public class CourierProfileService {
 
     private final CourierProfileRepository repository;
     private final CourierProfileMapper mapper;
+    private final UserRepository userRepository;
+    private final ZoneLookup zoneLookup;
 
     @Transactional
     public CourierProfileResponse create(CourierProfileCreateRequest request) {
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (!isCourier(user)) {
+            throw new BadRequestException("User does not have the COURIER role");
+        }
+        if (!zoneLookup.exists(request.zoneId())) {
+            throw new NotFoundException("Zone not found");
+        }
         if (repository.existsByUserId(request.userId())) {
             throw new ConflictException("A courier profile already exists for this user");
         }
-        // TODO(M8): check the user exists and has the COURIER role (User entity not merged yet)
-        // TODO(M4): check the zone exists (Zone entity not merged yet)
         CourierProfile profile = CourierProfile.builder()
                 .userId(request.userId())
                 .vehicleType(request.vehicleType())
@@ -68,7 +79,9 @@ public class CourierProfileService {
             profile.setVehicleType(request.vehicleType());
         }
         if (request.zoneId() != null) {
-            // TODO(M4): check the zone exists
+            if (!zoneLookup.exists(request.zoneId())) {
+                throw new NotFoundException("Zone not found");
+            }
             profile.setZoneId(request.zoneId());
         }
         if (request.active() != null) {
@@ -77,6 +90,11 @@ public class CourierProfileService {
         CourierProfile saved = repository.save(profile);
         log.info("Courier profile updated id={}", saved.getId());
         return mapper.toResponse(saved);
+    }
+
+    /** Package-private so tests can replace it (the role type belongs to the auth module). */
+    boolean isCourier(User user) {
+        return "COURIER".equals(String.valueOf(user.getRole()));
     }
 
     private CourierProfile findOrThrow(Long id) {

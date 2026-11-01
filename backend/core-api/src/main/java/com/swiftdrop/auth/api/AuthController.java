@@ -8,7 +8,6 @@ import com.swiftdrop.common.exception.NotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,14 +21,16 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDto> getCurrentUserProfile() {
-        User currentUser = getAuthenticatedUser();
+    public ResponseEntity<UserResponseDto> getCurrentUserProfile(Authentication authentication) {
+        User currentUser = getAuthenticatedUser(authentication);
         return ResponseEntity.ok(mapToResponseDto(currentUser));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<UserResponseDto> updateProfile(@Valid @RequestBody UpdateProfileRequestDto requestDto) {
-        User currentUser = getAuthenticatedUser();
+    public ResponseEntity<UserResponseDto> updateProfile(
+            @Valid @RequestBody UpdateProfileRequestDto requestDto,
+            Authentication authentication) {
+        User currentUser = getAuthenticatedUser(authentication);
 
         currentUser.setFullName(requestDto.getFullName());
         currentUser.setPhoneNumber(requestDto.getPhoneNumber());
@@ -38,8 +39,7 @@ public class AuthController {
         return ResponseEntity.ok(mapToResponseDto(updatedUser));
     }
 
-    private User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    private User getAuthenticatedUser(Authentication authentication) {
         String email = authentication.getName();
 
         return userRepository.findByEmail(email)
