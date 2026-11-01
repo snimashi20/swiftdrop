@@ -2,9 +2,13 @@ package com.swiftdrop.common.config;
 
 import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
+import com.swiftdrop.merchant.security.ApiKeyAccessDeniedHandler;
+import com.swiftdrop.merchant.security.ApiKeyAuthenticationEntryPoint;
+import com.swiftdrop.merchant.security.ApiKeyAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -25,6 +29,31 @@ public class SecurityConfig {
     private final JwtTokenAuthenticationFilter jwtTokenAuthenticationFilter;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain merchantApiFilterChain(
+            HttpSecurity http,
+            ApiKeyAuthenticationFilter apiKeyAuthenticationFilter,
+            ApiKeyAuthenticationEntryPoint authenticationEntryPoint,
+            ApiKeyAccessDeniedHandler accessDeniedHandler
+    ) throws Exception {
+        http
+            .securityMatcher("/api/v1/merchant-api/**")
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+            )
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().hasRole("MERCHANT")
+            )
+            .addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
