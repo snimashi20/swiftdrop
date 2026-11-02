@@ -1,5 +1,8 @@
 package com.swiftdrop.dispatch.service;
 
+import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.dispatch.domain.CourierProfile;
@@ -31,6 +34,8 @@ class CourierProfileServiceTest {
 
     @Mock CourierProfileRepository repository;
     @Mock CourierProfileMapper mapper;
+    @Mock UserRepository userRepository;
+    @Mock ZoneLookup zoneLookup;
     @InjectMocks CourierProfileService service;
 
     private static CourierProfileResponse response() {
@@ -42,14 +47,25 @@ class CourierProfileServiceTest {
                 .id(1L).userId(10L).vehicleType(VehicleType.MOTORBIKE).zoneId(3L).active(true).build();
     }
 
+    /** A service whose role check says "this user is a courier". */
+    private CourierProfileService serviceWhereUserIsCourier() {
+        CourierProfileService spy = spy(service);
+        doReturn(true).when(spy).isCourier(any(User.class));
+        return spy;
+    }
+
+    // ---------- create ----------
+
     @Test
-    void create_savesActiveProfile_whenUserHasNoProfile() {
+    void create_savesActiveProfile_whenUserIsCourierAndZoneExists() {
         CourierProfile saved = profile();
+        when(userRepository.findById(10L)).thenReturn(Optional.of(mock(User.class)));
+        when(zoneLookup.exists(3L)).thenReturn(true);
         when(repository.existsByUserId(10L)).thenReturn(false);
         when(repository.save(any(CourierProfile.class))).thenReturn(saved);
         when(mapper.toResponse(saved)).thenReturn(response());
 
-        CourierProfileResponse result = service.create(
+        CourierProfileResponse result = serviceWhereUserIsCourier().create(
                 new CourierProfileCreateRequest(10L, VehicleType.MOTORBIKE, 3L, null));
 
         ArgumentCaptor<CourierProfile> captor = ArgumentCaptor.forClass(CourierProfile.class);
@@ -60,13 +76,45 @@ class CourierProfileServiceTest {
     }
 
     @Test
-    void create_throwsConflict_whenProfileAlreadyExists() {
-        when(repository.existsByUserId(10L)).thenReturn(true);
+    void create_throwsNotFound_whenUserMissing() {
+        when(userRepository.findById(10L)).thenReturn(Optional.empty());
 
-        assertThrows(ConflictException.class, () -> service.create(
+        assertThrows(NotFoundException.class, () -> service.create(
                 new CourierProfileCreateRequest(10L, VehicleType.CAR, 3L, true)));
         verify(repository, never()).save(any());
     }
+
+    @Test
+    void create_throwsBadRequest_whenUserIsNotCourier() {
+        when(userRepository.findById(10L)).thenReturn(Optional.of(mock(User.class)));
+
+        assertThrows(BadRequestException.class, () -> service.create(
+                new CourierProfileCreateRequest(10L, VehicleType.CAR, 3L, true)));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void create_throwsNotFound_whenZoneMissing() {
+        when(userRepository.findById(10L)).thenReturn(Optional.of(mock(User.class)));
+        when(zoneLookup.exists(3L)).thenReturn(false);
+
+        assertThrows(NotFoundException.class, () -> serviceWhereUserIsCourier().create(
+                new CourierProfileCreateRequest(10L, VehicleType.CAR, 3L, true)));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void create_throwsConflict_whenProfileAlreadyExists() {
+        when(userRepository.findById(10L)).thenReturn(Optional.of(mock(User.class)));
+        when(zoneLookup.exists(3L)).thenReturn(true);
+        when(repository.existsByUserId(10L)).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> serviceWhereUserIsCourier().create(
+                new CourierProfileCreateRequest(10L, VehicleType.CAR, 3L, true)));
+        verify(repository, never()).save(any());
+    }
+
+    // ---------- get / update ----------
 
     @Test
     void get_throwsNotFound_whenMissing() {
@@ -87,12 +135,14 @@ class CourierProfileServiceTest {
         assertFalse(existing.isActive());
         assertEquals(3L, existing.getZoneId(), "zone must stay unchanged");
         assertEquals(VehicleType.MOTORBIKE, existing.getVehicleType(), "vehicle must stay unchanged");
+        verifyNoInteractions(zoneLookup);
     }
 
     @Test
     void update_changesZoneAndVehicle() {
         CourierProfile existing = profile();
         when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(zoneLookup.exists(5L)).thenReturn(true);
         when(repository.save(existing)).thenReturn(existing);
         when(mapper.toResponse(existing)).thenReturn(response());
 
@@ -104,12 +154,26 @@ class CourierProfileServiceTest {
     }
 
     @Test
-    void update_throwsNotFound_whenMissing() {
+    void update_throwsNotFound_whenNewZoneMissing() {
+        CourierProfile existing = profile();
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(zoneLookup.exists(9L)).thenReturn(false);
+
+        assertThrows(NotFoundException.class,
+                () -> service.update(1L, new CourierProfileUpdateRequest(null, 9L, null)));
+        assertEquals(3L, existing.getZoneId(), "zone must not change");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void update_throwsNotFound_whenProfileMissing() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
                 () -> service.update(99L, new CourierProfileUpdateRequest(null, null, true)));
     }
+
+    // ---------- list ----------
 
     @Test
     void list_filtersByZoneAndActive() {
