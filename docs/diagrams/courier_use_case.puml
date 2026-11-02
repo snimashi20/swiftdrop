@@ -1,14 +1,15 @@
 @startuml courier_use_case
+title SwiftDrop — Courier Use Case Diagram\n<size:11>Author: Pamithra (M7) · Date: 2026-10-31 · Version: 1.0</size>
+
 left to right direction
 skinparam packageStyle rectangle
 skinparam shadowing false
-skinparam actorStyle awesome
 skinparam defaultFontName "Segoe UI", Arial, sans-serif
 
 skinparam rectangle {
     BackgroundColor #FAFAFB
     BorderColor #B0BEC5
-    FontSize 14
+    FontSize 13
 }
 
 skinparam usecase {
@@ -21,7 +22,7 @@ skinparam usecase {
 actor "Courier\n(Delivery Person)" as Courier
 
 rectangle "SwiftDrop System — Courier Module (M7)" {
-    usecase "Login & Authenticate\n(JWT Authentication)" as UC_Login
+    usecase "Login with Email & Password" as UC_Login
     usecase "View Today's Assigned Parcels\n(GET /api/v1/courier/deliveries/today)" as UC_ViewToday
     usecase "Filter Deliveries by Status\n(Active / Delivered / Failed)" as UC_Filter
     usecase "View Parcel & Delivery Details\n(Address, Masked Contact, Notes)" as UC_ViewDetail
@@ -32,7 +33,7 @@ rectangle "SwiftDrop System — Courier Module (M7)" {
     usecase "Select Failure Reason\n(Recipient Not Available, Wrong Address, etc.)" as UC_SelectReason
 }
 
-' Primary Actor associations
+' Courier Associations
 Courier --> UC_Login
 Courier --> UC_ViewToday
 Courier --> UC_ViewDetail
@@ -40,11 +41,11 @@ Courier --> UC_UpdateStatus
 Courier --> UC_Deliver
 Courier --> UC_Fail
 
-' Relationships between use cases
+' Relationships
 UC_ViewToday ..> UC_Filter : <<extend>>
 UC_Deliver ..> UC_UploadPhoto : <<include>>
-UC_Deliver ..> UC_UpdateStatus : <<invokes M5 Status Engine>>
+UC_Deliver ..> UC_UpdateStatus : <<invokes>>
 UC_Fail ..> UC_SelectReason : <<include>>
-UC_Fail ..> UC_UpdateStatus : <<invokes M5 Status Engine>>
+UC_Fail ..> UC_UpdateStatus : <<invokes>>
 
 @enduml
