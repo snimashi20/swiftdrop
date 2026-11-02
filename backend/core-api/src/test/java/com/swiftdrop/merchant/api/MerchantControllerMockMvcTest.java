@@ -8,6 +8,7 @@ import com.swiftdrop.merchant.dto.MerchantResponseDto;
 import com.swiftdrop.merchant.dto.RegisterMerchantRequest;
 import com.swiftdrop.merchant.service.MerchantService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -98,6 +101,11 @@ class MerchantControllerMockMvcTest {
                 .apply(springSecurity())
                 .build();
         objectMapper = new ObjectMapper();
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     // --- Register Endpoint Tests ---
@@ -258,6 +266,7 @@ class MerchantControllerMockMvcTest {
     }
 
     @Test
+    @WithAnonymousUser
     @DisplayName("GET /merchants/me: returns 401 Unauthorized when unauthenticated")
     void getMyProfile_unauthenticated_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/merchants/me"))
