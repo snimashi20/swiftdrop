@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
+import static com.swiftdrop.parcel.domain.ParcelStatus.CANCELLED;
 import static com.swiftdrop.parcel.domain.ParcelStatus.CREATED;
 import static com.swiftdrop.parcel.domain.ParcelStatus.DELIVERED;
 import static com.swiftdrop.parcel.domain.ParcelStatus.FAILED;
@@ -21,12 +22,13 @@ public class StatusTransitionRules {
             new EnumMap<>(ParcelStatus.class);
 
     static {
-        ALLOWED.put(CREATED, Set.of(PICKED_UP));
+        ALLOWED.put(CREATED, Set.of(PICKED_UP, CANCELLED));
         ALLOWED.put(PICKED_UP, Set.of(IN_TRANSIT, FAILED));
         ALLOWED.put(IN_TRANSIT, Set.of(OUT_FOR_DELIVERY, FAILED));
         ALLOWED.put(OUT_FOR_DELIVERY, Set.of(DELIVERED, FAILED));
         ALLOWED.put(FAILED, Set.of(OUT_FOR_DELIVERY));
         ALLOWED.put(DELIVERED, Set.of());
+        ALLOWED.put(CANCELLED, Set.of());
     }
 
     public boolean canTransition(ParcelStatus from, ParcelStatus to) {

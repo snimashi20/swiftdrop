@@ -1,0 +1,93 @@
+@startuml courier_delivery_sync_sequence
+title SwiftDrop — Courier Delivery Flow (Synchronous)\n<size:11>Author: Pamithra (M7) · Date: 2026-10-31 · Version: 1.0</size>
+
+autonumber
+skinparam responseMessageBelowArrow true
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+skinparam sequence {
+    ArrowColor #263238
+    ActorBorderColor #1976D2
+    LifeLineBorderColor #78909C
+    LifeLineBackgroundColor #ECEFF1
+    ParticipantBorderColor #1E88E5
+    ParticipantBackgroundColor #E3F2FD
+    DatabaseBorderColor #43A047
+    DatabaseBackgroundColor #E8F5E9
+}
+
+actor "Courier (Phone)" as Courier
+participant "Mobile Web UI\n(React M7)" as UI
+
+box "core-api (Spring Boot)" #FAFAFA
+    participant "CourierController\n(api M7)" as Controller
+    participant "CourierService\n(service M7)" as Service
+    participant "FileStorageService\n(service M7)" as FileService
+    participant "ParcelStatusService\n(service M5)" as StatusService
+end box
+
+database "PostgreSQL\n(delivery_proofs, parcels)" as DB
+participant "WebSocket Broker (STOMP)\n(/topic/tracking/{trackingNumber})" as STOMP
+actor "Customer Tracking Page" as Customer
+
+Courier -> UI: Tap "Mark as Delivered"\n(Enter recipient name & optional photo)
+activate UI
+
+UI -> Controller: POST /api/v1/courier/deliveries/{parcelId}/deliver\n(Multipart: DeliverParcelRequest + photo, Bearer JWT)
+activate Controller
+
+Controller -> Controller: resolveCourierProfileId(authentication)\n(Lookup user by email -> resolve courierProfileId)
+
+Controller -> Service: deliverParcel(courierProfileId, parcelId, request, photo)
+activate Service
+
+note over Service
+  1. Check parcel.assignedCourierId == courierProfileId
+     (If different courier, return 403 Forbidden)
+  2. Check photo type (JPG/PNG) and size (<= 5MB)
+  3. Store photo in uploads folder
+  4. Create DeliveryProof record
+end note
+
+alt Photo attached
+    Service -> FileService: store(photo)
+    activate FileService
+    FileService --> Service: photoPath (e.g. /uploads/proofs/uuid.jpg)
+    deactivate FileService
+end
+
+Service -> DB: INSERT INTO delivery_proofs\n(parcel_id, recipient_name, photo_path, delivered_at)
+activate DB
+DB --> Service: OK
+deactivate DB
+
+Service -> StatusService: changeStatus(parcelId, "DELIVERED", "COURIER", note)
+activate StatusService
+
+StatusService -> StatusService: Check StatusTransitionRules\n(OUT_FOR_DELIVERY -> DELIVERED)
+StatusService -> DB: UPDATE parcels SET status = 'DELIVERED'\nINSERT INTO status_history
+activate DB
+DB --> StatusService: OK
+deactivate DB
+
+StatusService -> StatusService: publish internal event\n(ParcelStatusChangedEvent)
+StatusService -> STOMP: convertAndSend("/topic/tracking/SD...", trackingDto)
+activate STOMP
+STOMP -> Customer: Push live status update via WebSocket
+deactivate STOMP
+
+StatusService --> Service: Status updated
+deactivate StatusService
+
+Service --> Controller: CourierDeliveryResponse DTO
+deactivate Service
+
+Controller --> UI: 200 OK (CourierDeliveryResponse)
+deactivate Controller
+
+UI --> Courier: Show success message & update parcel list
+deactivate UI
+
+@enduml
