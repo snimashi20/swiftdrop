@@ -42,22 +42,27 @@ public class DispatchService {
     private final DispatchParcelRepository parcelRepository;
     private final CourierProfileRepository courierRepository;
     private final UserRepository userRepository;
+    private final ZoneLookup zoneLookup;
 
     /**
      * Parcels with no courier that are not finished, oldest first.
      * The district filter matches the pickup district (one zone = one district).
      */
     @Transactional(readOnly = true)
-    public Page<UnassignedParcelResponse> listUnassigned(String district, LocalDate from, LocalDate to,
-                                                         Pageable pageable) {
+    public Page<UnassignedParcelResponse> listUnassigned(Long zoneId, String district, LocalDate from,
+                                                         LocalDate to, Pageable pageable) {
         var terminal = TerminalStatuses.values();
+        // A zone id is turned into its district (one zone = one district).
+        final String districtFilter = zoneId == null
+                ? district
+                : zoneLookup.districtOf(zoneId).orElseThrow(() -> new NotFoundException("Zone not found"));
         Specification<Parcel> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isNull(root.get("assignedCourierId")));
             predicates.add(cb.not(root.get("status").in(terminal)));
-            if (district != null && !district.isBlank()) {
+            if (districtFilter != null && !districtFilter.isBlank()) {
                 predicates.add(cb.equal(cb.lower(root.get("pickup").get("district")),
-                        district.trim().toLowerCase()));
+                        districtFilter.trim().toLowerCase()));
             }
             if (from != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.<Instant>get("createdAt"),
@@ -99,6 +104,25 @@ public class DispatchService {
         log.info("Parcel id={} {} to courier profile id={}",
                 saved.getId(), reassignment ? "reassigned" : "assigned", courier.getId());
         return toAssignment(saved);
+    }
+
+    /**
+     * Suggests the least busy ACTIVE courier in the zone that covers the parcel's pickup district.
+     * The dispatcher can still choose another courier.
+     */
+    @Transactional(readOnly = true)
+    public CourierWorkloadResponse suggestCourier(Long parcelId) {
+        Parcel parcel = parcelRepository.findById(parcelId)
+                .orElseThrow(() -> new NotFoundException("Parcel not found"));
+        if (TerminalStatuses.isTerminal(parcel.getStatus())) {
+            throw new ConflictException("Parcel can no longer be assigned");
+        }
+        String district = parcel.getPickup() == null ? null : parcel.getPickup().getDistrict();
+        Long zoneId = zoneLookup.zoneIdOfDistrict(district)
+                .orElseThrow(() -> new NotFoundException("No delivery zone covers this parcel's pickup area"));
+        return workload(zoneId, true).stream()
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("No active courier in this zone"));
     }
 
     /** Couriers with their number of active deliveries, least busy first. */
