@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   UserCheck,
   UserCog,
+  UserPlus,
   Users,
   UserX,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { ROLES } from "../../auth/auth.types";
 import { getApiErrorMessage } from "../../../lib/api";
 import { fetchAdminUsers, toggleUserStatus, updateUserRole } from "../admin.api";
 import type { AdminUser, RoleFilterOption, ToastMessage } from "../admin.types";
+import { CreateStaffModal } from "../components/CreateStaffModal";
 import { RoleBadge } from "../components/RoleBadge";
 import { RoleUpdateModal } from "../components/RoleUpdateModal";
 import { StatusBadge } from "../components/StatusBadge";
@@ -40,6 +42,7 @@ export const AdminUsersPage: React.FC = () => {
   // Modals state
   const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null);
   const [statusModalUser, setStatusModalUser] = useState<AdminUser | null>(null);
+  const [isCreateStaffOpen, setIsCreateStaffOpen] = useState<boolean>(false);
 
   // Toast feedback state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -169,14 +172,24 @@ export const AdminUsersPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => loadUsers(true)}
-          disabled={loading || refreshing}
-          className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-ink/10 text-xs font-semibold text-ink shadow-xs hover:bg-ink/5 transition disabled:opacity-50"
-        >
-          <RefreshCw size={14} className={refreshing ? "animate-spin text-coral" : ""} />
-          <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => setIsCreateStaffOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-ink/90 transition shadow-xs"
+          >
+            <UserPlus size={14} />
+            <span>+ Create Staff Account</span>
+          </button>
+
+          <button
+            onClick={() => loadUsers(true)}
+            disabled={loading || refreshing}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-ink/10 text-xs font-semibold text-ink shadow-xs hover:bg-ink/5 transition disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin text-coral" : ""} />
+            <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary Metrics Cards */}
@@ -548,6 +561,20 @@ export const AdminUsersPage: React.FC = () => {
               currentUser?.email?.toLowerCase() === statusModalUser.email?.toLowerCase()
           )
         }
+      />
+
+      {/* Create Staff Account Modal */}
+      <CreateStaffModal
+        isOpen={isCreateStaffOpen}
+        onClose={() => setIsCreateStaffOpen(false)}
+        onSuccess={(created) => {
+          addToast(
+            "success",
+            "Staff Account Created",
+            `${created.fullName} has been registered as a ${created.role}.`
+          );
+          loadUsers(true);
+        }}
       />
     </div>
   );

@@ -1,6 +1,11 @@
 import { api } from "../../lib/api";
 import type { Role } from "../auth/auth.types";
-import type { AdminUser, StatusToggleDto, UpdateRoleDto } from "./admin.types";
+import type {
+  AdminUser,
+  CreateStaffRequestDto,
+  StatusToggleDto,
+  UpdateRoleDto,
+} from "./admin.types";
 
 /**
  * Fetch all users with optional role filtering (e.g. CUSTOMER, COURIER, DISPATCHER, MERCHANT, ADMIN).
@@ -26,5 +31,15 @@ export const updateUserRole = async (userId: number, role: Role): Promise<AdminU
 export const toggleUserStatus = async (userId: number, enabled: boolean): Promise<AdminUser> => {
   const payload: StatusToggleDto = { enabled };
   const response = await api.patch<AdminUser>(`/admin/users/${userId}/status`, payload);
+  return response.data;
+};
+
+/**
+ * Create a Courier or Dispatcher staff account (POST /api/v1/admin/users/staff).
+ */
+export const createStaffAccount = async (
+  data: CreateStaffRequestDto
+): Promise<AdminUser> => {
+  const response = await api.post<AdminUser>("/admin/users/staff", data);
   return response.data;
 };

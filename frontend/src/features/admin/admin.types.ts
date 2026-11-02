@@ -20,6 +20,14 @@ export interface StatusToggleDto {
 
 export type RoleFilterOption = "ALL" | Role;
 
+export interface CreateStaffRequestDto {
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  role: "COURIER" | "DISPATCHER";
+  password: string;
+}
+
 export interface ToastMessage {
   id: string;
   type: "success" | "error" | "info";
