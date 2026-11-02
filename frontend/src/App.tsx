@@ -17,6 +17,7 @@ import {
   ReportsPage,
   UnassignedParcelsPage,
 } from "./features/dispatch";
+import { AdminUsersPage } from "./features/admin";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -48,7 +49,10 @@ export function App() {
               </Route>
             </Route>
             <Route path="/people" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
-              <Route index element={<PlaceholderPage />} />
+              <Route index element={<AdminUsersPage />} />
+            </Route>
+            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<AdminUsersPage />} />
             </Route>
           </Route>
         </Route>
