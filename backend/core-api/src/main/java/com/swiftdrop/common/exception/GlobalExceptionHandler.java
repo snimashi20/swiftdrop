@@ -18,6 +18,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
     }
 
+    @ExceptionHandler(com.swiftdrop.merchant.exception.MerchantNotApprovedException.class)
+    public ResponseEntity<ErrorResponse> handleMerchantNotApproved(com.swiftdrop.merchant.exception.MerchantNotApprovedException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.FORBIDDEN, "MERCHANT_NOT_APPROVED", ex.getMessage(), req);
+    }
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex, HttpServletRequest req) {
         return buildResponse(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), req);

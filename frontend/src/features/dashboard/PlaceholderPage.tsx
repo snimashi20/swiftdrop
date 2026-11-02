@@ -1,0 +1,2 @@
+import { Construction } from "lucide-react";
+export function PlaceholderPage() { return <div className="grid min-h-[60vh] place-items-center text-center"><div><div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-mint"><Construction /></div><h1 className="font-display text-3xl font-bold">Feature module coming up</h1><p className="mt-2 text-ink/55">This workspace is ready for the next SwiftDrop feature.</p></div></div>; }

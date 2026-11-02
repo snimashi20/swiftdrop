@@ -1,0 +1,113 @@
+@startuml courier_status_update_sequence
+autonumber
+skinparam responseMessageBelowArrow true
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+skinparam sequence {
+    ArrowColor #263238
+    ActorBorderColor #1976D2
+    LifeLineBorderColor #78909C
+    LifeLineBackgroundColor #ECEFF1
+    ParticipantBorderColor #1E88E5
+    ParticipantBackgroundColor #E3F2FD
+    DatabaseBorderColor #43A047
+    DatabaseBackgroundColor #E8F5E9
+    QueueBorderColor #FB8C00
+    QueueBackgroundColor #FFF3E0
+}
+
+actor "Courier (Phone)" as Courier
+participant "Mobile Web UI\n(React Feature M7)" as UI
+box "backend/core-api (Spring Boot)" #FAFAFA
+    participant "CourierController\n(api M7)" as Controller
+    participant "CourierService\n(service M7)" as CourierService
+    participant "FileStorageService\n(service M7)" as FileService
+    participant "ParcelStatusService\n(service M5)" as StatusService
+    participant "EventPublisher\n(@TransactionalEventListener)" as Publisher
+end box
+
+database "PostgreSQL\n(delivery_proofs, parcels)" as DB
+queue "RabbitMQ Exchange\n(swiftdrop.parcel.events)" as RabbitMQ
+participant "Notification Service\n(backend/notification-service M1)" as NotifService
+participant "Webhook Sender\n(backend/core-api M10)" as WebhookSender
+participant "WebSocket Broker (STOMP)\n(/topic/tracking/{trackingNumber})" as STOMP
+actor "Customer / Tracking Page" as Customer
+
+Courier -> UI: Tap "Mark as Delivered"\n(Enter recipient name & attach photo)
+activate UI
+
+UI -> Controller: POST /api/v1/courier/deliveries/{id}/deliver\n(Multipart: DeliverParcelRequest + photo file, Bearer JWT)
+activate Controller
+
+Controller -> CourierService: deliverParcel(courierId, parcelId, request, file)
+activate CourierService
+
+note over CourierService
+  1. Validate parcel.assignedCourierId == courierId
+     (If mismatched, throw AccessDeniedException -> 403 Forbidden)
+  2. Validate photo (JPG/PNG, max 5MB)
+  3. Store photo on Docker volume /app/uploads/proofs/
+  4. Create DeliveryProof record
+end note
+
+alt Photo Provided
+    CourierService -> FileService: store(photoFile)
+    activate FileService
+    FileService --> CourierService: photoPath (e.g. /uploads/proofs/uuid.jpg)
+    deactivate FileService
+end
+
+CourierService -> DB: Save DeliveryProof (recipientName, photoPath, note, deliveredAt)
+activate DB
+DB --> CourierService: Saved DeliveryProof
+deactivate DB
+
+CourierService -> StatusService: changeStatus(parcelId, "DELIVERED", "COURIER", note)
+activate StatusService
+
+StatusService -> StatusService: Validate Status Transition\n(OUT_FOR_DELIVERY -> DELIVERED)
+StatusService -> DB: UPDATE parcels SET status = 'DELIVERED'\nINSERT INTO parcel_status_history
+activate DB
+DB --> StatusService: OK
+deactivate DB
+
+StatusService -> Publisher: emit(ParcelStatusChangedEvent)
+StatusService -> STOMP: convertAndSend("/topic/tracking/SD...", eventDto)
+activate STOMP
+STOMP -> Customer: Push live status update via WebSocket
+deactivate STOMP
+deactivate StatusService
+
+CourierService --> Controller: CourierDeliveryResponse DTO
+deactivate CourierService
+
+Controller --> UI: 200 OK (CourierDeliveryResponse)
+deactivate Controller
+
+UI --> Courier: Show green success toast & refresh parcel list
+deactivate UI
+
+== After DB Transaction Commits (phase = AFTER_COMMIT) ==
+
+Publisher -> RabbitMQ: Publish ParcelStatusChangedEvent\n(exchange: swiftdrop.parcel.events, routingKey: parcel.status.changed)
+activate RabbitMQ
+
+par Queue: notification.parcel-status
+    RabbitMQ -> NotifService: @RabbitListener consumes event
+    activate NotifService
+    NotifService -> NotifService: Render Thymeleaf HTML email
+    NotifService -> NotifService: Send email to Mailpit (fake SMTP in Docker)
+    NotifService -> DB: INSERT INTO notification_logs (masked SMS)
+    deactivate NotifService
+else Queue: webhook.parcel-status
+    RabbitMQ -> WebhookSender: @RabbitListener consumes event
+    activate WebhookSender
+    WebhookSender -> WebhookSender: Sign payload with HMAC-SHA256
+    WebhookSender -> WebhookSender: POST to Merchant webhook URL (with retry)
+    deactivate WebhookSender
+end
+deactivate RabbitMQ
+
+@enduml
