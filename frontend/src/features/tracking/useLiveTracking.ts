@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Client, type Frame } from '@stomp/stompjs';
-import { getTracking, isNotFound } from './api';
+import { Client } from '@stomp/stompjs';
+import { getTracking, isMockMode, isNotFound } from './api';
 import type { TrackingResult, TrackingUpdateMessage } from './types';
 
 export type TrackingError = 'not-found' | 'failed' | null;
@@ -13,10 +13,7 @@ function applyUpdate(current: TrackingResult, msg: TrackingUpdateMessage): Track
   return {
     ...current,
     status: msg.status,
-    timeline: [
-      ...current.timeline,
-      { status: msg.status, changedAt: msg.changedAt, note: msg.note ?? null },
-    ],
+    timeline: [...current.timeline, { status: msg.status, changedAt: msg.changedAt }],
   };
 }
 
@@ -60,10 +57,7 @@ export function useLiveTracking(trackingNumber: string) {
 
   // 2. Live updates
   useEffect(() => {
-    if (!trackingNumber) return;
-    if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('mock')) {
-      return; // no WebSocket in mock mode
-    }
+    if (!trackingNumber || isMockMode()) return; // no WebSocket in mock mode
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const topic = `/topic/tracking/${trackingNumber}`;
 
@@ -72,7 +66,7 @@ export function useLiveTracking(trackingNumber: string) {
       reconnectDelay: 5_000,
       onConnect: () => {
         setLive(true);
-        client.subscribe(topic, (frame: Frame) => {
+        client.subscribe(topic, (frame) => {
           try {
             const msg = JSON.parse(frame.body) as TrackingUpdateMessage;
             setData((prev) => (prev ? applyUpdate(prev, msg) : prev));
