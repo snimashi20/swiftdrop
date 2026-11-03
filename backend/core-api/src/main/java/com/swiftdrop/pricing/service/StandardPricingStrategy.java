@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-@Component
+@Component("STANDARD")
 public class StandardPricingStrategy implements PricingStrategy {
 
     @Override
