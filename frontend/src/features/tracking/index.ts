@@ -1,6 +1,8 @@
 export { default as TrackLookupPage } from './TrackLookupPage';
 export { default as TrackingPage } from './TrackingPage';
+export { default as ParcelDetailPage } from './ParcelDetailPage';
 export { default as PublicTrackingLayout } from './components/PublicTrackingLayout';
+export { default as LiveParcelView } from './components/LiveParcelView';
 export { default as StatusTimeline } from './components/StatusTimeline';
 export { default as StatusBadge } from './components/StatusBadge';
 export { default as TrackingMap } from './components/TrackingMap';
