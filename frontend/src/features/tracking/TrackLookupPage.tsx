@@ -21,11 +21,11 @@ export default function TrackLookupPage() {
   };
 
   return (
-    <div className="space-y-5 p-4 md:p-8">
-      <PageHeader title="Track Parcel" subtitle="Enter your tracking number to see where your parcel is" />
-      <section className="mx-auto mt-6 max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:mt-12">
-        <h2 className="text-xl font-semibold text-slate-900">Where is your parcel?</h2>
-        <p className="mb-5 mt-1 text-sm text-slate-600">No account needed. You’ll find the number on your receipt.</p>
+    <div className="space-y-6">
+      <PageHeader title="Track your parcel" subtitle="Enter your tracking number to see where your parcel is" />
+      <section className="mx-auto mt-6 max-w-xl rounded-2xl border border-ink/10 bg-white p-6 md:mt-12">
+        <h2 className="text-xl font-semibold text-ink">Where is your parcel?</h2>
+        <p className="mb-5 mt-1 text-sm text-ink/60">No account needed. You’ll find the number on your receipt.</p>
         <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row" noValidate>
           <label htmlFor="tracking-number" className="sr-only">
             Tracking number
@@ -38,9 +38,9 @@ export default function TrackLookupPage() {
             autoComplete="off"
             autoCapitalize="characters"
             maxLength={12}
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white p-3 font-semibold uppercase tracking-wider"
+            className="min-w-0 flex-1 rounded-xl border border-ink/15 bg-white p-3 font-semibold uppercase tracking-wider outline-none focus:border-ink"
           />
-          <button type="submit" className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
+          <button type="submit" className="rounded-xl bg-ink px-6 py-3 font-semibold text-white hover:bg-ink/90">
             Track
           </button>
         </form>

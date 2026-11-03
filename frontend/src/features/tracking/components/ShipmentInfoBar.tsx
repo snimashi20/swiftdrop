@@ -5,8 +5,8 @@ import type { TrackingResult } from '../types';
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className="mt-1 truncate font-semibold text-slate-900">{children}</div>
+      <div className="text-xs text-ink/50">{label}</div>
+      <div className="mt-1 truncate font-semibold text-ink">{children}</div>
     </div>
   );
 }
@@ -22,9 +22,9 @@ export default function ShipmentInfoBar({ data }: { data: TrackingResult }) {
   return (
     <section
       aria-label="Shipment details"
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center"
+      className="flex flex-col gap-4 rounded-2xl border border-ink/10 bg-white p-5 md:flex-row md:items-center"
     >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-mint text-ink">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M21 8l-9-5-9 5v8l9 5 9-5z" />
           <path d="M3 8l9 5 9-5M12 13v8" />
