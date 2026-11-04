@@ -129,3 +129,18 @@ $$\text{V}\langle yyyyMMddHHmm \rangle\text{\_\_}\langle \text{module}\rangle\te
 10. `V202610281200__courier_delivery_proof.sql`: Courier proof of delivery uploads
 11. `V202610311500__isuri_parcels_pickup_zone.sql`: Pickup zone association for parcels
 12. `V202610311800__sithmi_fix_notification_log.sql`: Notification log schema fix
+
+---
+
+## 6. Delivery Receipt PDF API Contract (Member M2)
+
+| Property | Value |
+| :--- | :--- |
+| **Primary Route** | `GET /api/v1/parcels/{id}/receipt` |
+| **Legacy Route** | `GET /api/v1/receipts/{trackingNumber}` |
+| **Authentication** | Bearer JWT required (`@PreAuthorize("isAuthenticated()")`) |
+| **Authorization** | Restricted to Parcel Owner (`customerId`) or `ADMIN` role |
+| **Response Type** | `application/pdf` |
+| **Content-Disposition** | `attachment; filename="receipt-{trackingNumber}.pdf"` |
+| **IDOR Error** | HTTP `403 FORBIDDEN` with standard error JSON (`ACCESS_DENIED` or `FORBIDDEN`) |
+

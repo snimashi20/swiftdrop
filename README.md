@@ -5,9 +5,6 @@ Customers book deliveries and watch them move live, merchants push orders in ove
 API and get signed webhooks back, couriers update parcels from a phone, and
 dispatchers assign work and read reports.
 
-> **Project brief:** `docs/report/SwiftDrop-Project-Apex10.pdf` — the full brief with task
-> cards, shared contracts and deadlines. _(TODO: add the shared doc link here.)_
-
 Parcel lifecycle: `CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED | FAILED`
 
 ---
