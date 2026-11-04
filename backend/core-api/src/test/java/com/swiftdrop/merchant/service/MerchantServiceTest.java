@@ -3,6 +3,7 @@ package com.swiftdrop.merchant.service;
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.ConflictException;
+import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.dto.MerchantMapper;
@@ -221,5 +222,78 @@ class MerchantServiceTest {
         assertNotNull(result);
         assertEquals(55L, result.getId());
         assertEquals("My Shop", result.getBusinessName());
+    }
+
+    @Test
+    @DisplayName("Approves a pending merchant and records the admin reviewer")
+    void approve_pendingMerchant_success() {
+        Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.PENDING).build();
+        User admin = new User();
+        admin.setId(7L);
+        when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
+        when(authentication.getName()).thenReturn("admin@example.com");
+        when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(merchantRepository.save(merchant)).thenReturn(merchant);
+        when(merchantMapper.toDto(merchant)).thenReturn(MerchantResponseDto.builder()
+                .id(55L).status(MerchantStatus.APPROVED).reviewedBy(7L).build());
+
+        MerchantResponseDto result = merchantService.approve(55L, authentication);
+
+        assertEquals(MerchantStatus.APPROVED, merchant.getStatus());
+        assertEquals(7L, merchant.getReviewedBy());
+        assertNotNull(merchant.getReviewedAt());
+        assertEquals(MerchantStatus.APPROVED, result.getStatus());
+    }
+
+    @Test
+    @DisplayName("Rejects a pending merchant and records the reason")
+    void reject_pendingMerchant_success() {
+        Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.PENDING).build();
+        User admin = new User();
+        admin.setId(7L);
+        when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
+        when(authentication.getName()).thenReturn("admin@example.com");
+        when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(merchantRepository.save(merchant)).thenReturn(merchant);
+        when(merchantMapper.toDto(merchant)).thenReturn(MerchantResponseDto.builder()
+                .id(55L).status(MerchantStatus.REJECTED).rejectionReason("Incomplete documents").build());
+
+        MerchantResponseDto result = merchantService.reject(55L, " Incomplete documents ", authentication);
+
+        assertEquals(MerchantStatus.REJECTED, merchant.getStatus());
+        assertEquals("Incomplete documents", merchant.getRejectionReason());
+        assertEquals(MerchantStatus.REJECTED, result.getStatus());
+    }
+
+    @Test
+    void approve_nonPendingMerchant_throwsConflict() {
+        Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.APPROVED).build();
+        when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
+
+        assertThrows(ConflictException.class, () -> merchantService.approve(55L, authentication));
+        verify(merchantRepository, never()).save(any());
+    }
+
+    @Test
+    void reject_nonPendingMerchant_throwsConflict() {
+        Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.REJECTED).build();
+        when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
+
+        assertThrows(ConflictException.class, () -> merchantService.reject(55L, "reason", authentication));
+        verify(merchantRepository, never()).save(any());
+    }
+
+    @Test
+    void approve_unknownMerchant_throwsNotFound() {
+        when(merchantRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> merchantService.approve(404L, authentication));
+    }
+
+    @Test
+    void reject_unknownMerchant_throwsNotFound() {
+        when(merchantRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> merchantService.reject(404L, "reason", authentication));
     }
 }

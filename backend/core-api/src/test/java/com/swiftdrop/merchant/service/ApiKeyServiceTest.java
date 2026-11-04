@@ -291,6 +291,41 @@ class ApiKeyServiceTest {
 
             verify(apiKeyRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Rejected merchant can revoke its own API key")
+        void revoke_whenRejectedOwner_deactivatesKey() {
+            Merchant merchant = Merchant.builder().id(1L).status(MerchantStatus.REJECTED).build();
+            ApiKey apiKey = ApiKey.builder()
+                    .id(20L)
+                    .merchant(merchant)
+                    .label("Rejected Key")
+                    .keyPrefix("sdk_rejected")
+                    .keyHash("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+                    .active(true)
+                    .createdAt(Instant.now())
+                    .build();
+
+            when(apiKeyRepository.findByIdAndMerchantId(20L, 1L)).thenReturn(Optional.of(apiKey));
+            when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            ApiKeyResponse response = apiKeyService.revoke(1L, 20L);
+
+            assertThat(response.active()).isFalse();
+            verify(apiKeyRepository).save(apiKey);
+        }
+
+        @Test
+        @DisplayName("Merchant cannot revoke another merchant's API key")
+        void revoke_whenKeyBelongsToAnotherMerchant_throwsNotFoundException() {
+            when(apiKeyRepository.findByIdAndMerchantId(20L, 1L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> apiKeyService.revoke(1L, 20L))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessage("API key not found");
+
+            verify(apiKeyRepository, never()).save(any());
+        }
     }
 
     @Nested

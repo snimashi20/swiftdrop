@@ -1,6 +1,8 @@
 package com.swiftdrop.common.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -59,5 +61,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding webhookBinding(Queue webhookQueue, TopicExchange parcelEventsExchange) {
         return BindingBuilder.bind(webhookQueue).to(parcelEventsExchange).with(ROUTING_KEY);
+    }
+
+    // JSON on the wire; notification-service and the webhook consumer read it with the same converter.
+    @Bean
+    public MessageConverter jsonMessageConverter() {
+        return new JacksonJsonMessageConverter();
     }
 }
