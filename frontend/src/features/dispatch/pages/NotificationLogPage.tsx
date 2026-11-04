@@ -155,7 +155,7 @@ export function NotificationLogPage() {
                     <tr key={entry.id} className="border-b border-ink/5 align-top last:border-0">
                       <td className="py-3 pr-4 text-ink/60">{formatTime(entry.createdAt)}</td>
                       <td className="py-3 pr-4 font-semibold">{entry.trackingNumber}</td>
-                      <td className="py-3 pr-4">{entry.channel === "EMAIL" ? "E-mail" : "SMS"}</td>
+                      <td className="py-3 pr-4">{entry.type === "EMAIL" ? "E-mail" : "SMS"}</td>
                       <td className="py-3 pr-4 font-mono text-xs">{entry.recipient}</td>
                       <td className="py-3 pr-4">
                         {entry.oldStatus ?? "—"} → <span className="font-semibold">{entry.newStatus}</span>

@@ -75,16 +75,17 @@ export type CourierCandidate = { userId: number; fullName: string | null };
 
 export type ZoneOption = { id: number; name: string; district: string };
 
-// Contract of GET /api/v1/notifications (notification-service, ADMIN only).
+// Contract of GET /api/v1/notifications/admin (notification-service, ADMIN and DISPATCHER).
 export type NotificationChannel = "EMAIL" | "SMS";
 export type NotificationDeliveryStatus = "PENDING" | "SENT" | "FAILED";
 
 export type NotificationEntry = {
   id: number;
+  eventId: string;
   trackingNumber: string;
   parcelId: number;
   customerId: number | null;
-  channel: NotificationChannel;
+  type: NotificationChannel; // the API calls the channel "type"
   recipient: string; // already masked by the notification service
   oldStatus: string | null;
   newStatus: string;
@@ -100,4 +101,5 @@ export type NotificationPage = {
   size: number;
   totalElements: number;
   totalPages: number;
+  last: boolean;
 };
