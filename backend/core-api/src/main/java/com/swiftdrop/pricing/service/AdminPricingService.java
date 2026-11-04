@@ -1,5 +1,6 @@
 package com.swiftdrop.pricing.service;
 
+import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.pricing.domain.PricingRule;
 import com.swiftdrop.pricing.domain.Zone;
@@ -30,11 +31,27 @@ public class AdminPricingService {
 
     @Transactional
     public ZoneResponse createZone(ZoneRequest request) {
+        // Check for duplicates
+        if (zoneRepository.findByDistrict(request.getDistrict()).isPresent()) {
+            throw new ConflictException("Zone already exists for district: " + request.getDistrict());
+        }
+        
         Zone zone = Zone.builder()
                 .name(request.getName())
                 .district(request.getDistrict())
                 .build();
-        return mapToZoneResponse(zoneRepository.save(zone));
+        Zone savedZone = zoneRepository.save(zone);
+        
+        // Create a default pricing rule so new zones can be quoted immediately
+        PricingRule defaultRule = PricingRule.builder()
+                .zone(savedZone)
+                .baseFee(new BigDecimal("300.00"))
+                .perKgFee(new BigDecimal("100.00"))
+                .interZoneSurcharge(new BigDecimal("250.00"))
+                .build();
+        pricingRuleRepository.save(defaultRule);
+        
+        return mapToZoneResponse(savedZone);
     }
 
     private ZoneResponse mapToZoneResponse(Zone zone) {
@@ -59,10 +76,7 @@ public class AdminPricingService {
         PricingRule rule = pricingRuleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Pricing rule not found with id: " + id));
 
-        Zone zone = zoneRepository.findById(request.getZoneId())
-                .orElseThrow(() -> new NotFoundException("Zone not found with id: " + request.getZoneId()));
-
-        rule.setZone(zone);
+        // Do NOT change the zone associated with the rule (prevents UNIQUE constraint violation)
         rule.setBaseFee(request.getBaseFee());
         rule.setPerKgFee(request.getPerKgFee());
         rule.setInterZoneSurcharge(request.getInterZoneSurcharge());

@@ -2,6 +2,7 @@ package com.swiftdrop.pricing.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import java.math.BigDecimal;
 
@@ -19,11 +20,15 @@ public class PricingRuleRequest {
     private BigDecimal perKgFee;
 
     @NotNull(message = "Inter-zone surcharge is required")
-    @Positive(message = "Inter-zone surcharge must be positive")
+    @PositiveOrZero(message = "Inter-zone surcharge must be zero or positive")
     private BigDecimal interZoneSurcharge;
 
-    // Optional: if null, defaults to 1.00, 1.50, 2.00
+    @Positive(message = "Size factor S must be positive")
     private BigDecimal sizeFactorS;
+    
+    @Positive(message = "Size factor M must be positive")
     private BigDecimal sizeFactorM;
+    
+    @Positive(message = "Size factor L must be positive")
     private BigDecimal sizeFactorL;
 }

@@ -1,5 +1,6 @@
 package com.swiftdrop.pricing.service;
 
+import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.pricing.domain.PricingRule;
 import com.swiftdrop.pricing.domain.Zone;
@@ -43,6 +44,22 @@ class AdminPricingServiceTest {
         var response = service.createZone(request);
         assertEquals(1L, response.getId());
         assertEquals("Test Zone", response.getName());
+        
+        // Ensure default rule was created
+        Mockito.verify(ruleRepository).save(any(PricingRule.class));
+    }
+
+    @Test
+    void createZone_duplicateDistrict_throwsConflictException() {
+        ZoneRequest request = new ZoneRequest();
+        request.setName("Colombo Zone");
+        request.setDistrict("Colombo");
+
+        when(zoneRepository.findByDistrict("Colombo")).thenReturn(Optional.of(
+            Zone.builder().id(1L).district("Colombo").build()
+        ));
+
+        assertThrows(ConflictException.class, () -> service.createZone(request));
     }
 
     @Test
@@ -56,23 +73,25 @@ class AdminPricingServiceTest {
     }
 
     @Test
-    void updateRule_success() {
+    void updateRule_successAndDoesNotChangeZone() {
         Zone zone = Zone.builder().id(1L).name("Colombo").build();
         PricingRule rule = PricingRule.builder().id(10L).zone(zone)
                 .baseFee(new BigDecimal("100")).perKgFee(new BigDecimal("10"))
                 .interZoneSurcharge(new BigDecimal("50")).build();
 
         PricingRuleRequest request = new PricingRuleRequest();
-        request.setZoneId(1L);
+        request.setZoneId(999L); // Attempting to change the zone
         request.setBaseFee(new BigDecimal("200"));
         request.setPerKgFee(new BigDecimal("20"));
         request.setInterZoneSurcharge(new BigDecimal("75"));
 
         when(ruleRepository.findById(10L)).thenReturn(Optional.of(rule));
-        when(zoneRepository.findById(1L)).thenReturn(Optional.of(zone));
         when(ruleRepository.save(any(PricingRule.class))).thenReturn(rule);
 
         var response = service.updateRule(10L, request);
+        
+        // Assertions
         assertEquals(new BigDecimal("200"), response.getBaseFee());
+        assertEquals(1L, response.getZoneId()); // Zone should STILL be 1, not 999
     }
 }
