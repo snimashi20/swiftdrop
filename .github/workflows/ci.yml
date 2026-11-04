@@ -36,6 +36,18 @@ jobs:
           cd backend/core-api
           mvn -B verify --no-transfer-progress
 
+      # The second Spring Boot app was never built here, so its tests (the required event-flow
+      # test among them) never ran on a pull request.
+      - name: Build & test notification-service
+        if: steps.check-pom.outputs.exists == 'true'
+        run: |
+          if [ -f backend/notification-service/pom.xml ]; then
+            cd backend/notification-service
+            mvn -B verify --no-transfer-progress
+          else
+            echo "No notification-service pom.xml yet – skipping"
+          fi
+
       - name: Skip notice
         if: steps.check-pom.outputs.exists == 'false'
         run: echo "No pom.xml yet – skipping backend build"
