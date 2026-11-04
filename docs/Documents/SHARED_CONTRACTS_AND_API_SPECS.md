@@ -174,3 +174,17 @@ item read marks every channel of that status change.
 `recipient`, `status`, `failureReason` and `sentAt`. `recipient` is always the masked value the
 consumer stored (`s***@example.com`, `*******567`); the service never stores or returns a full
 e-mail address or phone number.
+
+---
+
+## 7. Delivery Receipt PDF API Contract (Member M2)
+
+| Property | Value |
+| :--- | :--- |
+| **Primary Route** | `GET /api/v1/parcels/{id}/receipt` |
+| **Legacy Route** | `GET /api/v1/receipts/{trackingNumber}` |
+| **Authentication** | Bearer JWT required (`@PreAuthorize("isAuthenticated()")`) |
+| **Authorization** | Restricted to Parcel Owner (`customerId`) or `ADMIN` role |
+| **Response Type** | `application/pdf` |
+| **Content-Disposition** | `attachment; filename="receipt-{trackingNumber}.pdf"` |
+| **IDOR Error** | HTTP `403 FORBIDDEN` with standard error JSON (`ACCESS_DENIED` or `FORBIDDEN`) |
