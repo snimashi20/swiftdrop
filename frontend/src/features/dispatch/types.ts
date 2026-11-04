@@ -45,6 +45,7 @@ export type CourierProfile = {
 export type CourierWorkload = {
   courierProfileId: number;
   userId: number;
+  courierName: string | null;
   vehicleType: VehicleType;
   zoneId: number;
   active: boolean;
@@ -69,3 +70,7 @@ export type ReportSummary = {
   outcomes: Outcomes;
   perZone: ZoneDeliveries[];
 };
+
+export type CourierCandidate = { userId: number; fullName: string | null };
+
+export type ZoneOption = { id: number; name: string; district: string };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
-import type { CourierWorkload, UnassignedParcel, VehicleType } from "../types";
+import type { CourierWorkload, UnassignedParcel, VehicleType, ZoneOption } from "../types";
 import { Modal } from "./Modal";
 
 const VEHICLE_LABELS: Record<VehicleType, string> = {
@@ -20,6 +20,7 @@ type AssignDialogProps = {
 
 export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps) {
   const [couriers, setCouriers] = useState<CourierWorkload[]>([]);
+  const [zones, setZones] = useState<ZoneOption[]>([]);
   const [suggested, setSuggested] = useState<CourierWorkload | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,13 +33,15 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
       setLoading(true);
       setError("");
       try {
-        const [list, suggestion] = await Promise.all([
+        const [list, suggestion, zoneList] = await Promise.all([
           dispatchApi.workload({ active: true }),
           // No zone or no active courier in the zone gives a 404: that is fine, there is just no suggestion.
           dispatchApi.suggestedCourier(parcel.id).catch(() => null),
+          dispatchApi.zones().catch(() => [] as ZoneOption[]),
         ]);
         if (ignore) return;
         setCouriers(list);
+        setZones(zoneList);
         setSuggested(suggestion);
         setSelected(suggestion ? suggestion.courierProfileId : null);
       } catch (err) {
@@ -60,13 +63,17 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
       Number(b.zoneId === zoneId) - Number(a.zoneId === zoneId) || a.activeDeliveries - b.activeDeliveries,
   );
 
+  const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? `Zone #${id}`;
+  const courierName = (courier: CourierWorkload) => courier.courierName ?? `User #${courier.userId}`;
+
   const assign = async () => {
     if (selected === null) return;
     setSaving(true);
     setError("");
     try {
       await dispatchApi.assignParcel(parcel.id, selected);
-      onAssigned(`Parcel ${parcel.trackingNumber} assigned to courier #${selected}.`);
+      const chosen = couriers.find((c) => c.courierProfileId === selected);
+      onAssigned(`Parcel ${parcel.trackingNumber} assigned to ${chosen ? courierName(chosen) : `courier #${selected}`}.`);
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not assign the parcel."));
       setSaving(false);
@@ -90,8 +97,8 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
         <>
           {suggested ? (
             <p className="mb-3 rounded-lg bg-mint/40 px-3 py-2 text-sm">
-              Suggested: courier #{suggested.courierProfileId} (User #{suggested.userId}), the least busy in the
-              parcel's zone with {suggested.activeDeliveries} active deliveries.
+              Suggested: {courierName(suggested)}, the least busy courier in {zoneName(suggested.zoneId)} with{" "}
+              {suggested.activeDeliveries} active deliveries.
             </p>
           ) : (
             <p className="mb-3 rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/60">
@@ -124,9 +131,9 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
                         onChange={() => setSelected(courier.courierProfileId)}
                       />
                       <span className="flex-1">
-                        <span className="font-semibold">Courier #{courier.courierProfileId}</span>{" "}
+                        <span className="font-semibold">{courierName(courier)}</span>{" "}
                         <span className="text-ink/50">
-                          · User #{courier.userId} · {VEHICLE_LABELS[courier.vehicleType]} · Zone #{courier.zoneId}
+                          · {VEHICLE_LABELS[courier.vehicleType]} · {zoneName(courier.zoneId)}
                         </span>
                       </span>
                       <span className="text-right">
