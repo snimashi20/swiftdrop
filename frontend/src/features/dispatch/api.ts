@@ -45,6 +45,8 @@ export const dispatchApi = {
     (await api.get<ReportSummary>("/dispatch/reports/summary", { params: { days } })).data,
 };
 
+// GET /api/v1/notifications/admin (notification-service, ADMIN and DISPATCHER).
+// The channel filter is called "type" in the API.
 export const notificationsApi = {
   list: async (params: {
     page?: number;
@@ -52,5 +54,8 @@ export const notificationsApi = {
     channel?: NotificationChannel;
     status?: NotificationDeliveryStatus;
     trackingNumber?: string;
-  } = {}) => (await api.get<NotificationPage>("/notifications", { params })).data,
+  } = {}) => {
+    const { channel, ...rest } = params;
+    return (await api.get<NotificationPage>("/notifications/admin", { params: { ...rest, type: channel } })).data;
+  },
 };

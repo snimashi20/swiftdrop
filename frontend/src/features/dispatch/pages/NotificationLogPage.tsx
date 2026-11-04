@@ -16,7 +16,7 @@ const NO_FILTERS: Filters = { channel: "", status: "", trackingNumber: "" };
 
 const STATUS_STYLE: Record<NotificationDeliveryStatus, string> = {
   SENT: "bg-mint text-ink",
-  PENDING: "bg-yellow-100 text-yellow-800",
+  PENDING: "border border-ink/15 bg-mist text-ink/60",
   FAILED: "bg-coral/15 text-coral",
 };
 
