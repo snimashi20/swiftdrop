@@ -36,14 +36,15 @@ jobs:
           cd backend/core-api
           mvn -B verify --no-transfer-progress
 
-      # The second Spring Boot app was never built here, so its tests (the required event-flow
-      # test among them) never ran on a pull request.
+      # The second Spring Boot app was never built here at all, so a change to it could not break
+      # the build. Tests tagged "docker" (Testcontainers: Postgres, RabbitMQ, Mailpit) are skipped
+      # because this runner has no Docker daemon; run them locally with `mvn verify`.
       - name: Build & test notification-service
         if: steps.check-pom.outputs.exists == 'true'
         run: |
           if [ -f backend/notification-service/pom.xml ]; then
             cd backend/notification-service
-            mvn -B verify --no-transfer-progress
+            mvn -B verify -DexcludedGroups=docker --no-transfer-progress
           else
             echo "No notification-service pom.xml yet – skipping"
           fi
