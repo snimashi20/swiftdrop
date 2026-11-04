@@ -12,10 +12,14 @@ import com.swiftdrop.merchant.repository.MerchantRepository;
 import com.swiftdrop.merchant.security.CurrentMerchantProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 @Slf4j
 @Service
@@ -73,5 +77,47 @@ public class MerchantService {
     public MerchantResponseDto getMyProfile(Authentication authentication) {
         Merchant merchant = currentMerchantProvider.getCurrentMerchant(authentication);
         return merchantMapper.toDto(merchant);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MerchantResponseDto> listForAdmin(MerchantStatus status, Pageable pageable) {
+        Page<Merchant> merchants = status == null
+                ? merchantRepository.findAll(pageable)
+                : merchantRepository.findByStatus(status, pageable);
+        return merchants.map(merchantMapper::toDto);
+    }
+
+    @Transactional
+    public MerchantResponseDto approve(Long merchantId, Authentication authentication) {
+        Merchant merchant = getPendingMerchant(merchantId);
+        merchant.setStatus(MerchantStatus.APPROVED);
+        merchant.setRejectionReason(null);
+        setReviewFields(merchant, authentication);
+        return merchantMapper.toDto(merchantRepository.save(merchant));
+    }
+
+    @Transactional
+    public MerchantResponseDto reject(Long merchantId, String reason, Authentication authentication) {
+        Merchant merchant = getPendingMerchant(merchantId);
+        merchant.setStatus(MerchantStatus.REJECTED);
+        merchant.setRejectionReason(reason.trim());
+        setReviewFields(merchant, authentication);
+        return merchantMapper.toDto(merchantRepository.save(merchant));
+    }
+
+    private Merchant getPendingMerchant(Long merchantId) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new com.swiftdrop.common.exception.NotFoundException("Merchant not found"));
+        if (merchant.getStatus() != MerchantStatus.PENDING) {
+            throw new ConflictException("Only pending merchants can be reviewed");
+        }
+        return merchant;
+    }
+
+    private void setReviewFields(Merchant merchant, Authentication authentication) {
+        User reviewer = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new com.swiftdrop.common.exception.NotFoundException("Admin user not found"));
+        merchant.setReviewedAt(Instant.now());
+        merchant.setReviewedBy(reviewer.getId());
     }
 }

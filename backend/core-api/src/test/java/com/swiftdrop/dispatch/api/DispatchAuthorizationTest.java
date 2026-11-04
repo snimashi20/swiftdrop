@@ -2,6 +2,7 @@ package com.swiftdrop.dispatch.api;
 
 import com.swiftdrop.dispatch.dto.AssignParcelRequest;
 import com.swiftdrop.dispatch.service.CourierProfileService;
+import com.swiftdrop.dispatch.service.DispatchLookupService;
 import com.swiftdrop.dispatch.service.DispatchService;
 import com.swiftdrop.dispatch.service.ReportService;
 import org.junit.jupiter.api.AfterEach;
@@ -43,9 +44,14 @@ class DispatchAuthorizationTest {
         @Bean DispatchService dispatchService() { return mock(DispatchService.class); }
         @Bean ReportService reportService() { return mock(ReportService.class); }
         @Bean CourierProfileService courierProfileService() { return mock(CourierProfileService.class); }
+        @Bean DispatchLookupService dispatchLookupService() { return mock(DispatchLookupService.class); }
 
         @Bean DispatchController dispatchController(DispatchService service) {
             return new DispatchController(service);
+        }
+
+        @Bean DispatchLookupController dispatchLookupController(DispatchLookupService service) {
+            return new DispatchLookupController(service);
         }
 
         @Bean ReportController reportController(ReportService service) {
@@ -60,6 +66,7 @@ class DispatchAuthorizationTest {
     @Autowired DispatchController dispatchController;
     @Autowired ReportController reportController;
     @Autowired CourierProfileController courierProfileController;
+    @Autowired DispatchLookupController dispatchLookupController;
 
     @AfterEach
     void clearLogin() {
@@ -83,7 +90,9 @@ class DispatchAuthorizationTest {
                 () -> dispatchController.suggestedCourier(5L),
                 () -> reportController.summary(7),
                 () -> courierProfileController.list(null, null, Pageable.unpaged()),
-                () -> courierProfileController.get(1L));
+                () -> courierProfileController.get(1L),
+                () -> dispatchLookupController.zones(),
+                () -> dispatchLookupController.courierCandidates());
     }
 
     @ParameterizedTest
