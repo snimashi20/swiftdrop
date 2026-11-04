@@ -39,8 +39,13 @@ jobs:
       # The second Spring Boot app was never built here at all, so a change to it could not break
       # the build. Its Testcontainers tests (Postgres, RabbitMQ, Mailpit) are tagged "docker";
       # add -DexcludedGroups=docker here if a runner ever turns out to have no Docker daemon.
+      #
+      # DOCKER_API_VERSION: the runner's Docker engine refuses the client's negotiated API 1.32
+      # ("Minimum supported API version is 1.40"), which made every Testcontainers test error.
       - name: Build & test notification-service
         if: steps.check-pom.outputs.exists == 'true'
+        env:
+          DOCKER_API_VERSION: "1.44"
         run: |
           if [ -f backend/notification-service/pom.xml ]; then
             cd backend/notification-service
