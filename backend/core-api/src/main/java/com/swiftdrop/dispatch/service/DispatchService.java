@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -131,9 +132,14 @@ public class DispatchService {
         Map<Long, Long> loads = parcelRepository.countActiveByCourier(TerminalStatuses.values()).stream()
                 .collect(Collectors.toMap(CourierLoad::getCourierId, CourierLoad::getActiveCount));
 
-        return findCouriers(zoneId, active).stream()
-                .map(c -> new CourierWorkloadResponse(c.getId(), c.getUserId(), c.getVehicleType(),
-                        c.getZoneId(), c.isActive(), loads.getOrDefault(c.getId(), 0L)))
+        List<CourierProfile> couriers = findCouriers(zoneId, active);
+        Map<Long, String> names = new HashMap<>();
+        userRepository.findAllById(couriers.stream().map(CourierProfile::getUserId).toList())
+                .forEach(user -> names.put(user.getId(), user.getFullName()));
+
+        return couriers.stream()
+                .map(c -> new CourierWorkloadResponse(c.getId(), c.getUserId(), names.get(c.getUserId()),
+                        c.getVehicleType(), c.getZoneId(), c.isActive(), loads.getOrDefault(c.getId(), 0L)))
                 .sorted(Comparator.comparingLong(CourierWorkloadResponse::activeDeliveries))
                 .toList();
     }

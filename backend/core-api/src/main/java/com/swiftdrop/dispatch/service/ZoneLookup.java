@@ -15,7 +15,23 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ZoneLookup {
 
+    /** One zone as shown in dropdowns. */
+    public record ZoneOption(Long id, String name, String district) {}
+
     private final EntityManager entityManager;
+
+    public List<ZoneOption> listAll() {
+        List<?> rows = entityManager
+                .createNativeQuery("select id, name, district from zones order by name")
+                .getResultList();
+        return rows.stream()
+                .map(row -> {
+                    Object[] cols = (Object[]) row;
+                    return new ZoneOption(((Number) cols[0]).longValue(),
+                            String.valueOf(cols[1]), String.valueOf(cols[2]));
+                })
+                .toList();
+    }
 
     public boolean exists(Long zoneId) {
         if (zoneId == null) {
