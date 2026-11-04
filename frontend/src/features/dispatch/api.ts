@@ -13,6 +13,9 @@ export const dispatchApi = {
   unassignedParcels: async (params: { district?: string; from?: string; to?: string; page?: number; size?: number } = {}) =>
     (await api.get<Page<UnassignedParcel>>("/dispatch/parcels/unassigned", { params })).data,
 
+  suggestedCourier: async (parcelId: number) =>
+    (await api.get<CourierWorkload>(`/dispatch/parcels/${parcelId}/suggested-courier`)).data,
+
   assignParcel: async (parcelId: number, courierProfileId: number) =>
     (await api.put<ParcelAssignment>(`/dispatch/parcels/${parcelId}/assign`, { courierProfileId })).data,
 
