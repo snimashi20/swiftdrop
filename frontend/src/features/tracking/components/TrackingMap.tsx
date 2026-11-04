@@ -32,13 +32,13 @@ function pinIcon(city: string, role: string, color: string) {
   });
 }
 
-function truckIcon(live: boolean) {
+function truckIcon(pulse: boolean) {
   return L.divIcon({
     className: 'sd-marker',
     iconSize: [44, 44],
     iconAnchor: [22, 22],
     html:
-      `<div class="sd-truck ${live ? 'sd-pulse' : ''}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
+      `<div class="sd-truck ${pulse ? 'sd-pulse' : ''}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
       `<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/>` +
       `<path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>` +
       `<circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg></div>`,
@@ -59,7 +59,7 @@ function FitRoute({ path, expanded }: { path: LatLng[]; expanded: boolean }) {
 
 function MapControls({ path }: { path: LatLng[] }) {
   const map = useMap();
-  const btn = 'flex h-10 w-10 items-center justify-center bg-white text-xl text-slate-700 hover:bg-slate-50';
+  const btn = 'flex h-10 w-10 items-center justify-center bg-white text-xl text-ink hover:bg-ink/5';
   return (
     <div
       ref={(el) => {
@@ -68,7 +68,7 @@ function MapControls({ path }: { path: LatLng[] }) {
           L.DomEvent.disableScrollPropagation(el);
         }
       }}
-      className="absolute right-4 top-1/2 z-[1000] flex -translate-y-1/2 flex-col divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 shadow-md"
+      className="absolute right-4 top-1/2 z-[1000] flex -translate-y-1/2 flex-col divide-y divide-ink/10 overflow-hidden rounded-xl border border-ink/10 shadow-md"
     >
       <button type="button" aria-label="Zoom in" onClick={() => map.zoomIn()} className={btn}>
         +
@@ -103,11 +103,12 @@ export default function TrackingMap({ pickupCity, dropoffCity, status, timeline,
   );
   const pickup = useMemo(() => pinIcon(pickupCity, 'Pickup', '#16A34A'), [pickupCity]);
   const dropoff = useMemo(() => pinIcon(dropoffCity, 'Delivery', '#DC2626'), [dropoffCity]);
-  const truck = useMemo(() => truckIcon(live && status !== 'DELIVERED'), [live, status]);
+  const moving = live && status !== 'DELIVERED' && status !== 'CANCELLED';
+  const truck = useMemo(() => truckIcon(moving), [moving]);
 
   if (!from || !to || !path || !split) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-100 p-6 text-center text-slate-600">
+      <div className="flex h-full items-center justify-center bg-ink/5 p-6 text-center text-ink/60">
         The map isn’t available for this route yet.
       </div>
     );
@@ -126,8 +127,8 @@ export default function TrackingMap({ pickupCity, dropoffCity, status, timeline,
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Polyline positions={split.remaining} pathOptions={{ color: '#93c5fd', weight: 5, dashArray: '8 10' }} />
-      <Polyline positions={split.done} pathOptions={{ color: '#2563eb', weight: 6, lineCap: 'round' }} />
+      <Polyline positions={split.remaining} pathOptions={{ color: '#9fb3b9', weight: 5, dashArray: '8 10' }} />
+      <Polyline positions={split.done} pathOptions={{ color: '#12252b', weight: 6, lineCap: 'round' }} />
       <Marker position={from} icon={pickup} alt={`Pickup: ${pickupCity}`} />
       <Marker position={to} icon={dropoff} alt={`Delivery: ${dropoffCity}`} />
       <Marker position={split.position} icon={truck} zIndexOffset={1000} alt="Parcel position (estimated)" />

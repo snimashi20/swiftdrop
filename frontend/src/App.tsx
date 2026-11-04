@@ -6,6 +6,7 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { PlaceholderPage } from "./features/dashboard/PlaceholderPage";
+import { ParcelDetailPage, PublicTrackingLayout, TrackLookupPage, TrackingPage } from "./features/tracking";
 import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
 import { UserProfilePage } from "./features/profile/UserProfilePage";
@@ -32,6 +33,11 @@ export function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
+        <Route element={<PublicTrackingLayout />}>
+          <Route path="/track" element={<TrackLookupPage />} />
+          <Route path="/track/:trackingNumber" element={<TrackingPage />} />
+        </Route>
+
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -39,6 +45,7 @@ export function App() {
             <Route path="/profile/addresses" element={<AddressBookPage />} />
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
             <Route path="/parcels" element={<PlaceholderPage />} />
+            <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
               <Route index element={<DispatcherDashboardPage />} />
               <Route path="unassigned" element={<UnassignedParcelsPage />} />

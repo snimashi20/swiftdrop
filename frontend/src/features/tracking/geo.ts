@@ -10,6 +10,7 @@ export const STATUS_PROGRESS: Record<ParcelStatus, number> = {
   OUT_FOR_DELIVERY: 0.88,
   DELIVERED: 1,
   FAILED: 0,
+  CANCELLED: 0,
 };
 
 export function progressFor(status: ParcelStatus, timeline: TimelineEntry[]): number {
