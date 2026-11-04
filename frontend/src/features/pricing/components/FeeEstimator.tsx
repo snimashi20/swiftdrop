@@ -19,7 +19,6 @@ export const FeeEstimator = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Don't fetch if required fields are missing
     if (!pickupDistrict || !dropoffDistrict || !weightKg || weightKg <= 0) {
       setQuote(null);
       return;
@@ -37,7 +36,6 @@ export const FeeEstimator = ({
         });
         setQuote(data);
       } catch (err: any) {
-        // Handle our custom NotFoundException (404) from the backend
         if (err.response?.status === 404) {
           setError(err.response.data.message || 'Zone not found for the selected district.');
         } else {
@@ -49,7 +47,6 @@ export const FeeEstimator = ({
       }
     };
 
-    // Debounce the API call so it doesn't fire on every keystroke
     const timeoutId = setTimeout(() => {
       getQuote();
     }, 500);
@@ -58,11 +55,11 @@ export const FeeEstimator = ({
   }, [pickupDistrict, dropoffDistrict, size, weightKg]);
 
   if (loading) {
-    return <div className="text-gray-500 text-sm animate-pulse">Calculating fee...</div>;
+    return <div className="text-ink/50 text-sm animate-pulse font-sans">Calculating fee...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500 text-sm">{error}</div>;
+    return <div className="text-coral text-sm font-sans">{error}</div>;
   }
 
   if (!quote) {
@@ -70,15 +67,15 @@ export const FeeEstimator = ({
   }
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-      <h3 className="text-lg font-semibold text-blue-900">Estimated Fee</h3>
-      <p className="text-3xl font-bold text-blue-700">Rs. {quote.fee.toFixed(2)}</p>
+    <div className="bg-mist border border-ink/10 rounded-lg p-4 mt-4 shadow-sm">
+      <h3 className="text-lg font-display font-semibold text-ink">Estimated Fee</h3>
+      <p className="text-3xl font-display font-bold text-ink">Rs. {quote.fee.toFixed(2)}</p>
       
-      <div className="mt-2 text-sm text-gray-600">
-        <p>From: <span className="font-medium">{quote.pickupZone}</span></p>
-        <p>To: <span className="font-medium">{quote.dropoffZone}</span></p>
+      <div className="mt-2 text-sm text-ink/70 font-sans">
+        <p>From: <span className="font-medium text-ink">{quote.pickupZone}</span></p>
+        <p>To: <span className="font-medium text-ink">{quote.dropoffZone}</span></p>
         {quote.interZone && (
-          <p className="text-orange-600 font-medium mt-1">* Includes inter-zone surcharge</p>
+          <p className="text-coral font-medium mt-1">* Includes inter-zone surcharge</p>
         )}
       </div>
     </div>
