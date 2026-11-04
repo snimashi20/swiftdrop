@@ -119,3 +119,47 @@ From Table 9 in the brief:
 * Do not touch `com.swiftdrop.parcel`, `com.swiftdrop.tracking`, `com.swiftdrop.pricing`, `com.swiftdrop.merchant`, `com.swiftdrop.courier`, or `com.swiftdrop.dispatch`.
 * Do not edit other members' Flyway migrations.
 * Do not modify `docker-compose.yml` or `ci.yml` (managed by M3).
+
+---
+
+## 5. Developer Technical Specification: OpenPDF Delivery Receipt
+
+### 5.1 Endpoint Contracts
+* **Primary Route:** `GET /api/v1/parcels/{id}/receipt`
+  * Path parameter `{id}` supports either numeric parcel ID (e.g. `1024`) or tracking number (e.g. `SD7K2M9QX4LP`).
+* **Backward Compatible Route:** `GET /api/v1/receipts/{trackingNumber}`
+* **Security & Authorization:** Requires authenticated session (`@PreAuthorize("isAuthenticated()")`).
+* **Response Headers:**
+  * `Content-Type: application/pdf`
+  * `Content-Disposition: attachment; filename="receipt-{trackingNumber}.pdf"`
+* **HTTP Status Codes:**
+  * `200 OK`: Valid PDF byte array stream (`%PDF-` format).
+  * `401 UNAUTHORIZED`: Unauthenticated request (no JWT).
+  * `403 FORBIDDEN`: IDOR violation (authenticated user is not the parcel owner and not `ADMIN`).
+  * `404 NOT FOUND`: Target parcel does not exist.
+
+### 5.2 IDOR Defense Architecture
+To prevent Insecure Direct Object Reference (IDOR):
+1. Extract current authenticated user principal (`currentUser`).
+2. Resolve the target `Parcel` entity.
+3. Compare:
+   $$\text{isOwner} = (\text{parcel.customerId} \neq \text{null} \land \text{parcel.customerId} == \text{currentUser.id})$$
+   $$\text{isAdmin} = \text{"ADMIN"}.\text{equalsIgnoreCase}(\text{currentUser.role})$$
+4. If neither condition is met, abort immediately and throw `ForbiddenException("IDOR Violation: Access denied to parcel receipt")`.
+
+### 5.3 PDF Structure & Layout Guidelines (OpenPDF)
+1. **Document Setup:** Standard ISO A4, portrait orientation with 36pt margins.
+2. **Color Palette:**
+   * Brand Primary Navy: `#1E3A5F` (RGB: `30, 58, 95`)
+   * Secondary Accent: `#2B4C7E`
+   * Neutral Dark: `#1F2937`
+   * Table Alternating Rows: `#F9FAFB` and `#FFFFFF`
+   * Subtle Border: `#E5E7EB`
+3. **Sections:**
+   * **Header Banner:** Company branding ("SwiftDrop Courier Services"), subtitle ("Official Delivery & Payment Receipt"), Issue Timestamp, Receipt Reference ID (`RCPT-{trackingNumber}`).
+   * **Sender & Recipient Information Grid:** 2-column card comparing Sender (Name, Phone, Pickup Address) with Recipient (Name, Phone, Drop-off Address).
+   * **Parcel Attributes:** Tracking number, weight in kg, parcel size class (S/M/L), service type.
+   * **Status Milestone Timeline:** Chronological list of status changes with timestamps queried via `StatusHistoryRepository`.
+   * **Fee Breakdown Table:** Itemized charges in Sri Lankan Rupees (LKR), service handling, and prominent Total Paid row.
+   * **Footer:** Security watermark, customer support URL (`swiftdrop.lk`), and system disclaimer.
+

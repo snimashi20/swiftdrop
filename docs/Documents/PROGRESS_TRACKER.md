@@ -26,13 +26,13 @@
 | :---: | :--- | :---: | :---: | :--- |
 | **[BE]** | **Profile API**: view/update name & phone (`07XXXXXXXX` / `+947XXXXXXXX`), saved addresses | Nov 4 | ✅ **DONE** | `AuthController.java` & `AddressController.java` |
 | **[BE]** | **Admin user API**: list/search users with role filter, enable/disable, change role, create staff | Nov 6 | ✅ **DONE** | `AdminUserController.java` (`GET`, `PATCH /status`, `PUT /role`, `POST /staff`) |
-| **[BE]** | **Delivery receipt PDF (OpenPDF)**: tracking #, addresses, weight, fee, status dates | Nov 8 | ✅ **DONE** | `ReceiptService.java` & `ReceiptController.java` (IDOR protected) |
+| **[BE]** | **Delivery receipt PDF (OpenPDF)**: tracking #, addresses, weight, fee, status dates | Nov 8 | ✅ **DONE** | `ReceiptDataDto.java`, `ReceiptService.java` & `ReceiptController.java` (`GET /api/v1/parcels/{id}/receipt` with IDOR defense) |
 | **[FE]** | **Profile page with address book** | Nov 9 | ✅ **DONE** | `UserProfilePage.tsx` & `AddressBookPage.tsx` under `src/features/profile/` |
 | **[FE]** | **Admin Users page**: filter by role, toggle enable/disable, create staff modal | Nov 10 | ⏳ In Progress | Role-protected dashboard view |
 | **[FE]** | **"Download receipt" button** in delivery history table | Nov 10 | ⏳ In Progress | Calls `/api/v1/receipts/{trackingNumber}` |
 | **[Test]** | **Google success handler test** (new user vs existing user linking, disabled check) | Nov 12 | ✅ **DONE** | `OAuth2AuthenticationSuccessHandlerTest.java` (5 unit tests passing) |
 | **[Test]** | **Admin-only endpoints authorization tests** | Nov 12 | ✅ **DONE** | `AdminUserControllerTest.java` (10 unit tests passing) |
-| **[Test]** | **Receipt ownership authorization test** (owner-only download & IDOR defense) | Nov 13 | ✅ **DONE** | `ReceiptControllerTest.java` (5 unit tests passing) |
+| **[Test]** | **Receipt ownership authorization & PDF tests** (owner-only download, IDOR defense & %PDF- header) | Nov 13 | ✅ **DONE** | `ReceiptControllerTest.java` (6 tests) & `ReceiptServiceTest.java` (3 tests) passing |
 | **[Test]** | **Address ownership & JWT validation tests** | Nov 13 | ✅ **DONE** | `AddressControllerTest.java` & `JwtServiceTest.java` passing |
 
 ---
