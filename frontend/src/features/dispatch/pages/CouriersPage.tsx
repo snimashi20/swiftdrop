@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
 import { PageHeader } from "../components/PageHeader";
-import type { CourierWorkload, VehicleType } from "../types";
+import type { CourierCandidate, CourierWorkload, VehicleType, ZoneOption } from "../types";
 
 const VEHICLES: { value: VehicleType; label: string }[] = [
   { value: "BICYCLE", label: "Bicycle" },
@@ -29,6 +29,8 @@ const inputClass =
 export function CouriersPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [couriers, setCouriers] = useState<CourierWorkload[]>([]);
+  const [zones, setZones] = useState<ZoneOption[]>([]);
+  const [candidates, setCandidates] = useState<CourierCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -39,6 +41,8 @@ export function CouriersPage() {
   const [vehicleType, setVehicleType] = useState<VehicleType>("MOTORBIKE");
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? `Zone #${id}`;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,9 +57,23 @@ export function CouriersPage() {
     }
   }, [filter]);
 
+  const loadLookups = useCallback(async () => {
+    try {
+      const [zoneList, candidateList] = await Promise.all([dispatchApi.zones(), dispatchApi.courierCandidates()]);
+      setZones(zoneList);
+      setCandidates(candidateList);
+    } catch (err) {
+      setFormError(getApiErrorMessage(err, "Could not load the courier account and zone lists."));
+    }
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadLookups();
+  }, [loadLookups]);
 
   const toggleActive = async (courier: CourierWorkload) => {
     setBusyId(courier.courierProfileId);
@@ -63,7 +81,9 @@ export function CouriersPage() {
     setNotice("");
     try {
       await dispatchApi.updateCourier(courier.courierProfileId, { active: !courier.active });
-      setNotice(`Courier #${courier.courierProfileId} is now ${courier.active ? "inactive" : "active"}.`);
+      setNotice(
+        `${courier.courierName ?? `Courier #${courier.courierProfileId}`} is now ${courier.active ? "inactive" : "active"}.`,
+      );
       await load();
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not update the courier."));
@@ -78,8 +98,8 @@ export function CouriersPage() {
     setNotice("");
     const userIdNumber = Number(userId);
     const zoneIdNumber = Number(zoneId);
-    if (!Number.isInteger(userIdNumber) || userIdNumber <= 0 || !Number.isInteger(zoneIdNumber) || zoneIdNumber <= 0) {
-      setFormError("Enter a valid user ID and zone ID (whole numbers above 0).");
+    if (!userId || !zoneId || !Number.isInteger(userIdNumber) || !Number.isInteger(zoneIdNumber)) {
+      setFormError("Select a courier account and a zone.");
       return;
     }
     setSaving(true);
@@ -88,7 +108,7 @@ export function CouriersPage() {
       setNotice("Courier profile created.");
       setUserId("");
       setZoneId("");
-      await load();
+      await Promise.all([load(), loadLookups()]);
     } catch (err) {
       setFormError(getApiErrorMessage(err, "Could not create the courier profile."));
     } finally {
@@ -149,9 +169,9 @@ export function CouriersPage() {
               <tbody>
                 {couriers.map((courier) => (
                   <tr key={courier.courierProfileId} className="border-b border-ink/5 last:border-0">
-                    <td className="py-3 pr-4 font-medium">User #{courier.userId}</td>
+                    <td className="py-3 pr-4 font-medium">{courier.courierName ?? `User #${courier.userId}`}</td>
                     <td className="py-3 pr-4">{vehicleLabel(courier.vehicleType)}</td>
-                    <td className="py-3 pr-4">Zone #{courier.zoneId}</td>
+                    <td className="py-3 pr-4">{zoneName(courier.zoneId)}</td>
                     <td className="py-3 pr-4 font-semibold">{courier.activeDeliveries}</td>
                     <td className="py-3 pr-4">
                       <span
@@ -183,18 +203,24 @@ export function CouriersPage() {
       <section className="rounded-2xl border border-ink/10 bg-white p-5">
         <h2 className="font-display text-xl font-bold">Create a courier profile</h2>
         <p className="mt-1 text-sm text-ink/55">
-          The user must already have an account with the COURIER role (an admin can create one on the Users page).
+          Pick a user who already has an account with the COURIER role (an admin can create one on the Users page).
         </p>
         <form onSubmit={createCourier} className="mt-5 grid gap-4 sm:grid-cols-3">
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-ink/80">User ID</span>
-            <input
-              className={inputClass}
-              inputMode="numeric"
-              placeholder="e.g. 12"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-            />
+            <span className="text-sm font-semibold text-ink/80">Courier account</span>
+            <select className={inputClass} value={userId} onChange={(e) => setUserId(e.target.value)}>
+              <option value="">Select a courier account</option>
+              {candidates.map((candidate) => (
+                <option key={candidate.userId} value={candidate.userId}>
+                  {candidate.fullName ?? `User #${candidate.userId}`}
+                </option>
+              ))}
+            </select>
+            {candidates.length === 0 && (
+              <span className="block text-xs text-ink/45">
+                No courier accounts without a profile yet. An admin can create a user with the COURIER role.
+              </span>
+            )}
           </label>
           <label className="block space-y-1.5">
             <span className="text-sm font-semibold text-ink/80">Vehicle</span>
@@ -211,14 +237,15 @@ export function CouriersPage() {
             </select>
           </label>
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-ink/80">Zone ID</span>
-            <input
-              className={inputClass}
-              inputMode="numeric"
-              placeholder="e.g. 1"
-              value={zoneId}
-              onChange={(e) => setZoneId(e.target.value)}
-            />
+            <span className="text-sm font-semibold text-ink/80">Zone</span>
+            <select className={inputClass} value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
+              <option value="">Select a zone</option>
+              {zones.map((zone) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.name} ({zone.district})
+                </option>
+              ))}
+            </select>
           </label>
           {formError && (
             <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral sm:col-span-3">{formError}</p>

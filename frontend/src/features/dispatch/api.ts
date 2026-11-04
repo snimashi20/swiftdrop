@@ -1,5 +1,6 @@
 import { api } from "../../lib/api";
 import type {
+  CourierCandidate,
   CourierProfile,
   CourierWorkload,
   Page,
@@ -7,6 +8,7 @@ import type {
   ReportSummary,
   UnassignedParcel,
   VehicleType,
+  ZoneOption,
 } from "./types";
 
 export const dispatchApi = {
@@ -30,6 +32,11 @@ export const dispatchApi = {
 
   updateCourier: async (id: number, body: { vehicleType?: VehicleType; zoneId?: number; active?: boolean }) =>
     (await api.patch<CourierProfile>(`/dispatch/couriers/${id}`, body)).data,
+
+  courierCandidates: async () =>
+    (await api.get<CourierCandidate[]>("/dispatch/lookups/courier-candidates")).data,
+
+  zones: async () => (await api.get<ZoneOption[]>("/dispatch/lookups/zones")).data,
 
   reportSummary: async (days: 7 | 30) =>
     (await api.get<ReportSummary>("/dispatch/reports/summary", { params: { days } })).data,
