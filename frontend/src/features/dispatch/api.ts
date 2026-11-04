@@ -3,6 +3,9 @@ import type {
   CourierCandidate,
   CourierProfile,
   CourierWorkload,
+  NotificationChannel,
+  NotificationDeliveryStatus,
+  NotificationPage,
   Page,
   ParcelAssignment,
   ReportSummary,
@@ -40,4 +43,14 @@ export const dispatchApi = {
 
   reportSummary: async (days: 7 | 30) =>
     (await api.get<ReportSummary>("/dispatch/reports/summary", { params: { days } })).data,
+};
+
+export const notificationsApi = {
+  list: async (params: {
+    page?: number;
+    size?: number;
+    channel?: NotificationChannel;
+    status?: NotificationDeliveryStatus;
+    trackingNumber?: string;
+  } = {}) => (await api.get<NotificationPage>("/notifications", { params })).data,
 };
