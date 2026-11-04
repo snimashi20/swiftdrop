@@ -5,6 +5,7 @@ import com.swiftdrop.dispatch.domain.VehicleType;
 public record CourierWorkloadResponse(
         Long courierProfileId,
         Long userId,
+        String courierName,
         VehicleType vehicleType,
         Long zoneId,
         boolean active,
