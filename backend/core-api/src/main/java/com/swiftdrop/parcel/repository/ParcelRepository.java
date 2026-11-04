@@ -1,6 +1,9 @@
 package com.swiftdrop.parcel.repository;
 
 import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.domain.ParcelStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +19,12 @@ public interface ParcelRepository extends JpaRepository<Parcel, Long> {
     Optional<Parcel> findByTrackingNumber(String trackingNumber);
 
     List<Parcel> findByAssignedCourierId(Long assignedCourierId);
+
+    /** A customer's own parcels, newest first when the Pageable sorts by createdAt. */
+    Page<Parcel> findByCustomerId(Long customerId, Pageable pageable);
+
+    /** Same, filtered by one status. */
+    Page<Parcel> findByCustomerIdAndStatus(Long customerId, ParcelStatus status, Pageable pageable);
 
     /**
      * Returns all active/in-progress parcels OR parcels updated today for this courier.
