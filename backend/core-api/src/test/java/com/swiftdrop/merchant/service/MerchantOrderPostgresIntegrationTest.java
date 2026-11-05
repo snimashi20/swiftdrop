@@ -19,8 +19,6 @@ import com.swiftdrop.merchant.dto.MerchantOrderRequest;
 import com.swiftdrop.parcel.domain.ParcelSize;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import com.swiftdrop.parcel.service.TrackingNumberGenerator;
-import com.swiftdrop.pricing.dto.QuoteResponse;
-import com.swiftdrop.pricing.service.PricingService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -59,7 +57,6 @@ class MerchantOrderPostgresIntegrationTest {
         registry.add("GOOGLE_CLIENT_SECRET", () -> "integration-test");
     }
 
-    @Autowired PricingService pricingService;
     @Autowired TrackingNumberGenerator trackingNumberGenerator;
     @Autowired RabbitTemplate rabbitTemplate;
     @Autowired MerchantOrderService orderService;
@@ -69,7 +66,6 @@ class MerchantOrderPostgresIntegrationTest {
 
     @TestConfiguration
     static class Mocks {
-        @Bean @Primary PricingService pricingService() { return org.mockito.Mockito.mock(PricingService.class); }
         @Bean @Primary TrackingNumberGenerator trackingNumberGenerator() {
             return org.mockito.Mockito.mock(TrackingNumberGenerator.class);
         }
@@ -90,8 +86,6 @@ class MerchantOrderPostgresIntegrationTest {
                 .status(MerchantStatus.APPROVED)
                 .build());
         merchantId = merchant.getId();
-        when(pricingService.calculateQuote(any())).thenReturn(QuoteResponse.builder()
-                .fee(new BigDecimal("100.00")).pickupZoneId(1L).dropoffZoneId(1L).build());
         AtomicInteger sequence = new AtomicInteger();
         when(trackingNumberGenerator.generate()).thenAnswer(invocation ->
                 sequence.getAndIncrement() == 0 ? "SDABCDEFGHIJ" : "SDKLMNOPQRS1");
@@ -120,11 +114,8 @@ class MerchantOrderPostgresIntegrationTest {
 
     @Test
     void failedAttemptLeavesNoOrphanParcelOrEvent() {
-        when(pricingService.calculateQuote(any()))
-                .thenThrow(new com.swiftdrop.common.exception.NotFoundException("Unknown district"));
-
         assertThrows(ValidationException.class,
-                () -> orderService.create(merchantId, "failed-key", request()));
+                () -> orderService.create(merchantId, "failed-key", request("Unknown District", "Kandy")));
 
         assertEquals(0, orderRepository.findByMerchantIdAndIdempotencyKey(
                 merchantId, "failed-key").stream().count());
@@ -136,18 +127,9 @@ class MerchantOrderPostgresIntegrationTest {
 
     @Test
     void bulkFailureRollsBackAllParcelsAndOrders() {
-        AtomicInteger quoteCalls = new AtomicInteger();
-        when(pricingService.calculateQuote(any())).thenAnswer(invocation -> {
-            if (quoteCalls.incrementAndGet() == 3) {
-                throw new com.swiftdrop.common.exception.NotFoundException("Unknown district");
-            }
-            return QuoteResponse.builder().fee(new BigDecimal("100.00"))
-                    .pickupZoneId(1L).dropoffZoneId(1L).build();
-        });
-
         assertThrows(ValidationException.class,
                 () -> orderService.createBulk(merchantId, "bulk-failure",
-                        List.of(request(), request(), request())));
+                        List.of(request(), request(), request("Unknown District", "Kandy"))));
 
         assertEquals(0, orderRepository.findByMerchantIdAndIdempotencyKey(
                 merchantId, "bulk-failure:0").stream().count());
@@ -166,15 +148,19 @@ class MerchantOrderPostgresIntegrationTest {
     }
 
     private MerchantOrderRequest request() {
+        return request("Colombo", "Kandy");
+    }
+
+    private MerchantOrderRequest request(String pickupDistrict, String dropoffDistrict) {
         MerchantOrderRequest request = new MerchantOrderRequest();
         var pickup = new com.swiftdrop.parcel.dto.ParcelAddressDto();
         pickup.setLine1("pickup");
         pickup.setCity("city");
-        pickup.setDistrict("district");
+        pickup.setDistrict(pickupDistrict);
         var dropoff = new com.swiftdrop.parcel.dto.ParcelAddressDto();
         dropoff.setLine1("dropoff");
         dropoff.setCity("city");
-        dropoff.setDistrict("district");
+        dropoff.setDistrict(dropoffDistrict);
         request.setPickup(pickup);
         request.setDropoff(dropoff);
         request.setReceiverName("receiver");
