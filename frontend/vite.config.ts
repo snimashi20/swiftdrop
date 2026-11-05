@@ -6,6 +6,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // Must stay above '/api': the notifications API lives in notification-service on 8081.
+      // Vite takes the first key that matches the path.
+      '/api/v1/notifications': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,

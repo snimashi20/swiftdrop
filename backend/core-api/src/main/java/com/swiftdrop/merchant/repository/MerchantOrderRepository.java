@@ -15,5 +15,12 @@ public interface MerchantOrderRepository extends JpaRepository<MerchantOrder, Lo
 
     Optional<MerchantOrder> findByMerchantIdAndParcelId(Long merchantId, Long parcelId);
 
+    @org.springframework.data.jpa.repository.Query("""
+            select o from MerchantOrder o
+            join Parcel p on p.id = o.parcelId
+            where o.merchant.id = :merchantId and p.trackingNumber = :trackingNumber
+            """)
+    Optional<MerchantOrder> findByMerchantIdAndParcelTrackingNumber(Long merchantId, String trackingNumber);
+
     Page<MerchantOrder> findByMerchantIdOrderByCreatedAtDesc(Long merchantId, Pageable pageable);
 }
