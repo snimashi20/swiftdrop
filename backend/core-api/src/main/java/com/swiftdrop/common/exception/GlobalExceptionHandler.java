@@ -34,6 +34,18 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), req);
     }
 
+    @ExceptionHandler(IdempotencyKeyRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyKeyRequired(
+            IdempotencyKeyRequiredException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "IDEMPOTENCY_KEY_REQUIRED", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            ValidationException ex, HttpServletRequest req) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", ex.getMessage(), req);
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest req) {
         return buildResponse(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), req);
