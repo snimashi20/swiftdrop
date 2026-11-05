@@ -47,7 +47,7 @@ git clone https://github.com/<owner>/swiftdrop.git
 cd swiftdrop
 
 # 1. Create your local env file and fill in the values
-cp .env.example .env
+cp .env.example .env      # Windows PowerShell: Copy-Item .env.example .env
 
 # 2. Start everything
 docker compose up
@@ -65,9 +65,37 @@ docker compose up
 ### Demo Accounts & Testing
 
 Default roles: `CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATCHER`, `ADMIN`.
-- **Google OAuth Login:** Use "Continue with Google" on `http://localhost:5173/login` or `http://localhost:8080/oauth2/authorization/google`.
+- **Google OAuth Login:** Use "Continue with Google" on `http://localhost:3000/login` (Docker) or `http://localhost:5173/login` (dev server), or open `http://localhost:8080/oauth2/authorization/google`. This needs real Google keys in `.env`.
 - **Admin Endpoints:** Accessible under `/api/v1/admin/**` (requires `ROLE_ADMIN`).
 - **Swagger Documentation:** Explore all REST routes at `http://localhost:8080/swagger-ui.html`.
+
+### Load the demo data
+
+When `docker compose up` is running and core-api shows `healthy` in `docker compose ps`, load the demo users and parcels. Run this from the repository root.
+
+Windows PowerShell:
+
+```powershell
+Get-Content scripts\demo-seed.sql -Raw | docker compose exec -T postgres psql -U swiftdrop -d swiftdrop -v ON_ERROR_STOP=1
+```
+
+macOS / Linux:
+
+```bash
+docker compose exec -T postgres psql -U swiftdrop -d swiftdrop -v ON_ERROR_STOP=1 < scripts/demo-seed.sql
+```
+
+It is safe to run twice. Every demo account uses the password `Demo@1234`:
+
+| Role | Email |
+| --- | --- |
+| `ADMIN` | `admin@demo.swiftdrop.lk` |
+| `DISPATCHER` | `dispatcher@demo.swiftdrop.lk` |
+| `COURIER` | `courier@demo.swiftdrop.lk` |
+| `MERCHANT` | `merchant@demo.swiftdrop.lk` |
+| `CUSTOMER` | `customer@demo.swiftdrop.lk` and `customer2@demo.swiftdrop.lk` |
+
+The script also creates 8 parcels, `SDDEMO000001` to `SDDEMO000008`: one in each status (`CREATED` to `CANCELLED`), plus one that belongs to the second customer.
 
 ---
 
