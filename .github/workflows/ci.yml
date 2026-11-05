@@ -36,6 +36,13 @@ jobs:
           cd backend/core-api
           mvn -B verify --no-transfer-progress
 
+      - name: Upload coverage report
+        if: always() && steps.check-pom.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/core-api/target/site/jacoco
+          if-no-files-found: warn
       # The second Spring Boot app was never built here at all, so a change to it could not break
       # the build. Its Testcontainers tests (Postgres, RabbitMQ, Mailpit) are tagged "docker";
       # add -DexcludedGroups=docker here if a runner ever turns out to have no Docker daemon.
