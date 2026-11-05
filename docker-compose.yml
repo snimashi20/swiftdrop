@@ -111,7 +111,9 @@ services:
     build: ./frontend
     container_name: swiftdrop-frontend
     depends_on:
+      # nginx resolves both upstreams when it starts, so each container must already exist.
       - core-api
+      - notification-service
     ports:
       - "3000:80"
 
