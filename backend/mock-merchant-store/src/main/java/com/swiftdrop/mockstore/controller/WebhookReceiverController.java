@@ -119,9 +119,18 @@ public class WebhookReceiverController {
                         ? "<span style='background:#EFF6FF; color:#1E3A5F; padding:3px 8px; border-radius:999px; font-weight:600; font-size:11px;'>VERIFIED (HMAC-SHA256)</span>"
                         : "<span style='background:#FEF9C3; color:#854D0E; padding:3px 8px; border-radius:999px; font-weight:600; font-size:11px;'>INVALID / MISSING</span>";
 
+                String statusFlow;
+                if (d.getOldStatus() == null || "null".equalsIgnoreCase(d.getOldStatus()) || "INITIAL".equalsIgnoreCase(d.getOldStatus())) {
+                    statusFlow = "<span style='color:#9CA3AF; font-style:italic;'>[Created]</span> &rarr; <b>" + d.getNewStatus() + "</b>";
+                } else if ("CANCELLED".equalsIgnoreCase(d.getNewStatus())) {
+                    statusFlow = d.getOldStatus() + " &rarr; <span style='background:#FEE2E2; color:#991B1B; padding:2px 6px; border-radius:4px; font-weight:700;'>CANCELLED</span>";
+                } else {
+                    statusFlow = d.getOldStatus() + " &rarr; <b>" + d.getNewStatus() + "</b>";
+                }
+
                 rows.append("<tr style='border-bottom: 1px solid #E5E7EB; font-size: 13px;'>")
                     .append("<td style='padding: 12px 14px; color: #1E3A5F; font-weight: 600;'>").append(d.getTrackingNumber()).append("</td>")
-                    .append("<td style='padding: 12px 14px; color: #4B5563;'>").append(d.getOldStatus()).append(" &rarr; <b>").append(d.getNewStatus()).append("</b></td>")
+                    .append("<td style='padding: 12px 14px; color: #4B5563;'>").append(statusFlow).append("</td>")
                     .append("<td style='padding: 12px 14px;'>").append(statusBadge).append("</td>")
                     .append("<td style='padding: 12px 14px;'>").append(sigBadge).append("</td>")
                     .append("<td style='padding: 12px 14px; font-family: monospace; font-size: 11px; color: #4B5563;'>").append(d.getSignature() != null && d.getSignature().length() > 16 ? d.getSignature().substring(0, 16) + "..." : d.getSignature()).append("</td>")

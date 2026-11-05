@@ -33,7 +33,7 @@ public class WebhookDelivery {
     @Column(name = "event_id", nullable = false, length = 64)
     private String eventId;
 
-    @Column(name = "tracking_number", nullable = false, length = 16)
+    @Column(name = "tracking_number", nullable = false, length = 12)
     private String trackingNumber;
 
     @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
