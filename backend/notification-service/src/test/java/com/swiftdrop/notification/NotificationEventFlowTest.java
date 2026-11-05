@@ -6,6 +6,7 @@ import com.swiftdrop.notification.domain.NotificationStatus;
 import com.swiftdrop.notification.domain.NotificationType;
 import com.swiftdrop.notification.event.ParcelStatusChangedEvent;
 import com.swiftdrop.notification.repository.NotificationLogRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@Tag("docker")
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")
