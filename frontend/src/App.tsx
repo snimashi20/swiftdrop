@@ -11,6 +11,7 @@ import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
+import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -61,6 +62,11 @@ export function App() {
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
             </Route>
+            
+            <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<AdminPricingPage />} />
+            </Route>
+
           </Route>
         </Route>
 
