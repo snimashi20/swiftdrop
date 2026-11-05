@@ -6,7 +6,8 @@ import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
-// Table is created by core-api's Flyway migrations (V202610262300, V202610311800); keep this mapping in sync.
+// Table is created by core-api's Flyway migrations (V202610262300, V202610311800, V202611041000);
+// keep this mapping in sync.
 @Entity
 @Table(name = "notification_log")
 @Getter
@@ -55,6 +56,9 @@ public class NotificationLog {
     private Instant createdAt;
 
     private Instant sentAt;
+
+    /** When the customer saw this notification; null means unread. */
+    private Instant readAt;
 
     @PrePersist
     void onCreate() {
