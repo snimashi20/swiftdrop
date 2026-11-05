@@ -133,10 +133,51 @@ $$\text{V}\langle yyyyMMddHHmm \rangle\text{\_\_}\langle \text{module}\rangle\te
 14. `V202610312100__lamya_courier_profile_fks.sql`: Foreign keys for courier profiles and workload tracking
 15. `V202610312200__nethmini_status_history_fk.sql`: Foreign key relationship for parcel status transitions
 16. `V202611021200__binuwara_merchant_user_fks.sql`: User relationship constraints for merchant accounts
+17. `V202611041000__sithmi_notification_read_at.sql`: `read_at` on `notification_log` for the unread count
 
 ---
 
-## 6. Delivery Receipt PDF API Contract (Member M2)
+## 6. Notifications API (notification-service, port 8081)
+
+Served by **notification-service**, not core-api. The browser reaches it on the same origin:
+nginx and the Vite dev server send `/api/v1/notifications` to port 8081, everything else to 8080.
+Do not add a `/api/v1/notifications` route to core-api.
+
+Authentication is the **same Bearer token core-api issues** (shared `JWT_SECRET`). The role and the
+enabled flag are re-read from the `users` table on every request, so disabling an account takes
+effect at once. Errors use the standard error JSON of section 2.
+
+| Method & path | Who | Returns |
+| :--- | :--- | :--- |
+| `GET /api/v1/notifications/me` | any signed-in user | The caller's own notifications, newest first |
+| `GET /api/v1/notifications/me/unread-count` | any signed-in user | `{ "unreadCount": 3 }` for the bell |
+| `POST /api/v1/notifications/me/read-all` | any signed-in user | `{ "updated": 4 }` |
+| `POST /api/v1/notifications/{id}/read` | any signed-in user | `{ "updated": 2 }`; 404 if the row is another user's |
+| `GET /api/v1/notifications/admin` | `ADMIN`, `DISPATCHER` | The delivery log, one row per channel |
+
+Query parameters: `page` (from 0) and `size` (1–100) everywhere; `unreadOnly` on `/me`; `type`
+(`EMAIL`, `SMS`), `status` (`PENDING`, `SENT`, `FAILED`), `trackingNumber` and `customerId` on
+`/admin`. All filters are optional and combine.
+
+Every paged response has the same shape:
+
+```json
+{ "content": [], "page": 0, "size": 20, "totalElements": 0, "totalPages": 0, "last": true }
+```
+
+**`/me` returns one item per status change**, even though a change is both e-mailed and texted, and
+it carries no channel or recipient: `id`, `parcelId`, `trackingNumber`, `oldStatus`, `newStatus`,
+`message` ("Parcel SD7K2M9QX4LP is now in transit."), `createdAt`, `read`, `readAt`. Marking one
+item read marks every channel of that status change.
+
+**`/admin` returns one row per delivery attempt**, adding `eventId`, `customerId`, `type`,
+`recipient`, `status`, `failureReason` and `sentAt`. `recipient` is always the masked value the
+consumer stored (`s***@example.com`, `*******567`); the service never stores or returns a full
+e-mail address or phone number.
+
+---
+
+## 7. Delivery Receipt PDF API Contract (Member M2)
 
 | Property | Value |
 | :--- | :--- |
@@ -147,4 +188,3 @@ $$\text{V}\langle yyyyMMddHHmm \rangle\text{\_\_}\langle \text{module}\rangle\te
 | **Response Type** | `application/pdf` |
 | **Content-Disposition** | `attachment; filename="receipt-{trackingNumber}.pdf"` |
 | **IDOR Error** | HTTP `403 FORBIDDEN` with standard error JSON (`ACCESS_DENIED` or `FORBIDDEN`) |
-
