@@ -2,6 +2,7 @@ package com.swiftdrop.merchant.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.timeout;
@@ -25,10 +26,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,6 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(classes = {CoreApiApplication.class, MerchantOrderPostgresIntegrationTest.Mocks.class})
+@Timeout(value = 60, unit = TimeUnit.SECONDS)
 class MerchantOrderPostgresIntegrationTest {
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -55,6 +59,8 @@ class MerchantOrderPostgresIntegrationTest {
         registry.add("JWT_SECRET", () -> "integration-test-secret-integration-test-secret");
         registry.add("GOOGLE_CLIENT_ID", () -> "integration-test");
         registry.add("GOOGLE_CLIENT_SECRET", () -> "integration-test");
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "6");
+        registry.add("spring.datasource.hikari.minimum-idle", () -> "2");
     }
 
     @Autowired TrackingNumberGenerator trackingNumberGenerator;
@@ -99,11 +105,16 @@ class MerchantOrderPostgresIntegrationTest {
 
     @Test
     void concurrentSameKeyCreatesOneParcelAndPublishesOneEventAfterCommit() throws Exception {
+        CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
-        Future<String> first = executor.submit(() -> createAtSameMoment(start));
-        Future<String> second = executor.submit(() -> createAtSameMoment(start));
+        Future<String> first = executor.submit(() -> createAtSameMoment(ready, start));
+        Future<String> second = executor.submit(() -> createAtSameMoment(ready, start));
 
-        assertEquals(first.get(), second.get());
+        assertTrue(ready.await(10, TimeUnit.SECONDS), "Concurrent workers did not become ready");
+        start.countDown();
+        String firstTracking = first.get(30, TimeUnit.SECONDS);
+        String secondTracking = second.get(30, TimeUnit.SECONDS);
+        assertEquals(firstTracking, secondTracking);
         assertEquals(1, orderRepository.findByMerchantIdAndIdempotencyKey(
                 merchantId, "concurrent-key").stream().count());
         assertEquals(1, parcelRepository.findAll().stream()
@@ -141,10 +152,18 @@ class MerchantOrderPostgresIntegrationTest {
                 .filter(parcel -> merchantId.equals(parcel.getMerchantId())).count());
     }
 
-    private String createAtSameMoment(CountDownLatch start) throws Exception {
-        start.await();
-        return orderService.create(merchantId, "concurrent-key", request())
-                .response().getTrackingNumber();
+    private String createAtSameMoment(CountDownLatch ready, CountDownLatch start) throws Exception {
+        ready.countDown();
+        try {
+            if (!start.await(30, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Concurrent test did not release its start latch");
+            }
+            return orderService.create(merchantId, "concurrent-key", request())
+                    .response().getTrackingNumber();
+        } catch (Throwable failure) {
+            start.countDown();
+            throw failure;
+        }
     }
 
     private MerchantOrderRequest request() {
