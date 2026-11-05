@@ -3,6 +3,9 @@ import type {
   CourierCandidate,
   CourierProfile,
   CourierWorkload,
+  NotificationChannel,
+  NotificationDeliveryStatus,
+  NotificationPage,
   Page,
   ParcelAssignment,
   ReportSummary,
@@ -40,4 +43,19 @@ export const dispatchApi = {
 
   reportSummary: async (days: 7 | 30) =>
     (await api.get<ReportSummary>("/dispatch/reports/summary", { params: { days } })).data,
+};
+
+// GET /api/v1/notifications/admin (notification-service, ADMIN and DISPATCHER).
+// The channel filter is called "type" in the API.
+export const notificationsApi = {
+  list: async (params: {
+    page?: number;
+    size?: number;
+    channel?: NotificationChannel;
+    status?: NotificationDeliveryStatus;
+    trackingNumber?: string;
+  } = {}) => {
+    const { channel, ...rest } = params;
+    return (await api.get<NotificationPage>("/notifications/admin", { params: { ...rest, type: channel } })).data;
+  },
 };
