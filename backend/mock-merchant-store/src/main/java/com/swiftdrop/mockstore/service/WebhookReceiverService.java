@@ -1,7 +1,7 @@
 package com.swiftdrop.mockstore.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.swiftdrop.mockstore.model.ReceivedWebhook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +45,10 @@ public class WebhookReceiverService {
 
         try {
             JsonNode node = objectMapper.readTree(payload);
-            if (node.has("trackingNumber")) trackingNumber = node.get("trackingNumber").asText();
-            if (node.has("eventId")) eventId = node.get("eventId").asText();
-            if (node.has("oldStatus")) oldStatus = node.get("oldStatus").asText();
-            if (node.has("newStatus")) newStatus = node.get("newStatus").asText();
+            if (node.has("trackingNumber")) trackingNumber = node.get("trackingNumber").asString();
+            if (node.has("eventId")) eventId = node.get("eventId").asString();
+            if (node.has("oldStatus")) oldStatus = node.get("oldStatus").asString();
+            if (node.has("newStatus")) newStatus = node.get("newStatus").asString();
         } catch (Exception e) {
             log.warn("Could not parse webhook JSON payload: {}", e.getMessage());
         }

@@ -2,6 +2,7 @@ package com.swiftdrop.courier.api;
 
 import com.swiftdrop.courier.dto.*;
 import com.swiftdrop.courier.service.CourierService;
+import com.swiftdrop.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -58,10 +59,13 @@ public class CourierController {
     }
 
     private Long extractUserId(Principal principal) {
+        if (principal instanceof AuthenticatedUser authenticatedUser) {
+            return authenticatedUser.id();
+        }
         try {
             return Long.parseLong(principal.getName());
         } catch (NumberFormatException e) {
-            return 1L;
+            throw new IllegalStateException("Authenticated principal does not contain a user id", e);
         }
     }
 }
