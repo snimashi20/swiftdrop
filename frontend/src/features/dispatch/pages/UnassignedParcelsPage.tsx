@@ -4,12 +4,12 @@ import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
 import { AssignDialog } from "../components/AssignDialog";
 import { PageHeader } from "../components/PageHeader";
-import type { Page, UnassignedParcel } from "../types";
+import type { Page, UnassignedParcel, ZoneOption } from "../types";
 
 const PAGE_SIZE = 10;
 
-type Filters = { district: string; from: string; to: string };
-const NO_FILTERS: Filters = { district: "", from: "", to: "" };
+type Filters = { zoneId: string; from: string; to: string };
+const NO_FILTERS: Filters = { zoneId: "", from: "", to: "" };
 
 const inputClass =
   "w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10";
@@ -23,13 +23,14 @@ export function UnassignedParcelsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [assigning, setAssigning] = useState<UnassignedParcel | null>(null);
+  const [zones, setZones] = useState<ZoneOption[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const result = await dispatchApi.unassignedParcels({
-        district: filters.district.trim() || undefined,
+        zoneId: filters.zoneId ? Number(filters.zoneId) : undefined,
         from: filters.from || undefined,
         to: filters.to || undefined,
         page,
@@ -50,6 +51,13 @@ export function UnassignedParcelsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    dispatchApi
+      .zones()
+      .then(setZones)
+      .catch(() => setZones([]));
+  }, []);
 
   const applyFilters = (event: FormEvent) => {
     event.preventDefault();
@@ -85,13 +93,19 @@ export function UnassignedParcelsPage() {
 
       <form onSubmit={applyFilters} className="mb-6 grid gap-3 rounded-2xl border border-ink/10 bg-white p-4 sm:grid-cols-4">
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Pickup district</span>
-          <input
+          <span className="text-xs font-semibold text-ink/60">Pickup zone</span>
+          <select
             className={inputClass}
-            placeholder="e.g. Colombo"
-            value={form.district}
-            onChange={(e) => setForm({ ...form, district: e.target.value })}
-          />
+            value={form.zoneId}
+            onChange={(e) => setForm({ ...form, zoneId: e.target.value })}
+          >
+            <option value="">All zones</option>
+            {zones.map((zone) => (
+              <option key={zone.id} value={zone.id}>
+                {zone.name} ({zone.district})
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block space-y-1">
           <span className="text-xs font-semibold text-ink/60">Booked from</span>
