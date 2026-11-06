@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,8 +15,11 @@ import com.swiftdrop.common.event.ParcelStatusChangedEvent;
 import com.swiftdrop.common.exception.ValidationException;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.merchant.domain.MerchantStatus;
+import com.swiftdrop.merchant.domain.ApiKey;
 import com.swiftdrop.merchant.repository.MerchantOrderRepository;
 import com.swiftdrop.merchant.repository.MerchantRepository;
+import com.swiftdrop.merchant.repository.ApiKeyRepository;
+import com.swiftdrop.merchant.service.ApiKeyService;
 import com.swiftdrop.merchant.dto.MerchantOrderRequest;
 import com.swiftdrop.parcel.domain.ParcelSize;
 import com.swiftdrop.parcel.repository.ParcelRepository;
@@ -43,6 +47,14 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import org.springframework.web.context.WebApplicationContext;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(classes = {CoreApiApplication.class, MerchantOrderPostgresIntegrationTest.Mocks.class})
@@ -69,6 +81,10 @@ class MerchantOrderPostgresIntegrationTest {
     @Autowired MerchantRepository merchantRepository;
     @Autowired MerchantOrderRepository orderRepository;
     @Autowired ParcelRepository parcelRepository;
+    @Autowired ApiKeyRepository apiKeyRepository;
+    @Autowired ApiKeyService apiKeyService;
+    @Autowired WebApplicationContext applicationContext;
+    private MockMvc mockMvc;
 
     @TestConfiguration
     static class Mocks {
@@ -79,10 +95,17 @@ class MerchantOrderPostgresIntegrationTest {
     }
 
     private Long merchantId;
+    private String integrationApiKey;
     private ExecutorService executor;
 
     @BeforeEach
     void setUp() {
+        reset(rabbitTemplate, trackingNumberGenerator);
+        orderRepository.deleteAll();
+        parcelRepository.deleteAll();
+        apiKeyRepository.deleteAll();
+        merchantRepository.deleteAll();
+
         Merchant merchant = merchantRepository.save(Merchant.builder()
                 .businessName("Integration Merchant")
                 .registrationNumber("REG-" + System.nanoTime())
@@ -92,15 +115,61 @@ class MerchantOrderPostgresIntegrationTest {
                 .status(MerchantStatus.APPROVED)
                 .build());
         merchantId = merchant.getId();
+        integrationApiKey = "integration-test-api-key-" + System.nanoTime();
+        apiKeyRepository.save(ApiKey.builder()
+                .merchant(merchant)
+                .label("Integration test key")
+                .keyPrefix("sdk_test_key")
+                .keyHash(apiKeyService.hashKey(integrationApiKey))
+                .active(true)
+                .build());
         AtomicInteger sequence = new AtomicInteger();
-        when(trackingNumberGenerator.generate()).thenAnswer(invocation ->
-                sequence.getAndIncrement() == 0 ? "SDABCDEFGHIJ" : "SDKLMNOPQRS1");
+        when(trackingNumberGenerator.generate())
+                .thenAnswer(invocation -> String.format("SD%010d", sequence.incrementAndGet()));
         executor = Executors.newFixedThreadPool(2);
+        mockMvc = MockMvcBuilders.webAppContextSetup(applicationContext)
+                .apply(springSecurity())
+                .build();
     }
 
     @AfterEach
     void tearDown() {
         executor.shutdownNow();
+        reset(rabbitTemplate, trackingNumberGenerator);
+        orderRepository.deleteAll();
+        parcelRepository.deleteAll();
+        apiKeyRepository.deleteAll();
+        merchantRepository.deleteAll();
+    }
+
+    @Test
+    void merchantApiUsesRealSecurityChainForValidApiKey() throws Exception {
+        mockMvc.perform(post("/api/v1/merchant-api/orders")
+                        .header("X-API-Key", integrationApiKey)
+                        .header("Idempotency-Key", "real-chain-key")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "pickup": {"line1": "12 Main St", "city": "Colombo", "district": "Colombo"},
+                                  "dropoff": {"line1": "5 Lake Rd", "city": "Kandy", "district": "Kandy"},
+                                  "receiverName": "Test Receiver",
+                                  "receiverPhone": "0771234567",
+                                  "size": "S",
+                                  "weightKg": 1.5,
+                                  "externalOrderId": "REAL-CHAIN-1001"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void merchantApiReturnsJsonForEmptyBody() throws Exception {
+        mockMvc.perform(post("/api/v1/merchant-api/orders")
+                        .header("X-API-Key", integrationApiKey)
+                        .header("Idempotency-Key", "empty-body-key")
+                        .contentType("application/json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     @Test
