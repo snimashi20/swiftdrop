@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.time.Instant;
 
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleMethodValidation(HandlerMethodValidationException ex, HttpServletRequest req) {
         return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid request parameters", req);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableMessage(
+            HttpMessageNotReadableException ex, HttpServletRequest req) {
+        String message = ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")
+                ? "Request body is required"
+                : "Malformed request body";
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message, req);
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String code, String message, HttpServletRequest req) {
