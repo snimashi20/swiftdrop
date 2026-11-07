@@ -20,6 +20,7 @@ import {
   UnassignedParcelsPage,
 } from "./features/dispatch";
 import { AdminUsersPage } from "./features/admin";
+import { TodayDeliveriesPage } from "./features/courier";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -45,6 +46,9 @@ export function App() {
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/profile/addresses" element={<AddressBookPage />} />
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
+            <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER", "ADMIN"]} />}>
+              <Route index element={<TodayDeliveriesPage />} />
+            </Route>
             <Route path="/parcels" element={<PlaceholderPage />} />
             <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
