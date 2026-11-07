@@ -20,6 +20,10 @@ import {
   UnassignedParcelsPage,
 } from "./features/dispatch";
 import { AdminUsersPage } from "./features/admin";
+import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprovalsPage";
+import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
+import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
+import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -32,6 +36,7 @@ export function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/merchant/register" element={<MerchantRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
         <Route element={<PublicTrackingLayout />}>
@@ -55,6 +60,15 @@ export function App() {
               <Route path="notifications" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
                 <Route index element={<NotificationLogPage />} />
               </Route>
+            </Route>
+            <Route path="/admin/merchants" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<MerchantApprovalsPage />} />
+            </Route>
+            <Route path="/merchant/api-keys" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<MerchantApiKeysPage />} />
+            </Route>
+            <Route path="/merchant/orders" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<MerchantOrdersPage />} />
             </Route>
             <Route path="/people" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />

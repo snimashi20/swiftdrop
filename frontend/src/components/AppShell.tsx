@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, Package, Settings, Truck, Users, X, DollarSign } from "lucide-react";
+import { Bell, ChevronDown, KeyRound, LayoutDashboard, LogOut, Menu, Package, Settings, ShieldCheck, Truck, Users, X, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
@@ -10,6 +10,9 @@ const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: R
   { label: "Fleet & dispatch", to: "/fleet", icon: Truck, roles: ["DISPATCHER", "ADMIN"] },
   { label: "People", to: "/people", icon: Users, roles: ["ADMIN"] },
   { label: "Zones & Pricing", to: "/admin/pricing", icon: DollarSign, roles: ["ADMIN"] },
+  { label: "Merchant approvals", to: "/admin/merchants", icon: ShieldCheck, roles: ["ADMIN"] },
+  { label: "Merchant orders", to: "/merchant/orders", icon: Package, roles: ["MERCHANT"] },
+  { label: "API keys", to: "/merchant/api-keys", icon: KeyRound, roles: ["MERCHANT"] },
 ];
 
 export function AppShell() {
