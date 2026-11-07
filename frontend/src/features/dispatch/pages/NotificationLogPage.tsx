@@ -132,9 +132,11 @@ export function NotificationLogPage() {
         {loading && !data ? (
           <p className="text-sm text-ink/50">Loading notifications…</p>
         ) : entries.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
-            No notifications match these filters.
-          </p>
+          error ? null : (
+            <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
+              No notifications match these filters.
+            </p>
+          )
         ) : (
           <>
             <div className="overflow-x-auto">
