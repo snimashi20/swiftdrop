@@ -12,6 +12,7 @@ import com.swiftdrop.merchant.security.CurrentMerchantProvider;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.parcel.domain.ParcelStatus;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -275,7 +276,7 @@ class MerchantControllerMockMvcTest {
         Merchant merchant = Merchant.builder().id(41L).build();
         when(currentMerchantProvider.getCurrentMerchant(any())).thenReturn(merchant);
         when(merchantOrderService.listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), any()))
-                .thenReturn(new PageImpl<>(java.util.List.of()));
+                .thenReturn(new PageImpl<>(java.util.List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/v1/merchants/me/orders?status=DELIVERED&page=0&size=20"))
                 .andExpect(status().isOk());
