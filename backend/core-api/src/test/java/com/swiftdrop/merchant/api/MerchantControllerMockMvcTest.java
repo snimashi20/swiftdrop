@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -49,6 +51,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -284,10 +287,11 @@ class MerchantControllerMockMvcTest {
         org.mockito.Mockito.verify(merchantOrderService).listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), any());
     }
 
-    @Test
-    @WithMockUser(username = "customer@example.lk", roles = "CUSTOMER")
-    void dashboardOrders_areMerchantOnly() throws Exception {
-        mockMvc.perform(get("/api/v1/merchants/me/orders"))
+    @ParameterizedTest
+    @ValueSource(strings = {"CUSTOMER", "COURIER", "DISPATCHER", "ADMIN"})
+    void dashboardOrders_areMerchantOnly(String role) throws Exception {
+        mockMvc.perform(get("/api/v1/merchants/me/orders")
+                        .with(user(role.toLowerCase() + "@example.com").roles(role)))
                 .andExpect(status().isForbidden());
         org.mockito.Mockito.verifyNoInteractions(merchantOrderService);
     }
