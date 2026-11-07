@@ -2,18 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
+import { EditCourierDialog } from "../components/EditCourierDialog";
 import { PageHeader } from "../components/PageHeader";
 import type { CourierCandidate, CourierWorkload, VehicleType, ZoneOption } from "../types";
-
-const VEHICLES: { value: VehicleType; label: string }[] = [
-  { value: "BICYCLE", label: "Bicycle" },
-  { value: "MOTORBIKE", label: "Motorbike" },
-  { value: "THREE_WHEELER", label: "Three-wheeler" },
-  { value: "CAR", label: "Car" },
-  { value: "VAN", label: "Van" },
-];
-
-const vehicleLabel = (type: VehicleType) => VEHICLES.find((v) => v.value === type)?.label ?? type;
+import { VEHICLES, vehicleLabel } from "../vehicles";
 
 type Filter = "all" | "active" | "inactive";
 
@@ -35,6 +27,7 @@ export function CouriersPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<CourierWorkload | null>(null);
 
   const [userId, setUserId] = useState("");
   const [zoneId, setZoneId] = useState("");
@@ -183,13 +176,21 @@ export function CouriersPage() {
                       </span>
                     </td>
                     <td className="py-3 text-right">
-                      <button
-                        onClick={() => toggleActive(courier)}
-                        disabled={busyId === courier.courierProfileId}
-                        className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink/5 disabled:opacity-50"
-                      >
-                        {courier.active ? "Deactivate" : "Activate"}
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setEditing(courier)}
+                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink/5"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => toggleActive(courier)}
+                          disabled={busyId === courier.courierProfileId}
+                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink/5 disabled:opacity-50"
+                        >
+                          {courier.active ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -258,6 +259,19 @@ export function CouriersPage() {
           </button>
         </form>
       </section>
+
+      {editing && (
+        <EditCourierDialog
+          courier={editing}
+          zones={zones}
+          onClose={() => setEditing(null)}
+          onSaved={(message) => {
+            setEditing(null);
+            setNotice(message);
+            void load();
+          }}
+        />
+      )}
     </div>
   );
 }

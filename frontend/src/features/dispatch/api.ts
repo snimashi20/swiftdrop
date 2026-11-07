@@ -15,7 +15,7 @@ import type {
 } from "./types";
 
 export const dispatchApi = {
-  unassignedParcels: async (params: { district?: string; from?: string; to?: string; page?: number; size?: number } = {}) =>
+  unassignedParcels: async (params: { zoneId?: number; district?: string; from?: string; to?: string; page?: number; size?: number } = {}) =>
     (await api.get<Page<UnassignedParcel>>("/dispatch/parcels/unassigned", { params })).data,
 
   suggestedCourier: async (parcelId: number) =>
