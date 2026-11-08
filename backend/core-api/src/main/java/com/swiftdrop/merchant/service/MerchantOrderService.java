@@ -7,6 +7,7 @@ import com.swiftdrop.merchant.dto.MerchantOrderRequest;
 import com.swiftdrop.merchant.dto.MerchantOrderResponse;
 import com.swiftdrop.merchant.repository.MerchantOrderRepository;
 import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.domain.ParcelStatus;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -57,6 +58,22 @@ public class MerchantOrderService {
     public Page<MerchantOrderResponse> list(Long merchantId, Pageable pageable) {
         return orderRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId, pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MerchantOrderResponse> listDashboard(Long merchantId, ParcelStatus status, Pageable pageable) {
+        return orderRepository.findDashboardOrders(merchantId, status, pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<ParcelStatus, Long> countDashboardByStatus(Long merchantId) {
+        java.util.Map<ParcelStatus, Long> counts = new java.util.EnumMap<>(ParcelStatus.class);
+        for (ParcelStatus status : ParcelStatus.values()) counts.put(status, 0L);
+        for (Object[] row : orderRepository.countDashboardOrdersByStatus(merchantId)) {
+            counts.put((ParcelStatus) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     private MerchantOrderResponse findByKey(Long merchantId, String key) {
