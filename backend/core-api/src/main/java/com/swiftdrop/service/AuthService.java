@@ -38,9 +38,9 @@ public class AuthService {
             throw new ConflictException("Email is already registered");
         }
         User user = User.builder()
-                .name(request.name())
+                .fullName(request.name())
                 .email(request.email().trim().toLowerCase())
-                .password(passwordEncoder.encode(request.password()))
+                .passwordHash(passwordEncoder.encode(request.password()))
                 .role(normalizeRole(request.role()))
                 .build();
         User saved = userRepository.save(user);
@@ -56,7 +56,7 @@ public class AuthService {
     }
 
     private AuthResponse response(User user, String token) {
-        return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(), user.getName(), Set.of(user.getRole()));
+        return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(), user.getFullName(), Set.of(user.getRole()));
     }
 
     private String normalizeRole(String role) {
