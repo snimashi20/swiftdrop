@@ -143,9 +143,11 @@ export function CouriersPage() {
         {loading ? (
           <p className="text-sm text-ink/50">Loading couriers…</p>
         ) : couriers.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
-            No couriers found. Create a courier profile below.
-          </p>
+          error ? null : (
+            <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
+              No couriers found. Create a courier profile below.
+            </p>
+          )
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[34rem] text-left text-sm">
