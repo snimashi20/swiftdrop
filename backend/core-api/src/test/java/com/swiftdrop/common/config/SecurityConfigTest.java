@@ -5,6 +5,9 @@ import com.swiftdrop.auth.security.JwtService;
 import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
 import com.swiftdrop.courier.service.CourierService;
+import com.swiftdrop.merchant.security.ApiKeyAccessDeniedHandler;
+import com.swiftdrop.merchant.security.ApiKeyAuthenticationEntryPoint;
+import com.swiftdrop.merchant.security.ApiKeyAuthenticationFilter;
 import com.swiftdrop.security.JwtTokenProvider;
 import com.swiftdrop.service.AuthService;
 import org.junit.jupiter.api.Test;
@@ -51,6 +54,15 @@ class SecurityConfigTest {
 
     @MockitoBean
     private CourierService courierService;
+
+    @MockitoBean
+    private ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
+
+    @MockitoBean
+    private ApiKeyAuthenticationEntryPoint apiKeyAuthenticationEntryPoint;
+
+    @MockitoBean
+    private ApiKeyAccessDeniedHandler apiKeyAccessDeniedHandler;
 
     @Test
     void trackingAndWebsocketRoutesArePublic() throws Exception {
