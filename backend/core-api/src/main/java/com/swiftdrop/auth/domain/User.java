@@ -1,11 +1,6 @@
 package com.swiftdrop.auth.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -31,22 +27,47 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 120)
-    private String name;
-
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = true, length = 255)
-    private String password;
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "full_name", nullable = false, length = 120)
+    private String fullName;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
 
     @Column(nullable = false, length = 40)
     @Builder.Default
     private String role = "ROLE_CUSTOMER";
 
+    @Column(nullable = false)
+    @Builder.Default
+    private String provider = "LOCAL";
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean enabled = true;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private OffsetDateTime updatedAt;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role));
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
     }
 
     @Override

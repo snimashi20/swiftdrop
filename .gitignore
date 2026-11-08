@@ -37,8 +37,9 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-.pnpm-store/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
 
 # ---------- Test & coverage reports ----------
 # Generated reports stay out of Git; only the final exported summary
@@ -52,6 +53,7 @@ uploads/
 deploy/data/
 
 # ---------- IDE ----------
+docs/M9_STEP_BY_STEP_TODO.md
 .idea/
 *.iml
 *.ipr
