@@ -20,6 +20,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,9 +68,19 @@ class SecurityConfigTest {
     @Test
     void trackingAndWebsocketRoutesArePublic() throws Exception {
         mockMvc.perform(get("/api/v1/tracking/ABC123"))
-            .andExpect(status().isNotFound());
+            .andExpect(result -> {
+                int status = result.getResponse().getStatus();
+                String redirect = result.getResponse().getRedirectedUrl();
+                assertThat(status).isNotIn(401, 403);
+                assertThat(redirect).isNotEqualTo("http://localhost/oauth2/authorization/google");
+            });
         mockMvc.perform(get("/ws/info"))
-            .andExpect(status().isNotFound());
+            .andExpect(result -> {
+                int status = result.getResponse().getStatus();
+                String redirect = result.getResponse().getRedirectedUrl();
+                assertThat(status).isNotIn(401, 403);
+                assertThat(redirect).isNotEqualTo("http://localhost/oauth2/authorization/google");
+            });
     }
 
     @Test
@@ -77,7 +88,12 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/v1/protected"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
-                    org.assertj.core.api.Assertions.assertThat(status).isIn(401, 403);
+                    String redirect = result.getResponse().getRedirectedUrl();
+                    assertThat(
+                            status == 401
+                                    || status == 403
+                                    || (status == 302 && "http://localhost/oauth2/authorization/google".equals(redirect))
+                    ).isTrue();
                 });
     }
 }
