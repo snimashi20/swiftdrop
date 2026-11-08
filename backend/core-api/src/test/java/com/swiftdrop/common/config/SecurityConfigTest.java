@@ -1,19 +1,20 @@
 package com.swiftdrop.common.config;
 
 import com.swiftdrop.auth.repository.UserRepository;
-import com.swiftdrop.service.AuthService;
+import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
+import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
 import com.swiftdrop.courier.service.CourierService;
-import com.swiftdrop.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.security.JwtTokenProvider;
+import com.swiftdrop.service.AuthService;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,6 +32,9 @@ class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
     @MockitoBean
     private UserRepository userRepository;
