@@ -1,0 +1,293 @@
+﻿{
+    "info":  {
+                 "name":  "SwiftDrop Merchant API",
+                 "description":  "Merchant API collection. Keep real credentials only in a local Postman environment.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:8080/api/v1"
+                     },
+                     {
+                         "key":  "apiKey",
+                         "value":  "PASTE_LOCAL_KEY"
+                     },
+                     {
+                         "key":  "idempotencyKey",
+                         "value":  "demo-order-001"
+                     },
+                     {
+                         "key":  "trackingNumber",
+                         "value":  "PASTE_TRACKING_NUMBER"
+                     },
+                     {
+                         "key":  "merchantId",
+                         "value":  "PASTE_MERCHANT_ID"
+                     },
+                     {
+                         "key":  "adminToken",
+                         "value":  "PASTE_ADMIN_TOKEN"
+                     }
+                 ],
+    "item":  [
+                 {
+                     "name":  "Onboarding",
+                     "item":  [
+                                  {
+                                      "name":  "Register merchant",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"email\":\"shop@example.lk\",\"password\":\"change-me-locally\",\"businessName\":\"Example Store\",\"registrationNumber\":\"BR-LOCAL-001\",\"contactName\":\"Store Owner\",\"contactPhone\":\"0712345678\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/merchants/register"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027registration returns 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "if(pm.response.code===201)pm.environment.set(\u0027merchantId\u0027,pm.response.json().id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin approve merchant",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/admin/merchants/{{merchantId}}/approve"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027merchant approved\u0027,()=\u003epm.response.to.have.status(200));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Merchant API orders",
+                     "item":  [
+                                  {
+                                      "name":  "Create single order",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-API-Key",
+                                                                         "value":  "{{apiKey}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Idempotency-Key",
+                                                                         "value":  "{{idempotencyKey}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Demo Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"WEB-1001\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/merchant-api/orders"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027new order returns 201\u0027,()=\u003epm.response.to.have.status(201));",
+                                                                                    "if(pm.response.code===201)pm.environment.set(\u0027trackingNumber\u0027,pm.response.json().trackingNumber);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Retry same idempotency key",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-API-Key",
+                                                                         "value":  "{{apiKey}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Idempotency-Key",
+                                                                         "value":  "{{idempotencyKey}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Demo Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"WEB-1001\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/merchant-api/orders"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027retry returns original order\u0027,()=\u003epm.response.to.have.status(200));",
+                                                                                    "pm.test(\u0027tracking unchanged\u0027,()=\u003epm.expect(pm.response.json().trackingNumber).to.eql(pm.environment.get(\u0027trackingNumber\u0027)));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Create bulk orders",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-API-Key",
+                                                                         "value":  "{{apiKey}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Idempotency-Key",
+                                                                         "value":  "bulk-demo-001"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "[{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Receiver One\",\"receiverPhone\":\"0771234567\",\"size\":\"S\",\"weightKg\":1.0,\"externalOrderId\":\"WEB-1002\"},{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Receiver Two\",\"receiverPhone\":\"0771234568\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"WEB-1003\"}]",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  "{{baseUrl}}/merchant-api/orders/bulk"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027bulk succeeds\u0027,()=\u003epm.expect([200,201]).to.include(pm.response.code));",
+                                                                                    "pm.test(\u0027two orders returned\u0027,()=\u003epm.expect(pm.response.json()).to.have.length(2));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "List my orders",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-API-Key",
+                                                                         "value":  "{{apiKey}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/merchant-api/orders?page=0\u0026size=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027list succeeds\u0027,()=\u003epm.response.to.have.status(200));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Get order status",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-API-Key",
+                                                                         "value":  "{{apiKey}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/merchant-api/orders/{{trackingNumber}}"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status lookup succeeds\u0027,()=\u003epm.response.to.have.status(200));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Invalid key returns 401",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-API-Key",
+                                                                         "value":  "invalid-local-test-key"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/merchant-api/orders?page=0\u0026size=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027invalid key returns 401\u0027,()=\u003epm.response.to.have.status(401));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ]
+}

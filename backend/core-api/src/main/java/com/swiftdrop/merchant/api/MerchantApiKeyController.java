@@ -28,7 +28,7 @@ public class MerchantApiKeyController {
     private final CurrentMerchantProvider currentMerchantProvider;
 
     @PostMapping
-    @Operation(summary = "Generate a merchant API key")
+    @Operation(summary = "Generate a merchant API key", description = "The raw key appears only in this response. Copy it and store it securely.")
     public ResponseEntity<ApiKeyGeneratedResponse> generate(
             @Valid @RequestBody CreateApiKeyRequest request,
             Authentication authentication) {

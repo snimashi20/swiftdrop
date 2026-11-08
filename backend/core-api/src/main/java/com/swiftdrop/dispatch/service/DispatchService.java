@@ -52,6 +52,9 @@ public class DispatchService {
     @Transactional(readOnly = true)
     public Page<UnassignedParcelResponse> listUnassigned(Long zoneId, String district, LocalDate from,
                                                          LocalDate to, Pageable pageable) {
+        if (from != null && to != null && to.isBefore(from)) {
+            throw new BadRequestException("The end date must not be before the start date");
+        }
         var terminal = TerminalStatuses.values();
         // A zone id is turned into its district (one zone = one district).
         final String districtFilter = zoneId == null

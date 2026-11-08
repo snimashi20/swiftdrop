@@ -14,6 +14,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -119,10 +121,11 @@ class MerchantApiKeyControllerMockMvcTest {
                 .andExpect(jsonPath("$.code").value("MERCHANT_NOT_APPROVED"));
     }
 
-    @Test
-    void customer_cannotCreateKey() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"CUSTOMER", "COURIER", "DISPATCHER", "ADMIN"})
+    void nonMerchant_cannotCreateKey(String role) throws Exception {
         mockMvc.perform(post("/api/v1/merchants/me/api-keys")
-                        .with(user("customer@example.com").roles("CUSTOMER"))
+                        .with(user(role.toLowerCase() + "@example.com").roles(role))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"label\":\"test\"}"))
                 .andExpect(status().isForbidden());

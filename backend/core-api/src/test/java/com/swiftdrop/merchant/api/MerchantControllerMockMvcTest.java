@@ -7,12 +7,20 @@ import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.dto.MerchantResponseDto;
 import com.swiftdrop.merchant.dto.RegisterMerchantRequest;
 import com.swiftdrop.merchant.service.MerchantService;
+import com.swiftdrop.merchant.service.MerchantOrderService;
+import com.swiftdrop.merchant.security.CurrentMerchantProvider;
+import com.swiftdrop.merchant.domain.Merchant;
+import com.swiftdrop.parcel.domain.ParcelStatus;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -39,9 +47,11 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -68,6 +78,16 @@ class MerchantControllerMockMvcTest {
         }
 
         @Bean
+        public MerchantOrderService merchantOrderService() {
+            return Mockito.mock(MerchantOrderService.class);
+        }
+
+        @Bean
+        public CurrentMerchantProvider currentMerchantProvider() {
+            return Mockito.mock(CurrentMerchantProvider.class);
+        }
+
+        @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -89,13 +109,17 @@ class MerchantControllerMockMvcTest {
 
     @Autowired
     private MerchantService merchantService;
+    @Autowired
+    private MerchantOrderService merchantOrderService;
+    @Autowired
+    private CurrentMerchantProvider currentMerchantProvider;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        reset(merchantService);
+        reset(merchantService, merchantOrderService, currentMerchantProvider);
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(context)
                 .apply(springSecurity())
@@ -247,6 +271,29 @@ class MerchantControllerMockMvcTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.businessName").value("Store LK"))
                 .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    @WithMockUser(username = "merchant@example.lk", roles = "MERCHANT")
+    void dashboardOrders_areScopedToCurrentMerchantAndFilterable() throws Exception {
+        Merchant merchant = Merchant.builder().id(41L).build();
+        when(currentMerchantProvider.getCurrentMerchant(any())).thenReturn(merchant);
+        when(merchantOrderService.listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), any()))
+                .thenReturn(new PageImpl<>(java.util.List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/v1/merchants/me/orders?status=DELIVERED&page=0&size=20"))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(merchantOrderService).listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CUSTOMER", "COURIER", "DISPATCHER", "ADMIN"})
+    void dashboardOrders_areMerchantOnly(String role) throws Exception {
+        mockMvc.perform(get("/api/v1/merchants/me/orders")
+                        .with(user(role.toLowerCase() + "@example.com").roles(role)))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(merchantOrderService);
     }
 
     @Test

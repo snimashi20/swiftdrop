@@ -53,6 +53,7 @@ uploads/
 deploy/data/
 
 # ---------- IDE ----------
+docs/M9_STEP_BY_STEP_TODO.md
 .idea/
 *.iml
 *.ipr

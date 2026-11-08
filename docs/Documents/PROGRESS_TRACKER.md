@@ -50,7 +50,7 @@
 | **M6 (Lamya)** | Dispatcher, Workload, Reports | ⏳ In Progress | Dispatcher workload balancing foundation |
 | **M7 (Pamithra)** | Courier Mobile App, Proof Uploads | ⏳ In Progress | Courier mobile flows & proof upload |
 | **M8 (Dinira)** | Foundation, JWT Login, Security | ✅ Merged | SecurityConfig, JWT foundation, BCrypt |
-| **M9 (Binuwara)** | Merchant Management, API Keys | 🔄 In Progress | Merchant, ApiKey, MerchantOrder entities |
+| **M9 (Binuwara)** | Merchant Management, API Keys | 🔄 In Progress | Backend registration, approval, hashed API key and idempotent order APIs present; merchant UI, Postman docs, integration verification and merge status being completed |
 | **M10 (Sandavi)**| Webhooks, Retry, Kubernetes | ⏳ In Progress | Webhook consumer and dead-letter queues |
 
 ---
