@@ -8,6 +8,9 @@ import type { Page, UnassignedParcel, ZoneOption } from "../types";
 
 const PAGE_SIZE = 10;
 
+// Today as yyyy-mm-dd in the browser's time zone: bookings cannot be in the future.
+const today = () => new Date().toLocaleDateString("en-CA");
+
 type Filters = { zoneId: string; from: string; to: string };
 const NO_FILTERS: Filters = { zoneId: "", from: "", to: "" };
 
@@ -24,6 +27,7 @@ export function UnassignedParcelsPage() {
   const [notice, setNotice] = useState("");
   const [assigning, setAssigning] = useState<UnassignedParcel | null>(null);
   const [zones, setZones] = useState<ZoneOption[]>([]);
+  const [dateError, setDateError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,11 +66,17 @@ export function UnassignedParcelsPage() {
   const applyFilters = (event: FormEvent) => {
     event.preventDefault();
     setNotice("");
+    if (form.from && form.to && form.to < form.from) {
+      setDateError("\"Booked until\" cannot be before \"Booked from\".");
+      return;
+    }
+    setDateError("");
     setPage(0);
     setFilters(form);
   };
 
   const clearFilters = () => {
+    setDateError("");
     setForm(NO_FILTERS);
     setFilters(NO_FILTERS);
     setPage(0);
@@ -113,7 +123,11 @@ export function UnassignedParcelsPage() {
             type="date"
             className={inputClass}
             value={form.from}
-            onChange={(e) => setForm({ ...form, from: e.target.value })}
+            max={form.to || today()}
+            onChange={(e) => {
+              setDateError("");
+              setForm({ ...form, from: e.target.value });
+            }}
           />
         </label>
         <label className="block space-y-1">
@@ -122,7 +136,12 @@ export function UnassignedParcelsPage() {
             type="date"
             className={inputClass}
             value={form.to}
-            onChange={(e) => setForm({ ...form, to: e.target.value })}
+            min={form.from || undefined}
+            max={today()}
+            onChange={(e) => {
+              setDateError("");
+              setForm({ ...form, to: e.target.value });
+            }}
           />
         </label>
         <div className="flex items-end gap-2">
@@ -135,15 +154,18 @@ export function UnassignedParcelsPage() {
             Clear
           </button>
         </div>
+        {dateError && <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral sm:col-span-4">{dateError}</p>}
       </form>
 
       <section className="rounded-2xl border border-ink/10 bg-white p-5">
         {loading && !data ? (
           <p className="text-sm text-ink/50">Loading parcels…</p>
         ) : parcels.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
-            No unassigned parcels match these filters.
-          </p>
+          error ? null : (
+            <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
+              No unassigned parcels match these filters.
+            </p>
+          )
         ) : (
           <>
             <div className="overflow-x-auto">

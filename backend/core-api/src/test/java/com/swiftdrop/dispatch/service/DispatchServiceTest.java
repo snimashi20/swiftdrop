@@ -27,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -279,6 +280,24 @@ class DispatchServiceTest {
         when(parcelRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> service.suggestCourier(99L));
+    }
+
+    @Test
+    void listUnassigned_throwsBadRequest_whenEndDateIsBeforeStartDate() {
+        assertThrows(BadRequestException.class, () -> service.listUnassigned(
+                null, null, LocalDate.of(2026, 11, 10), LocalDate.of(2026, 11, 9), PageRequest.of(0, 20)));
+        verifyNoInteractions(parcelRepository);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void listUnassigned_acceptsTheSameStartAndEndDate() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(parcelRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(Page.empty());
+
+        service.listUnassigned(null, null, LocalDate.of(2026, 11, 10), LocalDate.of(2026, 11, 10), pageable);
+
+        verify(parcelRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     // ---------- terminal statuses ----------
