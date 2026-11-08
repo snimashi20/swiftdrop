@@ -1,8 +1,9 @@
-import { Bell, ChevronDown, KeyRound, LayoutDashboard, LogOut, Menu, Package, Settings, ShieldCheck, Truck, Users, X, DollarSign } from "lucide-react";
+import { ChevronDown, KeyRound, LayoutDashboard, LogOut, Menu, Package, Settings, ShieldCheck, Truck, Users, X, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import type { Role } from "../features/auth/auth.types";
+import { NotificationBell } from "./NotificationBell";
 
 const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
   { label: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
@@ -26,7 +27,7 @@ export function AppShell() {
         <button className="rounded-lg p-2 md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
         <NavLink to="/dashboard" className="font-display text-2xl font-bold tracking-tight">swift<span className="text-coral">drop</span><span className="ml-1 align-top font-sans text-xs text-ink/50">/ OS</span></NavLink>
         <div className="flex items-center gap-3">
-          <button className="relative rounded-lg p-2 text-ink/60" aria-label="Notifications"><Bell size={19} /><span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-coral" /></button>
+          <NotificationBell />
           <div className="hidden items-center gap-2 border-l border-ink/10 pl-3 sm:flex">
             <div className="grid h-8 w-8 place-items-center rounded-full bg-mint font-bold text-ink">{user?.name[0]?.toUpperCase()}</div>
             <span className="max-w-28 truncate text-sm font-medium">{user?.name}</span>
