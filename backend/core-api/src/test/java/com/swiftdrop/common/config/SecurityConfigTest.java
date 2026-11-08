@@ -1,6 +1,7 @@
 package com.swiftdrop.common.config;
 
 import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.auth.security.JwtService;
 import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
 import com.swiftdrop.courier.service.CourierService;
@@ -35,6 +36,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
+
+    @MockitoBean
+    private JwtService jwtService;
 
     @MockitoBean
     private UserRepository userRepository;
