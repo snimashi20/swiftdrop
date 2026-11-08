@@ -5,6 +5,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,9 +17,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Component
 public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenAuthenticationFilter.class);
 
     private final JwtTokenProvider tokenProvider;
 
@@ -38,13 +43,7 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = ((Number) claims.get("userId")).longValue();
                 String email = claims.get("email", String.class);
                 String role = claims.get("role", String.class);
-                Collection<?> claimAuthorities = claims.get("authorities", Collection.class);
-                List<SimpleGrantedAuthority> authorities = claimAuthorities == null
-                        ? List.of(new SimpleGrantedAuthority(role))
-                        : claimAuthorities.stream()
-                                .map(Object::toString)
-                                .map(SimpleGrantedAuthority::new)
-                                .toList();
+                List<SimpleGrantedAuthority> authorities = parseAuthorities(claims.get("authorities"), role);
                 AuthenticatedUser principal = new AuthenticatedUser(userId, email, role);
                 SecurityContextHolder.getContext().setAuthentication(
                         new UsernamePasswordAuthenticationToken(principal, null, authorities));
@@ -53,5 +52,34 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> parseAuthorities(Object claim, String role) {
+        Stream<?> values;
+        if (claim == null) {
+            values = Stream.empty();
+        } else if (claim instanceof Collection<?> collection) {
+            values = collection.stream();
+        } else if (claim instanceof String authority) {
+            values = Stream.of(authority);
+        } else {
+            log.warn("Ignoring malformed JWT authorities claim of type {}", claim.getClass().getName());
+            values = Stream.empty();
+        }
+
+        List<SimpleGrantedAuthority> authorities = values
+                .filter(value -> {
+                    if (value == null || value.toString().isBlank()) {
+                        log.warn("Ignoring malformed value in JWT authorities claim");
+                        return false;
+                    }
+                    return true;
+                })
+                .map(Object::toString)
+                .map(SimpleGrantedAuthority::new)
+                .toList();
+        return authorities.isEmpty() && role != null && !role.isBlank()
+                ? List.of(new SimpleGrantedAuthority(role))
+                : authorities;
     }
 }

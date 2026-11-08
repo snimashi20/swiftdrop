@@ -1,5 +1,6 @@
 package com.swiftdrop.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class JwtTokenAuthenticationFilterTest {
@@ -67,5 +69,45 @@ class JwtTokenAuthenticationFilterTest {
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void acceptsStringAuthorityClaim() throws Exception {
+        Claims claims = org.mockito.Mockito.mock(Claims.class);
+        when(claims.get("userId")).thenReturn(12L);
+        when(claims.get("email", String.class)).thenReturn("courier@example.com");
+        when(claims.get("role", String.class)).thenReturn("ROLE_COURIER");
+        when(claims.get("authorities")).thenReturn("ROLE_COURIER");
+        JwtTokenProvider provider = org.mockito.Mockito.mock(JwtTokenProvider.class);
+        when(provider.parseClaims("token")).thenReturn(claims);
+        JwtTokenAuthenticationFilter filter = new JwtTokenAuthenticationFilter(provider);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        request.addHeader("Authorization", "Bearer token");
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting(Object::toString).containsExactly("ROLE_COURIER");
+    }
+
+    @Test
+    void fallsBackToPrimaryRoleForMalformedAuthorityClaim() throws Exception {
+        Claims claims = org.mockito.Mockito.mock(Claims.class);
+        when(claims.get("userId")).thenReturn(12L);
+        when(claims.get("email", String.class)).thenReturn("courier@example.com");
+        when(claims.get("role", String.class)).thenReturn("ROLE_COURIER");
+        when(claims.get("authorities")).thenReturn(42);
+        JwtTokenProvider provider = org.mockito.Mockito.mock(JwtTokenProvider.class);
+        when(provider.parseClaims("token")).thenReturn(claims);
+        JwtTokenAuthenticationFilter filter = new JwtTokenAuthenticationFilter(provider);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        request.addHeader("Authorization", "Bearer token");
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting(Object::toString).containsExactly("ROLE_COURIER");
     }
 }

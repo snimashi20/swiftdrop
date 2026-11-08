@@ -22,6 +22,10 @@ import java.util.Set;
 public class AuthService {
 
     private static final String DEFAULT_ROLE = "ROLE_CUSTOMER";
+        private static final Set<String> SELF_REGISTRATION_ROLES = Set.of(
+            "ROLE_CUSTOMER",
+            "ROLE_MERCHANT",
+            "ROLE_COURIER");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -60,6 +64,10 @@ public class AuthService {
             return DEFAULT_ROLE;
         }
         String normalized = role.trim().toUpperCase();
-        return normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized;
+        String normalizedRole = normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized;
+        if (!SELF_REGISTRATION_ROLES.contains(normalizedRole)) {
+            throw new IllegalArgumentException("Unauthorized self-registration role: " + role);
+        }
+        return normalizedRole;
     }
 }
