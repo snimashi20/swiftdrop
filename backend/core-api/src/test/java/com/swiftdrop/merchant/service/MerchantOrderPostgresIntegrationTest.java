@@ -69,6 +69,7 @@ class MerchantOrderPostgresIntegrationTest {
         registry.add("DB_USERNAME", POSTGRES::getUsername);
         registry.add("DB_PASSWORD", POSTGRES::getPassword);
         registry.add("JWT_SECRET", () -> "integration-test-secret-integration-test-secret");
+        registry.add("app.jwt.secret", () -> "integration-test-secret-integration-test-secret");
         registry.add("GOOGLE_CLIENT_ID", () -> "integration-test");
         registry.add("GOOGLE_CLIENT_SECRET", () -> "integration-test");
         registry.add("spring.datasource.hikari.maximum-pool-size", () -> "6");
