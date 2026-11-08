@@ -25,7 +25,7 @@ Parcel lifecycle: `CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY →
 
 ## Tech stack
 
-Java 21 (LTS) · Maven · Spring Boot (Web, Validation, Data JPA, Security, OAuth2 Client,
+Java 25 (LTS) · Maven · Spring Boot (Web, Validation, Data JPA, Security, OAuth2 Client,
 WebSocket, AMQP, Mail, Actuator) · PostgreSQL 16 + Flyway · RabbitMQ · STOMP WebSockets ·
 JWT + BCrypt + Google OAuth 2.0 · React + TypeScript + Vite + Tailwind + shadcn/ui ·
 Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, JaCoCo
@@ -36,7 +36,7 @@ Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, J
 
 ### Prerequisites
 
-- Java 21 (LTS) and Maven
+- Java 25 (LTS) and Maven
 - Node.js 22 (LTS)
 - Docker Desktop
 
