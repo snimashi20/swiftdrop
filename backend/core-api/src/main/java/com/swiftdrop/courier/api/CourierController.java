@@ -95,10 +95,6 @@ public class CourierController {
         return ResponseEntity.ok(courierService.failParcel(courierProfileId, parcelId, request));
     }
 
-    /**
-     * Resolves the logged-in user's email from Authentication, looks up the User entity,
-     * and maps it to their CourierProfile ID. Throws 403 Forbidden if not found (no fallback).
-     */
     private Long resolveCourierProfileId(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new ForbiddenException("Not allowed: Missing authentication");
