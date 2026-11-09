@@ -67,8 +67,7 @@ public class JwtTokenProvider {
             if (decoded.length >= 32) {
                 return Keys.hmacShaKeyFor(decoded);
             }
-        } catch (IllegalArgumentException ignored) {
-            // Treat non-Base64 application secrets as UTF-8 keys.
+        } catch (Exception ignored) {
         }
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }

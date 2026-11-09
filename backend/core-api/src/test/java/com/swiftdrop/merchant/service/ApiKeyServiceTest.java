@@ -20,6 +20,8 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.Instant;
 import java.util.List;
@@ -169,6 +171,37 @@ class ApiKeyServiceTest {
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("must not exceed 100 characters");
         }
+
+        @Test
+        @ExtendWith(OutputCaptureExtension.class)
+        @DisplayName("Log output during key generation does not contain raw key or prefix")
+        void generate_doesNotLogRawKeyOrPrefix(CapturedOutput output) {
+            Merchant merchant = Merchant.builder()
+                    .id(1L)
+                    .businessName("Binu Retail")
+                    .status(MerchantStatus.APPROVED)
+                    .build();
+
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(invocation -> {
+                ApiKey toSave = invocation.getArgument(0);
+                toSave.setId(10L);
+                return toSave;
+            });
+
+            ApiKeyGeneratedResponse response = apiKeyService.generate(1L, "Production Key");
+
+            String plainKey = response.apiKey();
+            String prefix = response.keyPrefix();
+
+            assertThat(plainKey).isNotBlank();
+            assertThat(prefix).isNotBlank();
+
+            String logs = output.getAll();
+            assertThat(logs).contains("Generated new API key id=10 for merchantId=1");
+            assertThat(logs).doesNotContain(plainKey);
+            assertThat(logs).doesNotContain(prefix);
+        }
     }
 
     @Nested
@@ -255,6 +288,41 @@ class ApiKeyServiceTest {
             assertThatThrownBy(() -> apiKeyService.revoke(2L, 20L))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("API key not found");
+
+            verify(apiKeyRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Rejected merchant can revoke its own API key")
+        void revoke_whenRejectedOwner_deactivatesKey() {
+            Merchant merchant = Merchant.builder().id(1L).status(MerchantStatus.REJECTED).build();
+            ApiKey apiKey = ApiKey.builder()
+                    .id(20L)
+                    .merchant(merchant)
+                    .label("Rejected Key")
+                    .keyPrefix("sdk_rejected")
+                    .keyHash("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+                    .active(true)
+                    .createdAt(Instant.now())
+                    .build();
+
+            when(apiKeyRepository.findByIdAndMerchantId(20L, 1L)).thenReturn(Optional.of(apiKey));
+            when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            ApiKeyResponse response = apiKeyService.revoke(1L, 20L);
+
+            assertThat(response.active()).isFalse();
+            verify(apiKeyRepository).save(apiKey);
+        }
+
+        @Test
+        @DisplayName("Merchant cannot revoke another merchant's API key")
+        void revoke_whenKeyBelongsToAnotherMerchant_throwsNotFoundException() {
+            when(apiKeyRepository.findByIdAndMerchantId(20L, 1L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> apiKeyService.revoke(1L, 20L))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessage("API key not found");
 
             verify(apiKeyRepository, never()).save(any());
         }
