@@ -1,293 +1,1105 @@
-﻿{
-    "info":  {
-                 "name":  "SwiftDrop Merchant API",
-                 "description":  "Merchant API collection. Keep real credentials only in a local Postman environment.",
-                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-             },
-    "variable":  [
-                     {
-                         "key":  "baseUrl",
-                         "value":  "http://localhost:8080/api/v1"
-                     },
-                     {
-                         "key":  "apiKey",
-                         "value":  "PASTE_LOCAL_KEY"
-                     },
-                     {
-                         "key":  "idempotencyKey",
-                         "value":  "demo-order-001"
-                     },
-                     {
-                         "key":  "trackingNumber",
-                         "value":  "PASTE_TRACKING_NUMBER"
-                     },
-                     {
-                         "key":  "merchantId",
-                         "value":  "PASTE_MERCHANT_ID"
-                     },
-                     {
-                         "key":  "adminToken",
-                         "value":  "PASTE_ADMIN_TOKEN"
-                     }
-                 ],
-    "item":  [
-                 {
-                     "name":  "Onboarding",
-                     "item":  [
-                                  {
-                                      "name":  "Register merchant",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\"email\":\"shop@example.lk\",\"password\":\"change-me-locally\",\"businessName\":\"Example Store\",\"registrationNumber\":\"BR-LOCAL-001\",\"contactName\":\"Store Owner\",\"contactPhone\":\"0712345678\"}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/merchants/register"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027registration returns 201\u0027, () =\u003e pm.response.to.have.status(201));",
-                                                                                    "if(pm.response.code===201)pm.environment.set(\u0027merchantId\u0027,pm.response.json().id);"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "Admin approve merchant",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Authorization",
-                                                                         "value":  "Bearer {{adminToken}}"
-                                                                     }
-                                                                 ],
-                                                      "url":  "{{baseUrl}}/admin/merchants/{{merchantId}}/approve"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027merchant approved\u0027,()=\u003epm.response.to.have.status(200));"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  }
-                              ]
-                 },
-                 {
-                     "name":  "Merchant API orders",
-                     "item":  [
-                                  {
-                                      "name":  "Create single order",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "X-API-Key",
-                                                                         "value":  "{{apiKey}}"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Idempotency-Key",
-                                                                         "value":  "{{idempotencyKey}}"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Demo Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"WEB-1001\"}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/merchant-api/orders"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027new order returns 201\u0027,()=\u003epm.response.to.have.status(201));",
-                                                                                    "if(pm.response.code===201)pm.environment.set(\u0027trackingNumber\u0027,pm.response.json().trackingNumber);"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "Retry same idempotency key",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "X-API-Key",
-                                                                         "value":  "{{apiKey}}"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Idempotency-Key",
-                                                                         "value":  "{{idempotencyKey}}"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Demo Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"WEB-1001\"}",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/merchant-api/orders"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027retry returns original order\u0027,()=\u003epm.response.to.have.status(200));",
-                                                                                    "pm.test(\u0027tracking unchanged\u0027,()=\u003epm.expect(pm.response.json().trackingNumber).to.eql(pm.environment.get(\u0027trackingNumber\u0027)));"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "Create bulk orders",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "X-API-Key",
-                                                                         "value":  "{{apiKey}}"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Idempotency-Key",
-                                                                         "value":  "bulk-demo-001"
-                                                                     },
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "[{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Receiver One\",\"receiverPhone\":\"0771234567\",\"size\":\"S\",\"weightKg\":1.0,\"externalOrderId\":\"WEB-1002\"},{\"pickup\":{\"city\":\"Colombo\",\"district\":\"Colombo\",\"line1\":\"10 Main Street\"},\"dropoff\":{\"city\":\"Kandy\",\"district\":\"Kandy\",\"line1\":\"20 Lake Road\"},\"receiverName\":\"Receiver Two\",\"receiverPhone\":\"0771234568\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"WEB-1003\"}]",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "url":  "{{baseUrl}}/merchant-api/orders/bulk"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027bulk succeeds\u0027,()=\u003epm.expect([200,201]).to.include(pm.response.code));",
-                                                                                    "pm.test(\u0027two orders returned\u0027,()=\u003epm.expect(pm.response.json()).to.have.length(2));"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "List my orders",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "X-API-Key",
-                                                                         "value":  "{{apiKey}}"
-                                                                     }
-                                                                 ],
-                                                      "url":  "{{baseUrl}}/merchant-api/orders?page=0\u0026size=20"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027list succeeds\u0027,()=\u003epm.response.to.have.status(200));"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "Get order status",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "X-API-Key",
-                                                                         "value":  "{{apiKey}}"
-                                                                     }
-                                                                 ],
-                                                      "url":  "{{baseUrl}}/merchant-api/orders/{{trackingNumber}}"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027status lookup succeeds\u0027,()=\u003epm.response.to.have.status(200));"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "Invalid key returns 401",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "X-API-Key",
-                                                                         "value":  "invalid-local-test-key"
-                                                                     }
-                                                                 ],
-                                                      "url":  "{{baseUrl}}/merchant-api/orders?page=0\u0026size=20"
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "exec":  [
-                                                                                    "pm.test(\u0027invalid key returns 401\u0027,()=\u003epm.response.to.have.status(401));"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  }
-                              ]
-                 }
-             ]
+{
+  "info": {
+    "name": "SwiftDrop Merchant API",
+    "description": "Repeatable M9 merchant workflow. Run sequentially with the matching local environment. Passwords, JWTs, and API keys are never stored in this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication and seeded accounts",
+      "item": [
+        {
+          "name": "Admin login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{demoPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin login returns 200\", () => pm.response.to.have.status(200));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"login response includes a JWT\", () => pm.expect(data.token).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"login response includes admin role\", () => pm.expect(JSON.stringify(data.roles)).to.match(/ADMIN/));",
+                  "if (data.token) pm.environment.set(\"adminToken\", data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seeded approved merchant login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{merchantEmail}}\",\"password\":\"{{demoPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"merchant login returns 200\", () => pm.response.to.have.status(200));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"login response includes a JWT\", () => pm.expect(data.token).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"login response includes merchant role\", () => pm.expect(JSON.stringify(data.roles)).to.match(/MERCHANT/));",
+                  "if (data.token) pm.environment.set(\"merchantToken\", data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate API key for seeded merchant (for cross-merchant check)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"Postman ownership check\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"key generation returns 201\", () => pm.response.to.have.status(201));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"raw API key is returned once\", () => pm.expect(data.apiKey).to.be.a(\"string\").and.not.empty);",
+                  "if (data.apiKey) pm.environment.set(\"seedApiKey\", data.apiKey);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Register and review merchants",
+      "item": [
+        {
+          "name": "Register unique merchant for approval",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{newMerchantEmail}}\",\"password\":\"{{demoPassword}}\",\"businessName\":\"Postman Approval {{newRegistrationNumber}}\",\"registrationNumber\":\"{{newRegistrationNumber}}\",\"contactName\":\"Postman Owner\",\"contactPhone\":\"0712345678\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString() + Math.floor(Math.random() * 100000).toString().padStart(5, \"0\");",
+                  "pm.environment.set(\"newMerchantEmail\", `postman-${suffix}@example.test`);",
+                  "pm.environment.set(\"newRegistrationNumber\", `PM-${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"registration returns 201\", () => pm.response.to.have.status(201));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"new merchant starts pending\", () => pm.expect(data.status).to.eql(\"PENDING\"));",
+                  "if (data.id) pm.environment.set(\"merchantId\", data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "New pending merchant login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{newMerchantEmail}}\",\"password\":\"{{demoPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"pending merchant login returns 200\", () => pm.response.to.have.status(200));",
+                  "var data = pm.response.json();",
+                  "if (data.token) pm.environment.set(\"pendingMerchantToken\", data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pending merchant cannot generate an API key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"Should be denied\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"pending merchant key generation returns 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error identifies unapproved merchant\", () => pm.expect(pm.response.json().code).to.eql(\"MERCHANT_NOT_APPROVED\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin lists pending merchants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/merchants?status=PENDING&page=0&size=20"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin list returns 200\", () => pm.response.to.have.status(200));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"registered merchant is in pending results\", () => pm.expect(data.content.some((merchant) => String(merchant.id) === String(pm.environment.get(\"merchantId\")))).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Merchant token cannot access admin endpoints",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/merchants"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"non-admin access returns 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unauthenticated admin access is rejected",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/admin/merchants"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"missing JWT returns 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin approves new merchant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/merchants/{{merchantId}}/approve"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"approval returns 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"merchant status is approved\", () => pm.expect(pm.response.json().status).to.eql(\"APPROVED\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Merchant API-key management",
+      "item": [
+        {
+          "name": "Approved merchant generates machine API key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"Postman order integration\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"key generation returns 201\", () => pm.response.to.have.status(201));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"generated key response includes a raw key\", () => pm.expect(data.apiKey).to.be.a(\"string\").and.not.empty);",
+                  "if (data.apiKey) pm.environment.set(\"apiKey\", data.apiKey);",
+                  "if (data.id) pm.environment.set(\"apiKeyId\", data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Merchant lists keys without raw secrets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"key list returns 200\", () => pm.response.to.have.status(200));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"key list contains the generated key\", () => pm.expect(data.some((key) => String(key.id) === String(pm.environment.get(\"apiKeyId\")))).to.eql(true));",
+                  "pm.test(\"key list does not expose raw keys or hashes\", () => pm.expect(JSON.stringify(data)).not.to.match(/\"apiKey\"|\"keyHash\"/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate a separate key for revocation test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"Postman revocation test\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"second key generation returns 201\", () => pm.response.to.have.status(201));",
+                  "var data = pm.response.json();",
+                  "if (data.apiKey) pm.environment.set(\"revokedApiKey\", data.apiKey);",
+                  "if (data.id) pm.environment.set(\"revokedKeyId\", data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Merchant revokes its API key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys/{{revokedKeyId}}/revoke"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"revocation returns 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"key is inactive\", () => pm.expect(pm.response.json().active).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Machine orders and merchant dashboard",
+      "item": [
+        {
+          "name": "Create single merchant order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{singleOrderKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"line1\":\"10 Main Street\",\"city\":\"Colombo\",\"district\":\"Colombo\"},\"dropoff\":{\"line1\":\"20 Lake Road\",\"city\":\"Kandy\",\"district\":\"Kandy\"},\"receiverName\":\"Postman Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"{{singleExternalOrderId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString() + Math.floor(Math.random() * 100000).toString().padStart(5, \"0\");",
+                  "pm.environment.set(\"singleOrderKey\", `single-${suffix}`);",
+                  "pm.environment.set(\"singleExternalOrderId\", `WEB-${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"new order returns 201\", () => pm.response.to.have.status(201));",
+                  "var data = pm.response.json();",
+                  "pm.test(\"response includes tracking number and status\", () => { pm.expect(data.trackingNumber).to.be.a(\"string\").and.not.empty; pm.expect(data.status).to.be.a(\"string\"); });",
+                  "if (data.trackingNumber) pm.environment.set(\"trackingNumber\", data.trackingNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry the same order with the same idempotency key and body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{singleOrderKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"line1\":\"10 Main Street\",\"city\":\"Colombo\",\"district\":\"Colombo\"},\"dropoff\":{\"line1\":\"20 Lake Road\",\"city\":\"Kandy\",\"district\":\"Kandy\"},\"receiverName\":\"Postman Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"{{singleExternalOrderId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"idempotent retry returns 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"retry returns original tracking number\", () => pm.expect(pm.response.json().trackingNumber).to.eql(pm.environment.get(\"trackingNumber\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a fresh bulk batch (up to 50 orders)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{bulkOrderKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders/bulk",
+            "body": {
+              "mode": "raw",
+              "raw": "[{\"pickup\":{\"line1\":\"10 Main Street\",\"city\":\"Colombo\",\"district\":\"Colombo\"},\"dropoff\":{\"line1\":\"20 Lake Road\",\"city\":\"Kandy\",\"district\":\"Kandy\"},\"receiverName\":\"Bulk Receiver One\",\"receiverPhone\":\"0771234567\",\"size\":\"S\",\"weightKg\":1.0,\"externalOrderId\":\"BULK-{{bulkExternalSuffix}}-1\"},{\"pickup\":{\"line1\":\"10 Main Street\",\"city\":\"Colombo\",\"district\":\"Colombo\"},\"dropoff\":{\"line1\":\"20 Lake Road\",\"city\":\"Kandy\",\"district\":\"Kandy\"},\"receiverName\":\"Bulk Receiver Two\",\"receiverPhone\":\"0771234568\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"BULK-{{bulkExternalSuffix}}-2\"}]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString() + Math.floor(Math.random() * 100000).toString().padStart(5, \"0\");",
+                  "pm.environment.set(\"bulkOrderKey\", `bulk-${suffix}`);",
+                  "pm.environment.set(\"bulkExternalSuffix\", suffix);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"new bulk batch returns 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"two order responses are returned\", () => pm.expect(pm.response.json()).to.have.length(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-key merchant lists machine orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders?page=0&size=20"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"machine order list returns 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-key merchant gets order status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders/{{trackingNumber}}"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"order status lookup returns 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "JWT merchant dashboard orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/orders?page=0&size=20"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"dashboard order list returns 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "JWT merchant dashboard status summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pendingMerchantToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/orders/summary"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"dashboard summary returns 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Machine API negative cases",
+      "item": [
+        {
+          "name": "Missing API key returns 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/merchant-api/orders?page=0&size=20"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"missing API key returns 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"error code is INVALID_API_KEY\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_API_KEY\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid API key returns 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "invalid-postman-test-key",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders?page=0&size=20"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"invalid API key returns 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoked API key returns 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{revokedApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders?page=0&size=20"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"revoked API key returns 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing Idempotency-Key returns 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"line1\":\"10 Main Street\",\"city\":\"Colombo\",\"district\":\"Colombo\"},\"dropoff\":{\"line1\":\"20 Lake Road\",\"city\":\"Kandy\",\"district\":\"Kandy\"},\"receiverName\":\"Postman Receiver\",\"receiverPhone\":\"0771234567\",\"size\":\"M\",\"weightKg\":2.0,\"externalOrderId\":\"{{singleExternalOrderId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"missing idempotency key returns 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"error code is IDEMPOTENCY_KEY_REQUIRED\", () => pm.expect(pm.response.json().code).to.eql(\"IDEMPOTENCY_KEY_REQUIRED\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Another merchant cannot read this order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{seedApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchant-api/orders/{{trackingNumber}}"
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"foreign merchant order returns 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error code is NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"NOT_FOUND\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rejection workflow",
+      "item": [
+        {
+          "name": "Register a separate merchant for rejection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{rejectedMerchantEmail}}\",\"password\":\"{{demoPassword}}\",\"businessName\":\"Postman Rejection {{rejectedRegistrationNumber}}\",\"registrationNumber\":\"{{rejectedRegistrationNumber}}\",\"contactName\":\"Postman Rejection Owner\",\"contactPhone\":\"0712345679\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString() + Math.floor(Math.random() * 100000).toString().padStart(5, \"0\");",
+                  "pm.environment.set(\"rejectedMerchantEmail\", `postman-reject-${suffix}@example.test`);",
+                  "pm.environment.set(\"rejectedRegistrationNumber\", `PR-${suffix}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"rejection test merchant registers with 201\", () => pm.response.to.have.status(201));",
+                  "var data = pm.response.json();",
+                  "if (data.id) pm.environment.set(\"rejectedMerchantId\", data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rejection test merchant login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{rejectedMerchantEmail}}\",\"password\":\"{{demoPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"rejection test merchant login returns 200\", () => pm.response.to.have.status(200));",
+                  "var data = pm.response.json();",
+                  "if (data.token) pm.environment.set(\"rejectedMerchantToken\", data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin rejects merchant with a reason",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/merchants/{{rejectedMerchantId}}/reject",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\":\"Postman rejection workflow test\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"rejection returns 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"merchant status is rejected\", () => pm.expect(pm.response.json().status).to.eql(\"REJECTED\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rejected merchant cannot generate an API key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rejectedMerchantToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/merchants/me/api-keys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"Should be denied\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"rejected merchant key generation returns 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error identifies unapproved merchant\", () => pm.expect(pm.response.json().code).to.eql(\"MERCHANT_NOT_APPROVED\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

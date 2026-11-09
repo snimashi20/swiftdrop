@@ -5,6 +5,8 @@ import com.swiftdrop.auth.security.JwtService;
 import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
 import com.swiftdrop.courier.service.CourierService;
+import com.swiftdrop.common.security.RestAccessDeniedHandler;
+import com.swiftdrop.common.security.RestAuthenticationEntryPoint;
 import com.swiftdrop.merchant.security.ApiKeyAccessDeniedHandler;
 import com.swiftdrop.merchant.security.ApiKeyAuthenticationEntryPoint;
 import com.swiftdrop.merchant.security.ApiKeyAuthenticationFilter;
@@ -22,6 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc(addFilters = true)
@@ -30,7 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     SecurityConfig.class,
     SecurityProbeController.class,
     JwtTokenProvider.class,
-    JwtTokenAuthenticationFilter.class
+    JwtTokenAuthenticationFilter.class,
+    RestAuthenticationEntryPoint.class,
+    RestAccessDeniedHandler.class
 })
 @TestPropertySource(properties = "app.jwt.secret=01234567890123456789012345678901")
 class SecurityConfigTest {
@@ -86,14 +92,8 @@ class SecurityConfigTest {
     @Test
     void unlistedRouteRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/protected"))
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    String redirect = result.getResponse().getRedirectedUrl();
-                    assertThat(
-                            status == 401
-                                    || status == 403
-                                    || (status == 302 && "http://localhost/oauth2/authorization/google".equals(redirect))
-                    ).isTrue();
-                });
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 }
