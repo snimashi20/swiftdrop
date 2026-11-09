@@ -30,7 +30,7 @@ public interface ParcelRepository extends JpaRepository<Parcel, Long> {
      * Returns all active/in-progress parcels OR parcels updated today for this courier.
      */
     @Query("SELECT p FROM Parcel p WHERE p.assignedCourierId = :courierId " +
-           "AND (p.status IN ('PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY') " +
+           "AND (p.status IN ('CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY') " +
            "     OR p.updatedAt >= :startOfDay) " +
            "ORDER BY p.updatedAt DESC")
     List<Parcel> findTodayDeliveriesForCourier(@Param("courierId") Long courierId,
