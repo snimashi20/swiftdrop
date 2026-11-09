@@ -33,10 +33,10 @@ export const TodayDeliveriesPage: React.FC = () => {
     fetchDeliveries();
   }, []);
 
-  const handleQuickStatusUpdate = async (parcelId: number, nextStatus: string) => {
+  const handleQuickStatusUpdate = async (parcelId: number, nextStatus: string, note?: string) => {
     try {
       setActionLoadingId(parcelId);
-      await updateDeliveryStatus(parcelId, nextStatus);
+      await updateDeliveryStatus(parcelId, nextStatus, note);
       await fetchDeliveries();
     } catch (err) {
       alert('Failed to update status');
@@ -47,7 +47,7 @@ export const TodayDeliveriesPage: React.FC = () => {
 
   const filtered = deliveries.filter((d) => {
     if (filter === 'ACTIVE') {
-      return ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(d.status);
+      return ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(d.status);
     }
     if (filter === 'COMPLETED') {
       return ['DELIVERED', 'FAILED'].includes(d.status);
@@ -143,46 +143,64 @@ export const TodayDeliveriesPage: React.FC = () => {
             </div>
 
             {/* Action Buttons for Couriers */}
-            {item.status !== 'DELIVERED' && item.status !== 'FAILED' && (
-              <div className="pt-2 border-t border-slate-100 space-y-2">
-                {item.status === 'PICKED_UP' && (
-                  <button
-                    onClick={() => handleQuickStatusUpdate(item.parcelId, 'IN_TRANSIT')}
-                    disabled={actionLoadingId === item.parcelId}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm"
-                  >
-                    Start Transit (In Transit)
-                  </button>
-                )}
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              {item.status === 'CREATED' && (
+                <button
+                  onClick={() => handleQuickStatusUpdate(item.parcelId, 'PICKED_UP', 'Picked up from sender')}
+                  disabled={actionLoadingId === item.parcelId}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm"
+                >
+                  Confirm Pickup (Picked Up)
+                </button>
+              )}
 
-                {item.status === 'IN_TRANSIT' && (
-                  <button
-                    onClick={() => handleQuickStatusUpdate(item.parcelId, 'OUT_FOR_DELIVERY')}
-                    disabled={actionLoadingId === item.parcelId}
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm"
-                  >
-                    Out for Delivery
-                  </button>
-                )}
+              {item.status === 'PICKED_UP' && (
+                <button
+                  onClick={() => handleQuickStatusUpdate(item.parcelId, 'IN_TRANSIT')}
+                  disabled={actionLoadingId === item.parcelId}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm"
+                >
+                  Start Transit (In Transit)
+                </button>
+              )}
 
-                {item.status === 'OUT_FOR_DELIVERY' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => { setSelectedParcel(item); setProofModalOpen(true); }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-xs font-semibold shadow-sm"
-                    >
-                      ✓ Delivered
-                    </button>
-                    <button
-                      onClick={() => { setSelectedParcel(item); setFailModalOpen(true); }}
-                      className="bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-lg text-xs font-semibold shadow-sm"
-                    >
-                      ✕ Failed
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+              {item.status === 'IN_TRANSIT' && (
+                <button
+                  onClick={() => handleQuickStatusUpdate(item.parcelId, 'OUT_FOR_DELIVERY')}
+                  disabled={actionLoadingId === item.parcelId}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm"
+                >
+                  Out for Delivery
+                </button>
+              )}
+
+              {item.status === 'OUT_FOR_DELIVERY' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => { setSelectedParcel(item); setProofModalOpen(true); }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-xs font-semibold shadow-sm"
+                  >
+                    ✓ Delivered
+                  </button>
+                  <button
+                    onClick={() => { setSelectedParcel(item); setFailModalOpen(true); }}
+                    className="bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-lg text-xs font-semibold shadow-sm"
+                  >
+                    ✕ Failed
+                  </button>
+                </div>
+              )}
+
+              {item.status === 'FAILED' && (
+                <button
+                  onClick={() => handleQuickStatusUpdate(item.parcelId, 'OUT_FOR_DELIVERY', 'Retrying delivery attempt')}
+                  disabled={actionLoadingId === item.parcelId}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm"
+                >
+                  ↻ Retry Delivery (Out for Delivery)
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </main>
