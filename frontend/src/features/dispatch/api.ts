@@ -3,6 +3,7 @@ import type {
   CourierCandidate,
   CourierProfile,
   CourierWorkload,
+  MyNotificationPage,
   NotificationChannel,
   NotificationDeliveryStatus,
   NotificationPage,
@@ -58,4 +59,18 @@ export const notificationsApi = {
     const { channel, ...rest } = params;
     return (await api.get<NotificationPage>("/notifications/admin", { params: { ...rest, type: channel } })).data;
   },
+
+  // The signed-in user's own feed. The customer id comes from the token, never from a parameter.
+  myFeed: async (params: { page?: number; size?: number; unreadOnly?: boolean } = {}) =>
+    (await api.get<MyNotificationPage>("/notifications/me", { params })).data,
+
+  myUnreadCount: async () =>
+    (await api.get<{ unreadCount: number }>("/notifications/me/unread-count")).data,
+
+  markAllRead: async () =>
+    (await api.post<{ updated: number }>("/notifications/me/read-all")).data,
+
+  // Marks the whole status change read, so `updated` can be 2 when it went out on both channels.
+  markRead: async (id: number) =>
+    (await api.post<{ updated: number }>(`/notifications/${id}/read`)).data,
 };
