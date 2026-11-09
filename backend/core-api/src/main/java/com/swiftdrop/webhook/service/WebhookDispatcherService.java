@@ -15,6 +15,7 @@ import com.swiftdrop.webhook.repository.WebhookEndpointRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -27,7 +28,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class WebhookDispatcherService {
 
     public static final String SIGNATURE_HEADER = "X-SwiftDrop-Signature";
@@ -38,6 +38,20 @@ public class WebhookDispatcherService {
     private final WebhookSigner webhookSigner;
     private final RestTemplate webhookRestTemplate;
     private final ObjectMapper objectMapper;
+
+    public WebhookDispatcherService(WebhookEndpointRepository endpointRepository,
+                                  WebhookDeliveryRepository deliveryRepository,
+                                  WebhookSigner webhookSigner,
+                                  RestTemplate webhookRestTemplate,
+                                  ObjectMapper objectMapper) {
+        this.endpointRepository = endpointRepository;
+        this.deliveryRepository = deliveryRepository;
+        this.webhookSigner = webhookSigner;
+        this.webhookRestTemplate = webhookRestTemplate;
+        ObjectMapper mapper = (objectMapper != null) ? objectMapper.copy() : new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        this.objectMapper = mapper;
+    }
 
     /**
      * Dispatches a webhook for an incoming parcel status changed event.

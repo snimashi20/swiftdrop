@@ -1,6 +1,7 @@
 package com.swiftdrop.webhook.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.swiftdrop.common.event.ParcelStatusChangedEvent;
 import com.swiftdrop.webhook.domain.DeliveryStatus;
 import com.swiftdrop.webhook.domain.WebhookDelivery;
@@ -51,7 +52,7 @@ class WebhookDispatcherServiceTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         dispatcherService = new WebhookDispatcherService(
                 endpointRepository,
                 deliveryRepository,

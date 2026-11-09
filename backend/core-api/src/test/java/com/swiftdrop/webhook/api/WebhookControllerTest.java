@@ -1,22 +1,25 @@
 package com.swiftdrop.webhook.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.swiftdrop.webhook.domain.DeliveryStatus;
 import com.swiftdrop.webhook.dto.TestPingResponse;
 import com.swiftdrop.webhook.dto.UpdateWebhookEndpointRequest;
 import com.swiftdrop.webhook.dto.WebhookDeliveryDto;
 import com.swiftdrop.webhook.dto.WebhookEndpointDto;
 import com.swiftdrop.webhook.service.WebhookService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,18 +33,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
+@ExtendWith(MockitoExtension.class)
 class WebhookControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @Mock
     private WebhookService webhookService;
+
+    @InjectMocks
+    private WebhookController webhookController;
+
+    @BeforeEach
+    void setUp() {
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        mockMvc = MockMvcBuilders.standaloneSetup(webhookController).build();
+    }
 
     @Test
     @DisplayName("GET /api/v1/webhooks/endpoint should return merchant endpoint config")

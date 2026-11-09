@@ -2,6 +2,7 @@ package com.swiftdrop.webhook.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.swiftdrop.common.event.ParcelStatusChangedEvent;
@@ -15,45 +16,47 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class WebhookWireMockIntegrationTest {
 
     private static WireMockServer wireMockServer;
 
-    @Autowired
-    private WebhookDispatcherService dispatcherService;
-
-    @Autowired
+    @Mock
     private WebhookEndpointRepository endpointRepository;
 
-    @Autowired
+    @Mock
     private WebhookDeliveryRepository deliveryRepository;
 
-    @Autowired
     private WebhookSigner webhookSigner;
-
-    @Autowired
+    private RestTemplate restTemplate;
     private ObjectMapper objectMapper;
+    private WebhookDispatcherService dispatcherService;
 
     private static final String TEST_SECRET = "whsec_test_wiremock_secret_key_123456";
     private static final Long MERCHANT_ID = 9999L;
     private WebhookEndpoint endpoint;
+    private final List<WebhookDelivery> savedDeliveries = new CopyOnWriteArrayList<>();
+    private final AtomicLong idGenerator = new AtomicLong(1);
 
     @BeforeAll
     static void startWireMock() {
@@ -71,11 +74,22 @@ class WebhookWireMockIntegrationTest {
 
     @BeforeEach
     void setupTestData() {
-        deliveryRepository.deleteAll();
-        endpointRepository.deleteAll();
+        savedDeliveries.clear();
         wireMockServer.resetAll();
 
+        webhookSigner = new WebhookSigner();
+        restTemplate = new RestTemplate();
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        dispatcherService = new WebhookDispatcherService(
+                endpointRepository,
+                deliveryRepository,
+                webhookSigner,
+                restTemplate,
+                objectMapper
+        );
+
         endpoint = WebhookEndpoint.builder()
+                .id(1L)
                 .merchantId(MERCHANT_ID)
                 .url(wireMockServer.baseUrl() + "/api/webhooks/orders")
                 .secret(TEST_SECRET)
@@ -83,7 +97,34 @@ class WebhookWireMockIntegrationTest {
                 .createdAt(Instant.now())
                 .build();
 
-        endpoint = endpointRepository.save(endpoint);
+        lenient().when(endpointRepository.findByMerchantIdAndActiveTrue(MERCHANT_ID)).thenReturn(Optional.of(endpoint));
+        lenient().when(endpointRepository.findByMerchantId(MERCHANT_ID)).thenReturn(Optional.of(endpoint));
+
+        lenient().when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(invocation -> {
+            WebhookDelivery d = invocation.getArgument(0);
+            if (d.getId() == null) {
+                d.setId(idGenerator.getAndIncrement());
+            }
+            if (d.getCreatedAt() == null) {
+                d.setCreatedAt(Instant.now());
+            }
+            savedDeliveries.removeIf(existing -> existing.getId().equals(d.getId()));
+            savedDeliveries.add(d);
+            return d;
+        });
+
+        lenient().when(deliveryRepository.findById(anyLong())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0);
+            return savedDeliveries.stream().filter(d -> id.equals(d.getId())).findFirst();
+        });
+
+        lenient().when(deliveryRepository.findByEndpointIdOrderByCreatedAtDesc(anyLong())).thenAnswer(invocation -> {
+            Long endpointId = invocation.getArgument(0);
+            return savedDeliveries.stream()
+                    .filter(d -> d.getEndpoint() != null && endpointId.equals(d.getEndpoint().getId()))
+                    .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                    .collect(Collectors.toList());
+        });
     }
 
     @Test
