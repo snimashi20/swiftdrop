@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { approveMerchant, fetchMerchants, rejectMerchant } from "../api";
 import type { Merchant, MerchantStatus } from "../types";
@@ -19,40 +19,81 @@ export function MerchantApprovalsPage() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const queryRef = useRef({ status, page });
+  const latestRequestRef = useRef(0);
+  const lifecycleRef = useRef(0);
+  const mountedRef = useRef(false);
+  const mutationInFlightRef = useRef(false);
+  queryRef.current = { status, page };
+
+  useEffect(() => {
+    mountedRef.current = true;
+    lifecycleRef.current += 1;
+
+    return () => {
+      mountedRef.current = false;
+      lifecycleRef.current += 1;
+      latestRequestRef.current += 1;
+    };
+  }, []);
 
   const load = useCallback(async () => {
+    const query = queryRef.current;
+    const lifecycleId = lifecycleRef.current;
+    const requestId = ++latestRequestRef.current;
     setLoading(true);
     setError("");
     try {
-      const result = await fetchMerchants(status === "ALL" ? undefined : status, page);
+      const result = await fetchMerchants(query.status === "ALL" ? undefined : query.status, query.page);
+      if (!mountedRef.current || lifecycleId !== lifecycleRef.current || requestId !== latestRequestRef.current) return;
       setMerchants(result.content);
       setTotalPages(result.totalPages);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "Could not load merchant applications."));
+      if (mountedRef.current && lifecycleId === lifecycleRef.current && requestId === latestRequestRef.current) {
+        setError(getApiErrorMessage(requestError, "Could not load merchant applications."));
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current && lifecycleId === lifecycleRef.current && requestId === latestRequestRef.current) {
+        setLoading(false);
+      }
     }
-  }, [page, status]);
+  }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, page, status]);
 
   const review = async (merchant: Merchant, action: "approve" | "reject") => {
+    if (!mountedRef.current || mutationInFlightRef.current) return;
     let reason = "";
     if (action === "reject") {
       reason = window.prompt(`Reason for rejecting ${merchant.businessName}:`)?.trim() ?? "";
       if (!reason) return;
     }
+    const lifecycleId = lifecycleRef.current;
+    mutationInFlightRef.current = true;
     setBusyId(merchant.id);
     setError("");
     setNotice("");
     try {
-      if (action === "approve") await approveMerchant(merchant.id);
-      else await rejectMerchant(merchant.id, reason);
+      const updatedMerchant = action === "approve"
+        ? await approveMerchant(merchant.id)
+        : await rejectMerchant(merchant.id, reason);
+      if (!mountedRef.current || lifecycleId !== lifecycleRef.current) return;
+      const currentStatus = queryRef.current.status;
+      setMerchants((current) => {
+        if (currentStatus !== "ALL" && updatedMerchant.status !== currentStatus) {
+          return current.filter((item) => item.id !== updatedMerchant.id);
+        }
+        return current.map((item) => item.id === updatedMerchant.id ? updatedMerchant : item);
+      });
       setNotice(`${merchant.businessName} ${action === "approve" ? "approved" : "rejected"}.`);
+      await load();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "Could not update this merchant."));
+      if (mountedRef.current && lifecycleId === lifecycleRef.current) {
+        setError(getApiErrorMessage(requestError, "Could not update this merchant."));
+      }
     } finally {
-      setBusyId(null);
+      mutationInFlightRef.current = false;
+      if (mountedRef.current && lifecycleId === lifecycleRef.current) setBusyId(null);
     }
   };
 
