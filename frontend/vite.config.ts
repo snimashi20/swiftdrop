@@ -1,13 +1,12 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true,
     proxy: {
-      // Must stay above '/api': the notifications API lives in notification-service on 8081.
-      // Vite takes the first key that matches the path.
       '/api/v1/notifications': {
         target: 'http://localhost:8081',
         changeOrigin: true,
@@ -27,6 +26,10 @@ export default defineConfig({
       '/ws': {
         target: 'http://localhost:8080',
         ws: true,
+      },
+      '/mock-store': {
+        target: 'http://localhost:8085',
+        changeOrigin: true,
       },
     },
   },
