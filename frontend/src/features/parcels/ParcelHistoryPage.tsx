@@ -43,7 +43,10 @@ export function ParcelHistoryPage() {
     }
   }, [user, load]);
 
+    // TODO: set to true when the cancel API (POST /parcels/{id}/cancel) is merged
+  const CANCEL_ENABLED = false;
   const handleCancel = async (id: number) => {
+
     if (!window.confirm("Cancel this parcel? This cannot be undone.")) return;
     try {
       await cancelParcel(id);
@@ -119,7 +122,7 @@ export function ParcelHistoryPage() {
                 <span className="text-ink/60">
                   Rs. {Number(parcel.fee).toFixed(2)} · booked {new Date(parcel.createdAt).toLocaleDateString()}
                 </span>
-                {parcel.status === "CREATED" && (
+                                {CANCEL_ENABLED && parcel.status === "CREATED" && (
                   <button
                     type="button"
                     onClick={() => handleCancel(parcel.id)}
