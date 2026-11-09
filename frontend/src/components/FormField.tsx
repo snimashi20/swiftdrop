@@ -1,26 +1,17 @@
-import React, { forwardRef } from 'react';
+import { forwardRef, type InputHTMLAttributes } from "react";
 
-interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-}
+interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> { label: string; error?: string }
 
 export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
-  ({ label, error, ...props }, ref) => {
-    return (
-      <div className="flex flex-col gap-1 w-full">
-        {label && <label className="text-sm font-medium text-gray-700">{label}</label>}
-        <input
-          ref={ref}
-          {...props}
-          className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-            error ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200'
-          } ${props.className || ''}`}
-        />
-        {error && <span className="text-xs text-red-500">{error}</span>}
-      </div>
-    );
-  }
+  ({ label, error, className, ...props }, ref) => <label className="block space-y-1.5">
+    <span className="text-sm font-semibold text-ink/80">{label}</span>
+    <input
+      {...props}
+      ref={ref}
+      className={`w-full rounded-xl border border-ink/15 bg-white px-3.5 py-3 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10 ${className ?? ""}`}
+    />
+    {error && <span className="text-xs text-coral">{error}</span>}
+  </label>
 );
 
 FormField.displayName = 'FormField';

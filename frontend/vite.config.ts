@@ -11,6 +11,14 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/notifications': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      '/mock-store': {
+        target: 'http://localhost:8085',
+        changeOrigin: true,
+      },
     },
   },
 });
