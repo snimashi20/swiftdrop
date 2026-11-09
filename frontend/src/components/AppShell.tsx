@@ -7,6 +7,7 @@ import { NotificationBell } from "./NotificationBell";
 
 const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
   { label: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
+  { label: "Today's Deliveries", to: "/courier/today", icon: Truck, roles: ["COURIER"] },
   { label: "Parcels", to: "/parcels", icon: Package, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
   { label: "Fleet & dispatch", to: "/fleet", icon: Truck, roles: ["DISPATCHER", "ADMIN"] },
   { label: "People", to: "/people", icon: Users, roles: ["ADMIN"] },
