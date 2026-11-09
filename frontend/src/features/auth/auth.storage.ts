@@ -1,0 +1,7 @@
+import type { User } from "./auth.types";
+export const TOKEN_KEY = "swiftdrop_access_token";
+export const USER_KEY = "swiftdrop_user";
+export const readStoredAuth = () => { const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY); const rawUser = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY); return { token, user: rawUser ? JSON.parse(rawUser) as User : null }; };
+export const persistAuth = (token: string, user: User, remember: boolean) => { const storage = remember ? localStorage : sessionStorage; const other = remember ? sessionStorage : localStorage; other.removeItem(TOKEN_KEY); other.removeItem(USER_KEY); storage.setItem(TOKEN_KEY, token); storage.setItem(USER_KEY, JSON.stringify(user)); };
+export const clearAuth = () => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(USER_KEY); };
+export const decodeJwt = (token: string): Partial<User> => { try { const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as Record<string, unknown>; const roles = payload.roles as string[] | undefined; return { id: payload.sub as string | undefined, name: (payload.name || payload.fullName) as string | undefined, email: payload.email as string | undefined, role: (payload.role || roles?.[0]) as User["role"] | undefined }; } catch { return {}; } };

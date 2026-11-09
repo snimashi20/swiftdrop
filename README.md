@@ -5,9 +5,6 @@ Customers book deliveries and watch them move live, merchants push orders in ove
 API and get signed webhooks back, couriers update parcels from a phone, and
 dispatchers assign work and read reports.
 
-> **Project brief:** `docs/report/SwiftDrop-Project-Apex10.pdf` — the full brief with task
-> cards, shared contracts and deadlines. _(TODO: add the shared doc link here.)_
-
 Parcel lifecycle: `CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED | FAILED`
 
 ---
@@ -28,7 +25,7 @@ Parcel lifecycle: `CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY →
 
 ## Tech stack
 
-Java 21 (LTS) · Maven · Spring Boot (Web, Validation, Data JPA, Security, OAuth2 Client,
+Java 25 (LTS) · Maven · Spring Boot (Web, Validation, Data JPA, Security, OAuth2 Client,
 WebSocket, AMQP, Mail, Actuator) · PostgreSQL 16 + Flyway · RabbitMQ · STOMP WebSockets ·
 JWT + BCrypt + Google OAuth 2.0 · React + TypeScript + Vite + Tailwind + shadcn/ui ·
 Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, JaCoCo
@@ -37,11 +34,9 @@ Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, J
 
 ## Getting started
 
-> ⚠️ **Placeholder — these steps are filled in by M3 once `docker-compose.yml` lands.**
-
 ### Prerequisites
 
-- Java 21 (LTS) and Maven
+- Java 25 (LTS) and Maven
 - Node.js 22 (LTS)
 - Docker Desktop
 
@@ -52,22 +47,55 @@ git clone https://github.com/<owner>/swiftdrop.git
 cd swiftdrop
 
 # 1. Create your local env file and fill in the values
-cp .env.example .env
+cp .env.example .env      # Windows PowerShell: Copy-Item .env.example .env
 
 # 2. Start everything
 docker compose up
 ```
 
-| Service | URL |
+| Service | Port | URL | Description |
+| --- | --- | --- | --- |
+| **Frontend** | 3000 / 5173 | `http://localhost:3000` (Docker) / `http://localhost:5173` (Dev) | React + TypeScript SPA |
+| **Core API (Swagger UI)** | 8080 | `http://localhost:8080/swagger-ui.html` | OpenAPI documentation & interactive client |
+| **Core API (REST)** | 8080 | `http://localhost:8080/api/v1` | Core modular monolith REST endpoints |
+| **RabbitMQ Management** | 15672 | `http://localhost:15672` | AMQP dashboard (credentials: `guest`/`guest`) |
+| **Mailpit Inbox** | 8025 | `http://localhost:8025` | Local developer mailbox for testing email receipts & notifications |
+| **Notification Service** | 8081 | `http://localhost:8081` | Standalone email/SMS notification consumer |
+
+### Demo Accounts & Testing
+
+Default roles: `CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATCHER`, `ADMIN`.
+- **Google OAuth Login:** Use "Continue with Google" on `http://localhost:3000/login` (Docker) or `http://localhost:5173/login` (dev server), or open `http://localhost:8080/oauth2/authorization/google`. This needs real Google keys in `.env`.
+- **Admin Endpoints:** Accessible under `/api/v1/admin/**` (requires `ROLE_ADMIN`).
+- **Swagger Documentation:** Explore all REST routes at `http://localhost:8080/swagger-ui.html`.
+
+### Load the demo data
+
+When `docker compose up` is running and core-api shows `healthy` in `docker compose ps`, load the demo users and parcels. Run this from the repository root.
+
+Windows PowerShell:
+
+```powershell
+Get-Content scripts\demo-seed.sql -Raw | docker compose exec -T postgres psql -U swiftdrop -d swiftdrop -v ON_ERROR_STOP=1
+```
+
+macOS / Linux:
+
+```bash
+docker compose exec -T postgres psql -U swiftdrop -d swiftdrop -v ON_ERROR_STOP=1 < scripts/demo-seed.sql
+```
+
+It is safe to run twice. Every demo account uses the password `Demo@1234`:
+
+| Role | Email |
 | --- | --- |
-| Frontend | TBD |
-| Core API (Swagger UI) | TBD `/swagger-ui.html` |
-| RabbitMQ management | TBD |
-| Mailpit inbox | TBD |
+| `ADMIN` | `admin@demo.swiftdrop.lk` |
+| `DISPATCHER` | `dispatcher@demo.swiftdrop.lk` |
+| `COURIER` | `courier@demo.swiftdrop.lk` |
+| `MERCHANT` | `merchant@demo.swiftdrop.lk` |
+| `CUSTOMER` | `customer@demo.swiftdrop.lk` and `customer2@demo.swiftdrop.lk` |
 
-### Demo accounts
-
-TBD — one seeded account per role (`CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATCHER`, `ADMIN`).
+The script also creates 8 parcels, `SDDEMO000001` to `SDDEMO000008`: one in each status (`CREATED` to `CANCELLED`), plus one that belongs to the second customer.
 
 ---
 
@@ -120,3 +148,31 @@ TBD — one seeded account per role (`CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATC
 | M8 | Dinira | Foundation, JWT login, security |
 | M9 | Binuwara | Merchants and the merchant API |
 | M10 | Sandavi | Webhooks and retry, Kubernetes bonus |
+
+## Merchant integration guide (M9)
+
+### Register and get approved
+
+1. Open `/merchant/register` or send `POST /api/v1/merchants/register` with the business name, registration number, contact name, email, password, and a Sri Lankan mobile number (`07XXXXXXXX` or `+947XXXXXXXX`).
+2. Sign in with the registered email and password. The merchant starts in `PENDING` status.
+3. An administrator reviews the application under `/admin/merchants` and approves or rejects it. Pending and rejected merchants cannot create API keys or orders.
+
+### Create an API key
+
+1. Sign in as the approved merchant and open `/merchant/api-keys`.
+2. Generate a labeled key. Copy it when it appears; the full key is returned once.
+3. Store the key in your shop backend's secret manager or environment. Do not put it in frontend code, Git, screenshots, or logs. Revoke it from the same page if it is exposed or no longer needed.
+
+### Create an order
+
+Send a `POST` request to `/api/v1/merchant-api/orders` with:
+
+- `X-API-Key`: your merchant key
+- `Idempotency-Key`: a unique request identifier. Reuse it when retrying the same order.
+- JSON fields `pickup`, `dropoff`, `receiverName`, `receiverPhone`, `size`, and `weightKg`; `externalOrderId` is optional.
+
+The pickup and dropoff objects use `line1`, `city`, and `district`. A successful new order returns HTTP 201 and a tracking number. Reusing the same idempotency key returns the original order. Bulk creation uses `POST /api/v1/merchant-api/orders/bulk` and accepts up to 50 orders.
+
+The signed-in merchant dashboard reads orders from `/api/v1/merchants/me/orders` and status totals from `/api/v1/merchants/me/orders/summary`. Store integrations should use the API-key protected `/api/v1/merchant-api/orders` endpoints.
+
+Import `docs/postman/SwiftDrop-Merchant-API.postman_collection.json` to try registration, approval, single order, idempotent retry, bulk, list, status, and invalid-key flows. Keep real credentials in a local Postman environment.

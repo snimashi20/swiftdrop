@@ -22,11 +22,11 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up Java 21
+      - name: Set up Java 25
         if: steps.check-pom.outputs.exists == 'true'
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
           cache: maven
 
@@ -35,6 +35,31 @@ jobs:
         run: |
           cd backend/core-api
           mvn -B verify --no-transfer-progress
+
+      - name: Upload coverage report
+        if: always() && steps.check-pom.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/core-api/target/site/jacoco
+          if-no-files-found: warn
+      # The second Spring Boot app was never built here at all, so a change to it could not break
+      # the build. Its Testcontainers tests (Postgres, RabbitMQ, Mailpit) are tagged "docker";
+      # add -DexcludedGroups=docker here if a runner ever turns out to have no Docker daemon.
+      #
+      # DOCKER_API_VERSION: the runner's Docker engine refuses the client's negotiated API 1.32
+      # ("Minimum supported API version is 1.40"), which made every Testcontainers test error.
+      - name: Build & test notification-service
+        if: steps.check-pom.outputs.exists == 'true'
+        env:
+          DOCKER_API_VERSION: "1.44"
+        run: |
+          if [ -f backend/notification-service/pom.xml ]; then
+            cd backend/notification-service
+            mvn -B verify --no-transfer-progress
+          else
+            echo "No notification-service pom.xml yet – skipping"
+          fi
 
       - name: Skip notice
         if: steps.check-pom.outputs.exists == 'false'
