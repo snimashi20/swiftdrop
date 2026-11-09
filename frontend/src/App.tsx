@@ -12,6 +12,7 @@ import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
+import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -20,6 +21,11 @@ import {
   UnassignedParcelsPage,
 } from "./features/dispatch";
 import { AdminUsersPage } from "./features/admin";
+import { TodayDeliveriesPage } from "./features/courier";
+import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprovalsPage";
+import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
+import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
+import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -32,6 +38,7 @@ export function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/merchant/register" element={<MerchantRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
         <Route element={<PublicTrackingLayout />}>
@@ -45,9 +52,12 @@ export function App() {
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/profile/addresses" element={<AddressBookPage />} />
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
+            <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
+              <Route index element={<TodayDeliveriesPage />} />
+            </Route>
             <Route path="/parcels" element={<ParcelHistoryPage />} />
             <Route path="/parcels/new" element={<BookParcelPage />} />
-            <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
+                        <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
               <Route index element={<DispatcherDashboardPage />} />
               <Route path="unassigned" element={<UnassignedParcelsPage />} />
@@ -57,12 +67,26 @@ export function App() {
                 <Route index element={<NotificationLogPage />} />
               </Route>
             </Route>
+            <Route path="/admin/merchants" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<MerchantApprovalsPage />} />
+            </Route>
+            <Route path="/merchant/api-keys" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<MerchantApiKeysPage />} />
+            </Route>
+            <Route path="/merchant/orders" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<MerchantOrdersPage />} />
+            </Route>
             <Route path="/people" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
             </Route>
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
             </Route>
+            
+            <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<AdminPricingPage />} />
+            </Route>
+
           </Route>
         </Route>
 

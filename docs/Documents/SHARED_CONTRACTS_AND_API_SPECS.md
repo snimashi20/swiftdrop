@@ -129,10 +129,10 @@ $$\text{V}\langle yyyyMMddHHmm \rangle\text{\_\_}\langle \text{module}\rangle\te
 10. `V202610281200__courier_delivery_proof.sql`: Courier proof of delivery uploads
 11. `V202610311500__isuri_parcels_pickup_zone.sql`: Pickup zone association for parcels
 12. `V202610311800__sithmi_fix_notification_log.sql`: Notification log schema fix
-13. `V202610311900__binuwara_merchant_parcel_fk.sql`: Merchant order to parcel foreign key
-14. `V202610312100__lamya_courier_profile_fks.sql`: Courier profile and parcel assignment foreign keys
-15. `V202610312200__nethmini_status_history_fk.sql`: Status history to parcel foreign key
-16. `V202611021200__binuwara_merchant_user_fks.sql`: Merchants to users foreign keys
+13. `V202610311900__binuwara_merchant_parcel_fk.sql`: Foreign key link between merchant parcels and orders
+14. `V202610312100__lamya_courier_profile_fks.sql`: Foreign keys for courier profiles and workload tracking
+15. `V202610312200__nethmini_status_history_fk.sql`: Foreign key relationship for parcel status transitions
+16. `V202611021200__binuwara_merchant_user_fks.sql`: User relationship constraints for merchant accounts
 17. `V202611041000__sithmi_notification_read_at.sql`: `read_at` on `notification_log` for the unread count
 
 ---

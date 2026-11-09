@@ -11,6 +11,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -105,17 +107,11 @@ class MerchantAdminControllerMockMvcTest {
                 .andExpect(status().isOk());
     }
 
-    @Test
-    void merchant_cannotApprove() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"MERCHANT", "CUSTOMER", "COURIER", "DISPATCHER"})
+    void nonAdmin_cannotApprove(String role) throws Exception {
         mockMvc.perform(post("/api/v1/admin/merchants/1/approve")
-                        .with(user("merchant@example.com").roles("MERCHANT")))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void customer_cannotApprove() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/merchants/1/approve")
-                        .with(user("customer@example.com").roles("CUSTOMER")))
+                        .with(user(role.toLowerCase() + "@example.com").roles(role)))
                 .andExpect(status().isForbidden());
     }
 
