@@ -103,3 +103,26 @@ export type NotificationPage = {
   totalPages: number;
   last: boolean;
 };
+
+// Contract of GET /api/v1/notifications/me (notification-service, any signed-in user).
+// One item per status change, even when it went out by both e-mail and SMS.
+export type MyNotification = {
+  id: number;
+  parcelId: number;
+  trackingNumber: string;
+  oldStatus: string | null;
+  newStatus: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  readAt: string | null;
+};
+
+export type MyNotificationPage = {
+  content: MyNotification[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};
