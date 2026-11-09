@@ -28,8 +28,10 @@ This folder contains high-level architecture documents, technical specifications
    - Specific implementation blueprint for **Member M2 (Sadeepa)**.
    - Google OAuth 2.0 social authentication and token verification flow.
    - User profile and customer address book CRUD design.
-   - Admin user management endpoints.
-   - Receipts and invoicing feature plan.
+   - Admin user management endpoints and staff account provisioning.
+   - OpenPDF delivery receipt technical specification with IDOR defense architecture.
+   - Official Report Section 13 (OAuth 2.0 Login Flow Mermaid Sequence Diagram) & Section 17 (Security & Personal Data Handling).
+   - Official Test Suite & QA Specification (32 automated unit/integration/IDOR test cases cataloged with Java 25 LTS execution guidance).
    - Collaboration and review notes with **M8 (Dinira)**.
 
 ---
