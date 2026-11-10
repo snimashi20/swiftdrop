@@ -5,7 +5,8 @@ import { AuthProvider, useAuth } from "./features/auth/AuthContext";
 import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
-import { PlaceholderPage } from "./features/dashboard/PlaceholderPage";
+import { BookParcelPage } from "./features/parcels/BookParcelPage";
+import { ParcelHistoryPage } from "./features/parcels/ParcelHistoryPage";
 import { ParcelDetailPage, PublicTrackingLayout, TrackLookupPage, TrackingPage } from "./features/tracking";
 import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
@@ -20,6 +21,7 @@ import {
   UnassignedParcelsPage,
 } from "./features/dispatch";
 import { AdminUsersPage } from "./features/admin";
+import { TodayDeliveriesPage } from "./features/courier";
 import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprovalsPage";
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
@@ -50,8 +52,12 @@ export function App() {
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/profile/addresses" element={<AddressBookPage />} />
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
-            <Route path="/parcels" element={<PlaceholderPage />} />
-            <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
+            <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
+              <Route index element={<TodayDeliveriesPage />} />
+            </Route>
+            <Route path="/parcels" element={<ParcelHistoryPage />} />
+            <Route path="/parcels/new" element={<BookParcelPage />} />
+                        <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
               <Route index element={<DispatcherDashboardPage />} />
               <Route path="unassigned" element={<UnassignedParcelsPage />} />

@@ -48,7 +48,7 @@ export function MerchantRegisterPage() {
           <h1 className="font-display text-3xl font-bold sm:text-4xl">Register your business.</h1>
           <p className="mt-2 max-w-xl text-sm text-ink/55">Submit your business details to request access to the SwiftDrop merchant network.</p>
         </div>
-        <form onSubmit={handleSubmit(submit)} className="grid gap-5 sm:grid-cols-2">
+        <form noValidate onSubmit={handleSubmit(submit)} className="grid gap-5 sm:grid-cols-2">
           <FormField label="Business name" placeholder="Northstar Goods" error={errors.businessName?.message} {...register("businessName")} />
           <FormField label="Registration number" placeholder="BR-123456" error={errors.registrationNumber?.message} {...register("registrationNumber")} />
           <FormField label="Contact name" placeholder="Alex Morgan" error={errors.contactName?.message} {...register("contactName")} />

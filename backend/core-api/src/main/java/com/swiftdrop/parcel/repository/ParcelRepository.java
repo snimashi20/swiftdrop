@@ -1,6 +1,9 @@
 package com.swiftdrop.parcel.repository;
 
 import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.domain.ParcelStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,11 +20,17 @@ public interface ParcelRepository extends JpaRepository<Parcel, Long> {
 
     List<Parcel> findByAssignedCourierId(Long assignedCourierId);
 
+    /** A customer's own parcels, newest first when the Pageable sorts by createdAt. */
+    Page<Parcel> findByCustomerId(Long customerId, Pageable pageable);
+
+    /** Same, filtered by one status. */
+    Page<Parcel> findByCustomerIdAndStatus(Long customerId, ParcelStatus status, Pageable pageable);
+
     /**
      * Returns all active/in-progress parcels OR parcels updated today for this courier.
      */
     @Query("SELECT p FROM Parcel p WHERE p.assignedCourierId = :courierId " +
-           "AND (p.status IN ('PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY') " +
+           "AND (p.status IN ('CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY') " +
            "     OR p.updatedAt >= :startOfDay) " +
            "ORDER BY p.updatedAt DESC")
     List<Parcel> findTodayDeliveriesForCourier(@Param("courierId") Long courierId,

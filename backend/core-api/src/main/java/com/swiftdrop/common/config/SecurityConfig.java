@@ -1,8 +1,10 @@
 package com.swiftdrop.common.config;
 
 import com.swiftdrop.auth.repository.UserRepository;
-import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
+import com.swiftdrop.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
+import com.swiftdrop.common.security.RestAccessDeniedHandler;
+import com.swiftdrop.common.security.RestAuthenticationEntryPoint;
 import com.swiftdrop.merchant.security.ApiKeyAccessDeniedHandler;
 import com.swiftdrop.merchant.security.ApiKeyAuthenticationEntryPoint;
 import com.swiftdrop.merchant.security.ApiKeyAuthenticationFilter;
@@ -70,16 +72,41 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiFilterChain(
+            HttpSecurity http,
+            RestAuthenticationEntryPoint authenticationEntryPoint,
+            RestAccessDeniedHandler accessDeniedHandler
+    ) throws Exception {
         http
+            .securityMatcher("/api/**")
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/v1/auth/**",
                     "/api/v1/merchants/register",
                     "/api/v1/tracking/**",
-                    "/api/v1/pricing/quote",
+                    "/api/v1/pricing/quote"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
+    public SecurityFilterChain browserFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/api-docs/**",
@@ -87,14 +114,14 @@ public class SecurityConfig {
                     "/ws/**",
                     "/actuator/**",
                     "/oauth2/**",
-                    "/login/oauth2/**"
+                    "/login/**",
+                    "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> oauth
                 .successHandler(oAuth2SuccessHandler)
-            )
-            .addFilterBefore(jwtTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            );
 
         return http.build();
     }
