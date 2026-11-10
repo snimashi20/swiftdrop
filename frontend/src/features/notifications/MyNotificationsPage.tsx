@@ -1,5 +1,5 @@
 import { Bell, CheckCheck } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "../../lib/api";
 import { notificationsApi } from "../dispatch/api";
@@ -25,21 +25,34 @@ export function MyNotificationsPage() {
   const [data, setData] = useState<MyNotificationPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [globalUnread, setGlobalUnread] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError("");
     try {
-      setData(await notificationsApi.myFeed({ page, size: PAGE_SIZE, unreadOnly }));
+      const [feed, { unreadCount }] = await Promise.all([
+        notificationsApi.myFeed({ page, size: PAGE_SIZE, unreadOnly }),
+        notificationsApi.myUnreadCount(),
+      ]);
+      if (signal?.aborted) return;
+      setData(feed);
+      setGlobalUnread(unreadCount);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(getApiErrorMessage(err, "Could not load your notifications."));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [page, unreadOnly]);
 
   useEffect(() => {
-    void load();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   const markAllRead = async () => {
@@ -48,6 +61,8 @@ export function MyNotificationsPage() {
       setData((prev) =>
         prev ? { ...prev, content: prev.content.map((n) => ({ ...n, read: true })) } : prev,
       );
+      setGlobalUnread(0);
+      window.dispatchEvent(new Event("notifications:read"));
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not mark notifications as read."));
     }
@@ -62,6 +77,8 @@ export function MyNotificationsPage() {
             ? { ...prev, content: prev.content.map((n) => (n.id === item.id ? { ...n, read: true } : n)) }
             : prev,
         );
+        setGlobalUnread((c) => Math.max(0, c - 1));
+        window.dispatchEvent(new Event("notifications:read"));
       } catch {
         /* still navigate */
       }
@@ -75,7 +92,7 @@ export function MyNotificationsPage() {
   };
 
   const items = data?.content ?? [];
-  const hasUnread = items.some((n) => !n.read);
+  const hasUnread = globalUnread > 0;
 
   return (
     <div>

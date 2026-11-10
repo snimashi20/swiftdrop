@@ -41,9 +41,11 @@ export function NotificationBell() {
     };
     void refresh();
     const timer = window.setInterval(refresh, POLL_MS);
+    window.addEventListener("notifications:read", refresh);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      window.removeEventListener("notifications:read", refresh);
     };
   }, []);
 
