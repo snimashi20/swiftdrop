@@ -179,4 +179,41 @@ class WebhookDispatcherServiceTest {
         assertThat(response.getHttpStatus()).isEqualTo(200);
         assertThat(response.getDurationMs()).isGreaterThanOrEqualTo(0);
     }
+
+    @Test
+    @DisplayName("resendDelivery should reset attempts counter to 1 and execute fresh delivery attempt")
+    void shouldResetAttemptsOnManualResend() {
+        WebhookDelivery delivery = WebhookDelivery.builder()
+                .id(77L)
+                .endpoint(testEndpoint)
+                .eventId("evt_resend_1")
+                .trackingNumber("SD7K2M9QX4LP")
+                .payload("{\"status\":\"DELIVERED\"}")
+                .status(DeliveryStatus.FAILED)
+                .attempts(5) // Previously exhausted attempts in DLQ
+                .build();
+
+        when(webhookSigner.sign(anyString(), anyString())).thenReturn("resend_sig");
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("OK", HttpStatus.OK));
+        when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        WebhookDeliveryDto result = dispatcherService.resendDelivery(delivery);
+
+        assertThat(result).isNotNull();
+        assertThat(delivery.getAttempts()).isEqualTo(1); // Reset to 1, does NOT increment past 5
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.SUCCESS);
+    }
+
+    @Test
+    @DisplayName("maskSecret should mask secret while keeping whsec_ prefix and last 4 chars")
+    void shouldMaskSecretProperly() {
+        String original = "whsec_0123456789abcdef0123456789abcdef";
+        String masked = WebhookDispatcherService.maskSecret(original);
+
+        assertThat(masked).startsWith("whsec_");
+        assertThat(masked).endsWith("cdef");
+        assertThat(masked).contains("****");
+        assertThat(masked).isNotEqualTo(original);
+    }
 }

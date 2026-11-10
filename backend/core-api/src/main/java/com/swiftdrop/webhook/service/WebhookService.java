@@ -1,8 +1,12 @@
 package com.swiftdrop.webhook.service;
 
+import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.common.exception.ForbiddenException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.merchant.repository.MerchantRepository;
+import com.swiftdrop.merchant.security.MerchantPrincipal;
 import com.swiftdrop.webhook.domain.WebhookDelivery;
 import com.swiftdrop.webhook.domain.WebhookEndpoint;
 import com.swiftdrop.webhook.dto.TestPingResponse;
@@ -28,6 +32,7 @@ public class WebhookService {
     private final WebhookEndpointRepository endpointRepository;
     private final WebhookDeliveryRepository deliveryRepository;
     private final MerchantRepository merchantRepository;
+    private final UserRepository userRepository;
     private final WebhookSigner webhookSigner;
     private final WebhookDispatcherService dispatcherService;
 
@@ -35,7 +40,7 @@ public class WebhookService {
     public WebhookEndpointDto getEndpoint(Long merchantId) {
         WebhookEndpoint endpoint = endpointRepository.findByMerchantId(merchantId)
                 .orElseThrow(() -> new NotFoundException("No webhook endpoint registered for merchant ID: " + merchantId));
-        return dispatcherService.toEndpointDto(endpoint);
+        return dispatcherService.toEndpointDto(endpoint, false); // Masked secret
     }
 
     @Transactional
@@ -43,7 +48,8 @@ public class WebhookService {
         WebhookEndpoint endpoint = endpointRepository.findByMerchantId(merchantId)
                 .orElse(null);
 
-        if (endpoint == null) {
+        boolean isNew = (endpoint == null);
+        if (isNew) {
             log.info("Creating new webhook endpoint for merchantId: {}", merchantId);
             endpoint = WebhookEndpoint.builder()
                     .merchantId(merchantId)
@@ -58,7 +64,8 @@ public class WebhookService {
         }
 
         endpoint = endpointRepository.save(endpoint);
-        return dispatcherService.toEndpointDto(endpoint);
+        // Expose full secret only on initial endpoint creation so merchant can store it securely
+        return dispatcherService.toEndpointDto(endpoint, isNew);
     }
 
     @Transactional
@@ -88,36 +95,50 @@ public class WebhookService {
     }
 
     public WebhookDeliveryDto resendDelivery(Long deliveryId) {
-        return dispatcherService.resendDelivery(deliveryId);
+        Long currentMerchantId = resolveCurrentMerchantId();
+        return resendDelivery(deliveryId, currentMerchantId);
+    }
+
+    public WebhookDeliveryDto resendDelivery(Long deliveryId, Long merchantId) {
+        WebhookDelivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new NotFoundException("Webhook delivery not found with ID: " + deliveryId));
+
+        if (delivery.getEndpoint() == null || !delivery.getEndpoint().getMerchantId().equals(merchantId)) {
+            log.warn("IDOR attempt: Merchant {} attempted to resend delivery {} belonging to endpoint merchant {}",
+                    merchantId, deliveryId, delivery.getEndpoint() != null ? delivery.getEndpoint().getMerchantId() : null);
+            throw new ForbiddenException("You are not authorized to resend this webhook delivery");
+        }
+
+        return dispatcherService.resendDelivery(delivery);
     }
 
     /**
      * Resolves current merchant ID from the authenticated user principal.
-     * Falls back gracefully to first merchant or default ID (1L) for development/demo convenience.
+     * Looks up user by email/username or numeric ID and throws 403 Forbidden if not authenticated
+     * or no associated merchant profile exists.
      */
     public Long resolveCurrentMerchantId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            String principalName = auth.getName();
-            try {
-                // If principal is numeric user ID
-                Long userId = Long.parseLong(principalName);
-                return merchantRepository.findByUserId(userId)
-                        .map(Merchant::getId)
-                        .orElse(1L);
-            } catch (NumberFormatException ignored) {
-                // If principal is an email or username
-                return merchantRepository.findAll().stream()
-                        .findFirst()
-                        .map(Merchant::getId)
-                        .orElse(1L);
-            }
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new ForbiddenException("Authentication required");
         }
 
-        // Demo fallback for local development testing
-        return merchantRepository.findAll().stream()
-                .findFirst()
-                .map(Merchant::getId)
-                .orElse(1L);
+        if (auth.getPrincipal() instanceof MerchantPrincipal principal) {
+            return principal.merchantId();
+        }
+
+        String principalName = auth.getName();
+        try {
+            Long userId = Long.parseLong(principalName);
+            return merchantRepository.findByUserId(userId)
+                    .map(Merchant::getId)
+                    .orElseThrow(() -> new ForbiddenException("No merchant profile associated with user ID: " + userId));
+        } catch (NumberFormatException ignored) {
+            // Principal is an email or username
+            return userRepository.findByEmailIgnoreCase(principalName)
+                    .flatMap(user -> merchantRepository.findByUserId(user.getId()))
+                    .map(Merchant::getId)
+                    .orElseThrow(() -> new ForbiddenException("No merchant profile found for user: " + principalName));
+        }
     }
 }

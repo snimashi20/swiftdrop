@@ -55,8 +55,9 @@ public class WebhookDispatcherService {
 
     /**
      * Dispatches a webhook for an incoming parcel status changed event.
+     * Note: Transactional boundary intentionally omitted to prevent holding database connections
+     * during the outbound HTTP call.
      */
-    @Transactional
     public void dispatch(ParcelStatusChangedEvent event) {
         if (event == null || event.merchantId() == null) {
             log.debug("Skipping webhook dispatch: event is null or not associated with a merchant");
@@ -202,22 +203,24 @@ public class WebhookDispatcherService {
     /**
      * Manually triggers a resend of a failed or retrying delivery record.
      */
-    @Transactional
-    public WebhookDeliveryDto resendDelivery(Long deliveryId) {
-        WebhookDelivery delivery = deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new NotFoundException("Webhook delivery not found with ID: " + deliveryId));
-
+    public WebhookDeliveryDto resendDelivery(WebhookDelivery delivery) {
         WebhookEndpoint endpoint = delivery.getEndpoint();
         if (endpoint == null || !Boolean.TRUE.equals(endpoint.getActive())) {
             throw new IllegalStateException("Cannot resend webhook: endpoint is inactive or missing");
         }
 
-        log.info("Manual resend initiated for webhook delivery ID {}", deliveryId);
+        log.info("Manual resend initiated for webhook delivery ID {}", delivery.getId());
         delivery.setStatus(DeliveryStatus.PENDING);
-        delivery.setAttempts(delivery.getAttempts() + 1);
+        delivery.setAttempts(1); // Reset retry attempt counter on manual redelivery
         executeDeliveryAttempt(delivery, endpoint, delivery.getPayload());
 
         return toDto(delivery);
+    }
+
+    public WebhookDeliveryDto resendDelivery(Long deliveryId) {
+        WebhookDelivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new NotFoundException("Webhook delivery not found with ID: " + deliveryId));
+        return resendDelivery(delivery);
     }
 
     /**
@@ -290,12 +293,29 @@ public class WebhookDispatcherService {
                 .build();
     }
 
+    public static String maskSecret(String secret) {
+        if (secret == null || secret.isBlank()) {
+            return secret;
+        }
+        if (secret.length() <= 8) {
+            return "********";
+        }
+        String prefix = secret.startsWith("whsec_") ? "whsec_" : "";
+        String suffix = secret.substring(secret.length() - 4);
+        int maskedCount = Math.max(4, secret.length() - prefix.length() - 4);
+        return prefix + "*".repeat(maskedCount) + suffix;
+    }
+
     public WebhookEndpointDto toEndpointDto(WebhookEndpoint endpoint) {
+        return toEndpointDto(endpoint, false);
+    }
+
+    public WebhookEndpointDto toEndpointDto(WebhookEndpoint endpoint, boolean unmasked) {
         return WebhookEndpointDto.builder()
                 .id(endpoint.getId())
                 .merchantId(endpoint.getMerchantId())
                 .url(endpoint.getUrl())
-                .secret(endpoint.getSecret())
+                .secret(unmasked ? endpoint.getSecret() : maskSecret(endpoint.getSecret()))
                 .active(endpoint.getActive())
                 .createdAt(endpoint.getCreatedAt())
                 .build();

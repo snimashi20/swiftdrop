@@ -80,7 +80,6 @@ public class SecurityConfig {
                     "/api/v1/merchants/register",
                     "/api/v1/tracking/**",
                     "/api/v1/pricing/quote",
-                    "/api/v1/webhooks/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/api-docs/**",
