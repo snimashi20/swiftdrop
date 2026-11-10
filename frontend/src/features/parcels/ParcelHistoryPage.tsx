@@ -43,8 +43,7 @@ export function ParcelHistoryPage() {
     }
   }, [user, load]);
 
-    // TODO: set to true when the cancel API (POST /parcels/{id}/cancel) is merged
-  const CANCEL_ENABLED = false;
+      const CANCEL_ENABLED = true;
   const handleCancel = async (id: number) => {
 
     if (!window.confirm("Cancel this parcel? This cannot be undone.")) return;
