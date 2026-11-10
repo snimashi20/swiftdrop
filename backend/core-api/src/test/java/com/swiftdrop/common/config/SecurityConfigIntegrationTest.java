@@ -3,7 +3,7 @@ package com.swiftdrop.common.config;
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.auth.security.JwtService;
-import com.swiftdrop.auth.security.JwtTokenAuthenticationFilter;
+import com.swiftdrop.security.JwtTokenAuthenticationFilter;
 import com.swiftdrop.auth.security.OAuth2AuthenticationSuccessHandler;
 import com.swiftdrop.common.security.RestAccessDeniedHandler;
 import com.swiftdrop.common.security.RestAuthenticationEntryPoint;
