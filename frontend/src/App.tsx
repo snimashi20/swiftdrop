@@ -26,6 +26,7 @@ import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprov
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
 import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
+import { MyNotificationsPage } from "./features/notifications/MyNotificationsPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -55,6 +56,7 @@ export function App() {
             <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
               <Route index element={<TodayDeliveriesPage />} />
             </Route>
+            <Route path="/notifications" element={<MyNotificationsPage />} />
             <Route path="/parcels" element={<ParcelHistoryPage />} />
             <Route path="/parcels/new" element={<BookParcelPage />} />
                         <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
