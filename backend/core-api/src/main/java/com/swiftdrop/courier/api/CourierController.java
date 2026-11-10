@@ -7,6 +7,7 @@ import com.swiftdrop.courier.dto.*;
 import com.swiftdrop.courier.service.CourierService;
 import com.swiftdrop.dispatch.domain.CourierProfile;
 import com.swiftdrop.dispatch.repository.CourierProfileRepository;
+import com.swiftdrop.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -35,6 +36,8 @@ public class CourierController {
     private final UserRepository userRepository;
     private final CourierProfileRepository courierProfileRepository;
 
+    private record CourierIdentity(Long userId, Long profileId) {}
+
     @GetMapping("/deliveries/today")
     @Operation(summary = "Get today's assigned deliveries", description = "Retrieves active or completed deliveries assigned to the authenticated courier for today.")
     @ApiResponses({
@@ -42,8 +45,8 @@ public class CourierController {
             @ApiResponse(responseCode = "403", description = "Forbidden: Authenticated user has no courier profile")
     })
     public ResponseEntity<List<CourierDeliveryResponse>> getTodayDeliveries(Authentication authentication) {
-        Long courierProfileId = resolveCourierProfileId(authentication);
-        return ResponseEntity.ok(courierService.getTodayDeliveries(courierProfileId));
+        CourierIdentity courier = resolveCourierIdentity(authentication);
+        return ResponseEntity.ok(courierService.getTodayDeliveries(courier.profileId()));
     }
 
     @PatchMapping("/deliveries/{parcelId}/status")
@@ -58,8 +61,8 @@ public class CourierController {
             @PathVariable Long parcelId,
             @Valid @RequestBody UpdateStatusRequest request,
             Authentication authentication) {
-        Long courierProfileId = resolveCourierProfileId(authentication);
-        return ResponseEntity.ok(courierService.updateStatus(courierProfileId, parcelId, request));
+        CourierIdentity courier = resolveCourierIdentity(authentication);
+        return ResponseEntity.ok(courierService.updateStatus(courier.profileId(), courier.userId(), parcelId, request));
     }
 
     @PostMapping(value = "/deliveries/{parcelId}/deliver", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -75,8 +78,8 @@ public class CourierController {
             @Valid @RequestPart("data") DeliverParcelRequest request,
             @RequestPart(value = "photo", required = false) MultipartFile photo,
             Authentication authentication) {
-        Long courierProfileId = resolveCourierProfileId(authentication);
-        return ResponseEntity.ok(courierService.deliverParcel(courierProfileId, parcelId, request, photo));
+        CourierIdentity courier = resolveCourierIdentity(authentication);
+        return ResponseEntity.ok(courierService.deliverParcel(courier.profileId(), courier.userId(), parcelId, request, photo));
     }
 
     @PostMapping("/deliveries/{parcelId}/fail")
@@ -91,21 +94,28 @@ public class CourierController {
             @PathVariable Long parcelId,
             @Valid @RequestBody FailParcelRequest request,
             Authentication authentication) {
-        Long courierProfileId = resolveCourierProfileId(authentication);
-        return ResponseEntity.ok(courierService.failParcel(courierProfileId, parcelId, request));
+        CourierIdentity courier = resolveCourierIdentity(authentication);
+        return ResponseEntity.ok(courierService.failParcel(courier.profileId(), courier.userId(), parcelId, request));
     }
 
-    private Long resolveCourierProfileId(Authentication authentication) {
+    private CourierIdentity resolveCourierIdentity(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new ForbiddenException("Not allowed: Missing authentication");
         }
 
-        Long userId = userRepository.findByEmail(authentication.getName())
-                .map(User::getId)
-                .orElseThrow(() -> new ForbiddenException("Not allowed: User not found"));
+        Long userId;
+        if (authentication.getPrincipal() instanceof AuthenticatedUser authUser && authUser.id() != null) {
+            userId = authUser.id();
+        } else {
+            userId = userRepository.findByEmail(authentication.getName())
+                    .map(User::getId)
+                    .orElseThrow(() -> new ForbiddenException("Not allowed: User not found"));
+        }
 
-        return courierProfileRepository.findByUserId(userId)
+        Long profileId = courierProfileRepository.findByUserId(userId)
                 .map(CourierProfile::getId)
                 .orElseThrow(() -> new ForbiddenException("Not allowed: Courier profile not found for user"));
+
+        return new CourierIdentity(userId, profileId);
     }
 }
