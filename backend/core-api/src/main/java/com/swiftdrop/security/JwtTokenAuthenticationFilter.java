@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -18,6 +19,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
+@Component
 public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtTokenAuthenticationFilter.class);
@@ -52,6 +54,10 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    private static String withRolePrefix(String authority) {
+        return authority.startsWith("ROLE_") ? authority : "ROLE_" + authority;
+    }
+
     private List<SimpleGrantedAuthority> parseAuthorities(Object claim, String role) {
         Stream<?> values;
         if (claim == null) {
@@ -74,10 +80,11 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
                     return true;
                 })
                 .map(Object::toString)
+                .map(JwtTokenAuthenticationFilter::withRolePrefix)
                 .map(SimpleGrantedAuthority::new)
                 .toList();
         return authorities.isEmpty() && role != null && !role.isBlank()
-                ? List.of(new SimpleGrantedAuthority(role))
+                ? List.of(new SimpleGrantedAuthority(withRolePrefix(role)))
                 : authorities;
     }
 }
