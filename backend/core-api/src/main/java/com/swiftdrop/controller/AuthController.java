@@ -3,11 +3,13 @@ package com.swiftdrop.controller;
 import com.swiftdrop.dto.auth.AuthResponse;
 import com.swiftdrop.dto.auth.LoginRequest;
 import com.swiftdrop.dto.auth.RegisterRequest;
+import com.swiftdrop.dto.auth.SelectRoleRequest;
 import com.swiftdrop.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,5 +30,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/select-role")
+    public ResponseEntity<AuthResponse> selectRole(@Valid @RequestBody SelectRoleRequest request, Authentication authentication) {
+        return ResponseEntity.ok(authService.selectRole(authentication, request.role()));
     }
 }

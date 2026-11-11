@@ -13,4 +13,5 @@ public class UserResponseDto {
     private String role;
     private String provider;
     private boolean enabled;
+    private String status;
 }

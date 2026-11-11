@@ -27,6 +27,10 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(Long userId, String email, Collection<String> roles) {
+        return generateToken(userId, email, roles, "ACTIVE");
+    }
+
+    public String generateToken(Long userId, String email, Collection<String> roles, String status) {
         Date issuedAt = new Date();
         Date expiration = new Date(issuedAt.getTime() + expirationMs);
         Set<String> authorities = Set.copyOf(roles);
@@ -38,6 +42,7 @@ public class JwtTokenProvider {
                 .claim("email", email)
                 .claim("role", role)
                 .claim("authorities", authorities)
+                .claim("status", status != null ? status : "ACTIVE")
                 .issuedAt(issuedAt)
                 .expiration(expiration)
                 .signWith(signingKey)

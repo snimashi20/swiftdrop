@@ -51,9 +51,10 @@ public class MerchantService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getContactName().trim());
         user.setPhoneNumber(request.getContactPhone().trim());
-        user.setRole("MERCHANT");
+        user.setRole("ROLE_MERCHANT");
         user.setProvider("LOCAL");
-        user.setEnabled(true);
+        user.setEnabled(false);
+        user.setStatus("PENDING_APPROVAL");
 
         User savedUser = userRepository.save(user);
 
@@ -93,6 +94,15 @@ public class MerchantService {
         merchant.setStatus(MerchantStatus.APPROVED);
         merchant.setRejectionReason(null);
         setReviewFields(merchant, authentication);
+
+        if (merchant.getUserId() != null) {
+            userRepository.findById(merchant.getUserId()).ifPresent(user -> {
+                user.setStatus("ACTIVE");
+                user.setEnabled(true);
+                userRepository.save(user);
+            });
+        }
+
         return merchantMapper.toDto(merchantRepository.save(merchant));
     }
 
@@ -102,6 +112,15 @@ public class MerchantService {
         merchant.setStatus(MerchantStatus.REJECTED);
         merchant.setRejectionReason(reason.trim());
         setReviewFields(merchant, authentication);
+
+        if (merchant.getUserId() != null) {
+            userRepository.findById(merchant.getUserId()).ifPresent(user -> {
+                user.setStatus("REJECTED");
+                user.setEnabled(false);
+                userRepository.save(user);
+            });
+        }
+
         return merchantMapper.toDto(merchantRepository.save(merchant));
     }
 

@@ -6,16 +6,18 @@ spring:
     name: swiftdrop-core-api
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:h2:mem:swiftdropdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
 
   flyway:
+    enabled: false
     out-of-order: true
 
   rabbitmq:
@@ -33,8 +35,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:dummy-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dummy-client-secret}
             scope:
               - openid
               - email
@@ -48,7 +50,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:v9y$B&E)H@McQfTjWnZr4u7x!A%C*F-JaNdRgUkXp2s5v8y/B?E(G+KbPeShVmYq3t6w}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}

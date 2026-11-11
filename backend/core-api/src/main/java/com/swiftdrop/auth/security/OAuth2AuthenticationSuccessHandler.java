@@ -1,5 +1,5 @@
 package com.swiftdrop.auth.security;
-
+import java.util.Optional;
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -56,32 +56,62 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             return;
         }
 
-        User user = userRepository.findByEmail(email)
-                .map(existingUser -> {
-                    existingUser.setProvider("GOOGLE");
-                    existingUser.setProviderId(googleSub);
-                    if (name != null && !name.isBlank() && (existingUser.getFullName() == null || existingUser.getFullName().isBlank())) {
-                        existingUser.setFullName(name);
-                    }
-                    return userRepository.save(existingUser);
-                })
-                .orElseGet(() -> {
-                    User newUser = new User();
-                    newUser.setEmail(email);
-                    newUser.setFullName(name != null && !name.isBlank() ? name : email);
-                    newUser.setRole("CUSTOMER");
-                    newUser.setProvider("GOOGLE");
-                    newUser.setProviderId(googleSub);
-                    newUser.setEnabled(true);
-                    return userRepository.save(newUser);
-                });
+        boolean isNewUser = false;
+        Optional<User> existingUserOpt = userRepository.findByEmail(email);
+        User user;
 
-        if (!user.isEnabled()) {
+        if (existingUserOpt.isPresent()) {
+            user = existingUserOpt.get();
+            user.setProvider("GOOGLE");
+            user.setProviderId(googleSub);
+            if (name != null && !name.isBlank() && (user.getFullName() == null || user.getFullName().isBlank())) {
+                user.setFullName(name);
+            }
+            if ("PENDING_ROLE".equalsIgnoreCase(user.getRole())) {
+                isNewUser = true;
+            }
+            user = userRepository.save(user);
+        } else {
+            isNewUser = true;
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setFullName(name != null && !name.isBlank() ? name : email);
+            newUser.setRole("PENDING_ROLE");
+            newUser.setStatus("PENDING_ROLE");
+            newUser.setProvider("GOOGLE");
+            newUser.setProviderId(googleSub);
+            newUser.setEnabled(true);
+            user = userRepository.save(newUser);
+        }
+
+        if (isNewUser) {
+            String jwtToken = jwtService.generateToken(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getStatus());
+            String targetUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl)
+                    .path("/oauth/callback")
+                    .queryParam("token", jwtToken)
+                    .queryParam("newUser", "true")
+                    .build().toUriString();
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
+            return;
+        }
+
+        if ("PENDING_APPROVAL".equalsIgnoreCase(user.getStatus())) {
+            String jwtToken = jwtService.generateToken(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getStatus());
+            String targetUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl)
+                    .path("/oauth/callback")
+                    .queryParam("token", jwtToken)
+                    .queryParam("status", "PENDING_APPROVAL")
+                    .build().toUriString();
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
+            return;
+        }
+
+        if (!user.isEnabled() || "INACTIVE".equalsIgnoreCase(user.getStatus()) || "REJECTED".equalsIgnoreCase(user.getStatus())) {
             getRedirectStrategy().sendRedirect(request, response, loginErrorUrl("account_disabled"));
             return;
         }
 
-        String jwtToken = jwtService.generateToken(user.getId(), user.getEmail(), user.getFullName(), user.getRole());
+        String jwtToken = jwtService.generateToken(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getStatus());
 
         String targetUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl)
                 .path("/oauth/callback")
