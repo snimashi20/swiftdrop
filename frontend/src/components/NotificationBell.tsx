@@ -1,6 +1,6 @@
 import { Bell, CheckCheck } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { notificationsApi } from "../features/dispatch/api";
 import type { MyNotification } from "../features/dispatch/types";
 import { getApiErrorMessage } from "../lib/api";
@@ -41,9 +41,11 @@ export function NotificationBell() {
     };
     void refresh();
     const timer = window.setInterval(refresh, POLL_MS);
+    window.addEventListener("notifications:read", refresh);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      window.removeEventListener("notifications:read", refresh);
     };
   }, []);
 
@@ -177,6 +179,16 @@ export function NotificationBell() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {items.length > 0 && (
+            <Link
+              to="/notifications"
+              onClick={() => setOpen(false)}
+              className="block border-t border-ink/10 px-4 py-2.5 text-center text-xs font-semibold text-coral hover:bg-coral/5"
+            >
+              View all notifications
+            </Link>
           )}
         </div>
       )}

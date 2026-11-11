@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../lib/api";
 import { useAuth } from "../auth/AuthContext";
-import { cancelParcel, listParcels, STATUSES } from "./parcels.api";
+import { cancelParcel, downloadReceipt, listParcels, STATUSES } from "./parcels.api";
 import type { ParcelPage, ParcelStatus } from "./parcels.api";
 
 const statusClass: Record<ParcelStatus, string> = {
@@ -42,6 +42,20 @@ export function ParcelHistoryPage() {
       load();
     }
   }, [user, load]);
+
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const handleDownload = async (id: number, trackingNumber: string) => {
+    setError("");
+    setDownloadingId(id);
+    try {
+      await downloadReceipt(id, trackingNumber);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not download the receipt."));
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
       const CANCEL_ENABLED = true;
   const handleCancel = async (id: number) => {
@@ -130,6 +144,14 @@ export function ParcelHistoryPage() {
                     Cancel
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => handleDownload(parcel.id, parcel.trackingNumber)}
+                  disabled={parcel.status === "CANCELLED" || downloadingId === parcel.id}
+                  className="rounded-xl border border-ink px-4 py-1.5 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {downloadingId === parcel.id ? "Downloading..." : "Download receipt"}
+                </button>
               </div>
             </li>
           ))}
