@@ -12,6 +12,7 @@ import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPag
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
+import { PriceCalculator } from './features/pricing/components/PriceCalculator'; // <-- ADDED
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -33,6 +34,7 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/calculator" element={<PriceCalculator />} /> {/* Moved outside ProtectedRoute so it's public */}
 
         <Route element={<PublicTrackingLayout />}>
           <Route path="/track" element={<TrackLookupPage />} />
@@ -62,11 +64,9 @@ export function App() {
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
             </Route>
-            
             <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminPricingPage />} />
             </Route>
-
           </Route>
         </Route>
 
