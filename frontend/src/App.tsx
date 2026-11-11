@@ -13,6 +13,8 @@ import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPag
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
+import { ChatWidget } from './features/ai/ChatWidget';
+import { PriceCalculator } from './features/pricing/components/PriceCalculator';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -46,6 +48,7 @@ export function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/merchant/register" element={<MerchantRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/calculator" element={<PriceCalculator />} />
         <Route path="/select-role" element={<RoleSelectionPage />} />
         <Route path="/waiting-approval" element={<WaitingApprovalPage />} />
 
@@ -91,16 +94,15 @@ export function App() {
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
             </Route>
-            
             <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminPricingPage />} />
             </Route>
-
           </Route>
         </Route>
 
         <Route path="*" element={<PublicRedirect />} />
       </Routes>
+      <ChatWidget />
     </AuthProvider>
   );
 }
