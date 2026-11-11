@@ -55,6 +55,7 @@ public class AuthController {
                 .role(user.getRole())
                 .provider(user.getProvider())
                 .enabled(user.isEnabled())
+                .status(user.getStatus())
                 .build();
     }
 }

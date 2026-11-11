@@ -25,6 +25,10 @@ public class JwtService {
     }
 
     public String generateToken(Long userId, String email, String fullName, String role) {
+        return generateToken(userId, email, fullName, role, "ACTIVE");
+    }
+
+    public String generateToken(Long userId, String email, String fullName, String role, String status) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
 
@@ -35,6 +39,7 @@ public class JwtService {
                 .claim("fullName", fullName)
                 .claim("role", role)
                 .claim("userId", userId)
+                .claim("status", status != null ? status : "ACTIVE")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(signingKey)

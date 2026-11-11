@@ -25,7 +25,7 @@ Parcel lifecycle: `CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY →
 
 ## Tech stack
 
-Java 21 (LTS) · Maven · Spring Boot (Web, Validation, Data JPA, Security, OAuth2 Client,
+Java 25 (LTS) · Maven · Spring Boot (Web, Validation, Data JPA, Security, OAuth2 Client,
 WebSocket, AMQP, Mail, Actuator) · PostgreSQL 16 + Flyway · RabbitMQ · STOMP WebSockets ·
 JWT + BCrypt + Google OAuth 2.0 · React + TypeScript + Vite + Tailwind + shadcn/ui ·
 Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, JaCoCo
@@ -36,7 +36,7 @@ Docker + Docker Compose + Nginx · JUnit 5, Mockito, Testcontainers, WireMock, J
 
 ### Prerequisites
 
-- Java 21 (LTS) and Maven
+- Java 25 (LTS) and Maven
 - Node.js 22 (LTS)
 - Docker Desktop
 
@@ -148,3 +148,31 @@ The script also creates 8 parcels, `SDDEMO000001` to `SDDEMO000008`: one in each
 | M8 | Dinira | Foundation, JWT login, security |
 | M9 | Binuwara | Merchants and the merchant API |
 | M10 | Sandavi | Webhooks and retry, Kubernetes bonus |
+
+## Merchant integration guide (M9)
+
+### Register and get approved
+
+1. Open `/merchant/register` or send `POST /api/v1/merchants/register` with the business name, registration number, contact name, email, password, and a Sri Lankan mobile number (`07XXXXXXXX` or `+947XXXXXXXX`).
+2. Sign in with the registered email and password. The merchant starts in `PENDING` status.
+3. An administrator reviews the application under `/admin/merchants` and approves or rejects it. Pending and rejected merchants cannot create API keys or orders.
+
+### Create an API key
+
+1. Sign in as the approved merchant and open `/merchant/api-keys`.
+2. Generate a labeled key. Copy it when it appears; the full key is returned once.
+3. Store the key in your shop backend's secret manager or environment. Do not put it in frontend code, Git, screenshots, or logs. Revoke it from the same page if it is exposed or no longer needed.
+
+### Create an order
+
+Send a `POST` request to `/api/v1/merchant-api/orders` with:
+
+- `X-API-Key`: your merchant key
+- `Idempotency-Key`: a unique request identifier. Reuse it when retrying the same order.
+- JSON fields `pickup`, `dropoff`, `receiverName`, `receiverPhone`, `size`, and `weightKg`; `externalOrderId` is optional.
+
+The pickup and dropoff objects use `line1`, `city`, and `district`. A successful new order returns HTTP 201 and a tracking number. Reusing the same idempotency key returns the original order. Bulk creation uses `POST /api/v1/merchant-api/orders/bulk` and accepts up to 50 orders.
+
+The signed-in merchant dashboard reads orders from `/api/v1/merchants/me/orders` and status totals from `/api/v1/merchants/me/orders/summary`. Store integrations should use the API-key protected `/api/v1/merchant-api/orders` endpoints.
+
+Import `docs/postman/SwiftDrop-Merchant-API.postman_collection.json` to try registration, approval, single order, idempotent retry, bulk, list, status, and invalid-key flows. Keep real credentials in a local Postman environment.

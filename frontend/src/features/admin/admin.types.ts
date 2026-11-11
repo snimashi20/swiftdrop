@@ -8,6 +8,7 @@ export interface AdminUser {
   role: Role;
   provider: "LOCAL" | "GOOGLE" | string;
   enabled: boolean;
+  status?: string;
 }
 
 export interface UpdateRoleDto {
@@ -19,6 +20,7 @@ export interface StatusToggleDto {
 }
 
 export type RoleFilterOption = "ALL" | Role;
+export type StatusFilterOption = "ALL" | "PENDING_APPROVAL" | "ACTIVE" | "INACTIVE";
 
 export interface CreateStaffRequestDto {
   fullName: string;

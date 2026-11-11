@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  Check,
+  Clock,
   Filter,
   Key,
   Power,
@@ -13,13 +15,14 @@ import {
   UserPlus,
   Users,
   UserX,
+  X,
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import type { Role } from "../../auth/auth.types";
 import { ROLES } from "../../auth/auth.types";
 import { getApiErrorMessage } from "../../../lib/api";
-import { fetchAdminUsers, toggleUserStatus, updateUserRole } from "../admin.api";
-import type { AdminUser, RoleFilterOption, ToastMessage } from "../admin.types";
+import { approveUser, fetchAdminUsers, rejectUser, toggleUserStatus, updateUserRole } from "../admin.api";
+import type { AdminUser, RoleFilterOption, StatusFilterOption, ToastMessage } from "../admin.types";
 import { CreateStaffModal } from "../components/CreateStaffModal";
 import { RoleBadge } from "../components/RoleBadge";
 import { RoleUpdateModal } from "../components/RoleUpdateModal";
@@ -37,6 +40,7 @@ export const AdminUsersPage: React.FC = () => {
 
   // Filters & search
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterOption>("ALL");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<StatusFilterOption>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Modals state
@@ -92,30 +96,73 @@ export const AdminUsersPage: React.FC = () => {
     loadUsers();
   }, [loadUsers]);
 
-  // Client-side search filtering (search by name, email, or ID)
+  // Client-side search and status filtering
   const filteredUsers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return users;
-
     return users.filter((u) => {
+      // Status filter
+      if (selectedStatusFilter !== "ALL") {
+        if (selectedStatusFilter === "PENDING_APPROVAL" && u.status !== "PENDING_APPROVAL") {
+          return false;
+        }
+        if (selectedStatusFilter === "ACTIVE" && (!u.enabled || u.status === "PENDING_APPROVAL")) {
+          return false;
+        }
+        if (selectedStatusFilter === "INACTIVE" && (u.enabled || u.status === "PENDING_APPROVAL")) {
+          return false;
+        }
+      }
+
+      // Search filter
+      if (!q) return true;
       const matchName = u.fullName?.toLowerCase().includes(q);
       const matchEmail = u.email?.toLowerCase().includes(q);
       const matchId = u.id?.toString().includes(q);
       const matchPhone = u.phoneNumber?.toLowerCase().includes(q);
       return matchName || matchEmail || matchId || matchPhone;
     });
-  }, [users, searchQuery]);
+  }, [users, searchQuery, selectedStatusFilter]);
 
   // Summary Metrics calculations
   const metrics = useMemo(() => {
     const total = users.length;
-    const active = users.filter((u) => u.enabled).length;
-    const disabled = total - active;
-    const staff = users.filter((u) =>
-      ["ADMIN", "DISPATCHER", "COURIER"].includes(u.role)
-    ).length;
-    return { total, active, disabled, staff };
+    const pending = users.filter((u) => u.status === "PENDING_APPROVAL").length;
+    const active = users.filter((u) => u.enabled && u.status !== "PENDING_APPROVAL").length;
+    const disabled = users.filter((u) => !u.enabled && u.status !== "PENDING_APPROVAL").length;
+    return { total, pending, active, disabled };
   }, [users]);
+
+  // Approve user handler
+  const handleApproveUser = async (user: AdminUser) => {
+    try {
+      const updated = await approveUser(user.id);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
+      addToast(
+        "success",
+        "Account Approved",
+        `${user.fullName} (${user.role}) is now approved and active.`
+      );
+    } catch (err: unknown) {
+      const msg = getApiErrorMessage(err, "Failed to approve account.");
+      addToast("error", "Approval Failed", msg);
+    }
+  };
+
+  // Reject user handler
+  const handleRejectUser = async (user: AdminUser) => {
+    try {
+      const updated = await rejectUser(user.id);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
+      addToast(
+        "info",
+        "Account Rejected",
+        `${user.fullName}'s registration was rejected.`
+      );
+    } catch (err: unknown) {
+      const msg = getApiErrorMessage(err, "Failed to reject account.");
+      addToast("error", "Rejection Failed", msg);
+    }
+  };
 
   // Role update handler
   const handleRoleUpdate = async (userId: number, nextRole: Role) => {
@@ -194,7 +241,13 @@ export const AdminUsersPage: React.FC = () => {
 
       {/* Summary Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-ink/10 bg-white p-4 shadow-xs">
+        <div
+          onClick={() => {
+            setSelectedStatusFilter("ALL");
+            setSelectedRoleFilter("ALL");
+          }}
+          className="rounded-2xl border border-ink/10 bg-white p-4 shadow-xs cursor-pointer hover:border-ink/20 transition"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-ink/50">
               Total Users
@@ -204,10 +257,37 @@ export const AdminUsersPage: React.FC = () => {
             </div>
           </div>
           <p className="mt-2 text-2xl font-bold text-ink">{metrics.total}</p>
-          <p className="text-[11px] text-ink/50 mt-0.5">Registered accounts</p>
+          <p className="text-[11px] text-ink/50 mt-0.5">All registered accounts</p>
         </div>
 
-        <div className="rounded-2xl border border-ink/10 bg-white p-4 shadow-xs">
+        <div
+          onClick={() => setSelectedStatusFilter("PENDING_APPROVAL")}
+          className={`rounded-2xl border p-4 shadow-xs cursor-pointer transition ${
+            selectedStatusFilter === "PENDING_APPROVAL"
+              ? "border-amber-400 bg-amber-50/50"
+              : "border-amber-200/80 bg-white hover:border-amber-300"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
+              Pending Approval
+            </span>
+            <div className="p-2 rounded-xl bg-amber-100 text-amber-700">
+              <Clock size={16} />
+            </div>
+          </div>
+          <p className="mt-2 text-2xl font-bold text-amber-900">{metrics.pending}</p>
+          <p className="text-[11px] text-amber-700/80 mt-0.5">Merchants & couriers awaiting review</p>
+        </div>
+
+        <div
+          onClick={() => setSelectedStatusFilter("ACTIVE")}
+          className={`rounded-2xl border p-4 shadow-xs cursor-pointer transition ${
+            selectedStatusFilter === "ACTIVE"
+              ? "border-emerald-400 bg-emerald-50/50"
+              : "border-ink/10 bg-white hover:border-emerald-300"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
               Active Accounts
@@ -220,36 +300,30 @@ export const AdminUsersPage: React.FC = () => {
           <p className="text-[11px] text-emerald-600/75 mt-0.5">Login permitted</p>
         </div>
 
-        <div className="rounded-2xl border border-ink/10 bg-white p-4 shadow-xs">
+        <div
+          onClick={() => setSelectedStatusFilter("INACTIVE")}
+          className={`rounded-2xl border p-4 shadow-xs cursor-pointer transition ${
+            selectedStatusFilter === "INACTIVE"
+              ? "border-rose-400 bg-rose-50/50"
+              : "border-ink/10 bg-white hover:border-rose-300"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
-              Suspended
+              Suspended / Rejected
             </span>
             <div className="p-2 rounded-xl bg-rose-50 text-rose-600">
               <UserX size={16} />
             </div>
           </div>
           <p className="mt-2 text-2xl font-bold text-rose-900">{metrics.disabled}</p>
-          <p className="text-[11px] text-rose-600/75 mt-0.5">Access revoked</p>
-        </div>
-
-        <div className="rounded-2xl border border-ink/10 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">
-              Staff & Fleet
-            </span>
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-              <Shield size={16} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-indigo-900">{metrics.staff}</p>
-          <p className="text-[11px] text-indigo-600/75 mt-0.5">Couriers, dispatch, admins</p>
+          <p className="text-[11px] text-rose-600/75 mt-0.5">Access restricted</p>
         </div>
       </div>
 
       {/* Main Table Card */}
       <div className="rounded-2xl border border-ink/10 bg-white shadow-xs overflow-hidden">
-        {/* Toolbar: Search & Role Filter */}
+        {/* Toolbar: Search, Status & Role Filter */}
         <div className="p-4 sm:p-5 border-b border-ink/10 bg-mist/30 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md">
@@ -266,24 +340,44 @@ export const AdminUsersPage: React.FC = () => {
             />
           </div>
 
-          {/* Role Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-ink/60 shrink-0">
-              <Filter size={14} />
-              <span>Role:</span>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-ink/60 shrink-0">
+                <Clock size={14} />
+                <span>Status:</span>
+              </div>
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value as StatusFilterOption)}
+                className="rounded-xl border border-ink/15 bg-white px-3 py-2 text-xs font-semibold text-ink outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="PENDING_APPROVAL">Pending Approval ({metrics.pending})</option>
+                <option value="ACTIVE">Active ({metrics.active})</option>
+                <option value="INACTIVE">Suspended / Rejected ({metrics.disabled})</option>
+              </select>
             </div>
-            <select
-              value={selectedRoleFilter}
-              onChange={(e) => setSelectedRoleFilter(e.target.value as RoleFilterOption)}
-              className="rounded-xl border border-ink/15 bg-white px-3 py-2 text-xs font-semibold text-ink outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
-            >
-              <option value="ALL">All Roles ({users.length})</option>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r.charAt(0) + r.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
+
+            {/* Role Filter Dropdown */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-ink/60 shrink-0">
+                <Filter size={14} />
+                <span>Role:</span>
+              </div>
+              <select
+                value={selectedRoleFilter}
+                onChange={(e) => setSelectedRoleFilter(e.target.value as RoleFilterOption)}
+                className="rounded-xl border border-ink/15 bg-white px-3 py-2 text-xs font-semibold text-ink outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
+              >
+                <option value="ALL">All Roles ({users.length})</option>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r.charAt(0) + r.slice(1).toLowerCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -412,45 +506,69 @@ export const AdminUsersPage: React.FC = () => {
 
                         {/* Status Badge */}
                         <td className="py-3.5 px-4">
-                          <StatusBadge enabled={u.enabled} />
+                          <StatusBadge enabled={u.enabled} status={u.status} />
                         </td>
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right">
-                          <div className="inline-flex items-center gap-1.5">
-                            {/* Change Role Button */}
-                            <button
-                              onClick={() => setRoleModalUser(u)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink/10 bg-white hover:bg-ink/5 text-ink font-semibold text-[11px] transition shadow-xs"
-                              title="Update user role"
-                            >
-                              <UserCog size={13} className="text-ink/60" />
-                              <span>Role</span>
-                            </button>
+                          {u.status === "PENDING_APPROVAL" ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              {/* Approve Button */}
+                              <button
+                                onClick={() => handleApproveUser(u)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition shadow-xs"
+                                title="Approve user registration"
+                              >
+                                <Check size={13} strokeWidth={2.5} />
+                                <span>Approve</span>
+                              </button>
 
-                            {/* Status Toggle Button */}
-                            <button
-                              onClick={() => setStatusModalUser(u)}
-                              disabled={isSelf && u.enabled}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-semibold text-[11px] transition shadow-xs ${
-                                u.enabled
-                                  ? isSelf
-                                    ? "bg-ink/5 text-ink/30 cursor-not-allowed border border-ink/10"
-                                    : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                                  : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              }`}
-                              title={
-                                isSelf && u.enabled
-                                  ? "Cannot disable your own active account"
-                                  : u.enabled
-                                  ? "Disable user account"
-                                  : "Activate user account"
-                              }
-                            >
-                              <Power size={13} />
-                              <span>{u.enabled ? "Disable" : "Enable"}</span>
-                            </button>
-                          </div>
+                              {/* Reject Button */}
+                              <button
+                                onClick={() => handleRejectUser(u)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-[11px] transition shadow-xs"
+                                title="Reject user registration"
+                              >
+                                <X size={13} strokeWidth={2.5} />
+                                <span>Reject</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5">
+                              {/* Change Role Button */}
+                              <button
+                                onClick={() => setRoleModalUser(u)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink/10 bg-white hover:bg-ink/5 text-ink font-semibold text-[11px] transition shadow-xs"
+                                title="Update user role"
+                              >
+                                <UserCog size={13} className="text-ink/60" />
+                                <span>Role</span>
+                              </button>
+
+                              {/* Status Toggle Button */}
+                              <button
+                                onClick={() => setStatusModalUser(u)}
+                                disabled={isSelf && u.enabled}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-semibold text-[11px] transition shadow-xs ${
+                                  u.enabled
+                                    ? isSelf
+                                      ? "bg-ink/5 text-ink/30 cursor-not-allowed border border-ink/10"
+                                      : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                    : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                }`}
+                                title={
+                                  isSelf && u.enabled
+                                    ? "Cannot disable your own active account"
+                                    : u.enabled
+                                    ? "Disable user account"
+                                    : "Activate user account"
+                                }
+                              >
+                                <Power size={13} />
+                                <span>{u.enabled ? "Disable" : "Enable"}</span>
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -487,34 +605,55 @@ export const AdminUsersPage: React.FC = () => {
 
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <RoleBadge role={u.role} size="sm" />
-                      <StatusBadge enabled={u.enabled} size="sm" />
+                      <StatusBadge enabled={u.enabled} status={u.status} size="sm" />
                       <span className="text-[11px] text-ink/50 ml-auto">
                         Provider: <strong>{u.provider}</strong>
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 pt-2 border-t border-ink/5">
-                      <button
-                        onClick={() => setRoleModalUser(u)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-ink/15 text-xs font-semibold text-ink hover:bg-ink/5"
-                      >
-                        <UserCog size={14} />
-                        Change Role
-                      </button>
-                      <button
-                        onClick={() => setStatusModalUser(u)}
-                        disabled={isSelf && u.enabled}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold ${
-                          u.enabled
-                            ? isSelf
-                              ? "bg-ink/5 text-ink/30 cursor-not-allowed"
-                              : "bg-rose-50 text-rose-700 hover:bg-rose-100"
-                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                        }`}
-                      >
-                        <Power size={14} />
-                        {u.enabled ? "Disable Account" : "Enable Account"}
-                      </button>
+                      {u.status === "PENDING_APPROVAL" ? (
+                        <>
+                          <button
+                            onClick={() => handleApproveUser(u)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+                          >
+                            <Check size={14} strokeWidth={2.5} />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectUser(u)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold hover:bg-rose-100"
+                          >
+                            <X size={14} strokeWidth={2.5} />
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setRoleModalUser(u)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-ink/15 text-xs font-semibold text-ink hover:bg-ink/5"
+                          >
+                            <UserCog size={14} />
+                            Change Role
+                          </button>
+                          <button
+                            onClick={() => setStatusModalUser(u)}
+                            disabled={isSelf && u.enabled}
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold ${
+                              u.enabled
+                                ? isSelf
+                                  ? "bg-ink/5 text-ink/30 cursor-not-allowed"
+                                  : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            }`}
+                          >
+                            <Power size={14} />
+                            {u.enabled ? "Disable Account" : "Enable Account"}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

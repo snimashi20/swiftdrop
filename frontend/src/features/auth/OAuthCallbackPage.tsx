@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { decodeJwt, persistAuth } from "./auth.storage";
-import type { User } from "./auth.types";
+import type { User, UserStatus } from "./auth.types";
 
 export const OAuthCallbackPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -10,22 +10,32 @@ export const OAuthCallbackPage: React.FC = () => {
   useEffect(() => {
     const token = searchParams.get("token");
     const error = searchParams.get("error");
+    const isNewUserParam = searchParams.get("newUser") === "true";
+    const statusParam = searchParams.get("status");
 
     if (token) {
       try {
         const decoded = decodeJwt(token);
+        const status = (statusParam || decoded.status || "ACTIVE") as UserStatus;
         const user: User = {
           id: decoded.id,
           name: decoded.name || decoded.email?.split("@")[0] || "SwiftDrop user",
           email: decoded.email || "",
           role: decoded.role || "CUSTOMER",
+          status,
         };
 
         // Persist token in swiftdrop_access_token and user info
         persistAuth(token, user, true);
 
-        // Force a direct navigation to dashboard so AuthContext loads fresh state
-        window.location.href = "/dashboard";
+        // Routing logic based on user role and approval status
+        if (isNewUserParam || user.status === "PENDING_ROLE") {
+          window.location.href = "/select-role";
+        } else if (user.status === "PENDING_APPROVAL" || statusParam === "PENDING_APPROVAL") {
+          window.location.href = "/waiting-approval";
+        } else {
+          window.location.href = "/dashboard";
+        }
       } catch (e) {
         console.error("Failed to decode token", e);
         navigate("/login?error=token_invalid", { replace: true });
@@ -48,3 +58,5 @@ export const OAuthCallbackPage: React.FC = () => {
     </div>
   );
 };
+
+export default OAuthCallbackPage;

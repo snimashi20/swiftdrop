@@ -9,7 +9,10 @@ import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.merchant.domain.MerchantStatus;
+import com.swiftdrop.merchant.repository.MerchantRepository;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,19 +28,28 @@ public class AdminUserController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MerchantRepository merchantRepository;
 
     public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this(userRepository, passwordEncoder, null);
+    }
+
+    @Autowired
+    public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                               @Autowired(required = false) MerchantRepository merchantRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.merchantRepository = merchantRepository;
     }
 
     /**
      * GET /api/v1/admin/users
-     * Retrieve all users, optionally filtered by role (e.g. ?role=COURIER)
+     * Retrieve all users, optionally filtered by role (e.g. ?role=COURIER) and status (e.g. ?status=PENDING_APPROVAL)
      */
     @GetMapping
     public ResponseEntity<List<UserResponseDto>> getAllUsers(
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status) {
 
         List<User> users;
         if (role != null && !role.isBlank()) {
@@ -46,10 +58,64 @@ public class AdminUserController {
             users = userRepository.findAll();
         }
 
+        if (status != null && !status.isBlank()) {
+            String targetStatus = status.trim();
+            users = users.stream()
+                    .filter(u -> targetStatus.equalsIgnoreCase(u.getStatus()))
+                    .collect(Collectors.toList());
+        }
+
         List<UserResponseDto> result = users.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * PATCH /api/v1/admin/users/{id}/approve
+     * Approve a pending user account (e.g. Merchant or Courier)
+     */
+    @PatchMapping("/{id}/approve")
+    public ResponseEntity<UserResponseDto> approveUser(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+
+        user.setStatus("ACTIVE");
+        user.setEnabled(true);
+        User updated = userRepository.save(user);
+
+        if (merchantRepository != null) {
+            merchantRepository.findByUserId(user.getId()).ifPresent(m -> {
+                m.setStatus(MerchantStatus.APPROVED);
+                m.setRejectionReason(null);
+                merchantRepository.save(m);
+            });
+        }
+
+        return ResponseEntity.ok(mapToDto(updated));
+    }
+
+    /**
+     * PATCH /api/v1/admin/users/{id}/reject
+     * Reject a pending user account
+     */
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<UserResponseDto> rejectUser(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+
+        user.setStatus("REJECTED");
+        user.setEnabled(false);
+        User updated = userRepository.save(user);
+
+        if (merchantRepository != null) {
+            merchantRepository.findByUserId(user.getId()).ifPresent(m -> {
+                m.setStatus(MerchantStatus.REJECTED);
+                merchantRepository.save(m);
+            });
+        }
+
+        return ResponseEntity.ok(mapToDto(updated));
     }
 
     /**
@@ -65,6 +131,11 @@ public class AdminUserController {
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
 
         user.setEnabled(statusDto.isEnabled());
+        if (statusDto.isEnabled()) {
+            user.setStatus("ACTIVE");
+        } else {
+            user.setStatus("INACTIVE");
+        }
         User updated = userRepository.save(user);
 
         return ResponseEntity.ok(mapToDto(updated));
@@ -111,6 +182,7 @@ public class AdminUserController {
         staffUser.setPasswordHash(passwordEncoder.encode(requestDto.getPassword()));
         staffUser.setProvider("LOCAL");
         staffUser.setEnabled(true);
+        staffUser.setStatus("ACTIVE");
 
         User saved = userRepository.save(staffUser);
         return ResponseEntity.ok(mapToDto(saved));
@@ -125,6 +197,7 @@ public class AdminUserController {
                 .role(user.getRole())
                 .provider(user.getProvider())
                 .enabled(user.isEnabled())
+                .status(user.getStatus())
                 .build();
     }
 }
