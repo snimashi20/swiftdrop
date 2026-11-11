@@ -12,7 +12,8 @@ import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPag
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
-import { PriceCalculator } from './features/pricing/components/PriceCalculator'; // <-- ADDED
+import { ChatWidget } from './features/ai/ChatWidget';
+import { PriceCalculator } from './features/pricing/components/PriceCalculator';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -34,7 +35,7 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-        <Route path="/calculator" element={<PriceCalculator />} /> {/* Moved outside ProtectedRoute so it's public */}
+        <Route path="/calculator" element={<PriceCalculator />} />
 
         <Route element={<PublicTrackingLayout />}>
           <Route path="/track" element={<TrackLookupPage />} />
@@ -72,6 +73,7 @@ export function App() {
 
         <Route path="*" element={<PublicRedirect />} />
       </Routes>
+      <ChatWidget />
     </AuthProvider>
   );
 }

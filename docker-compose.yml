@@ -78,7 +78,6 @@ services:
       retries: 10
       start_period: 60s
 
-
   notification-service:
     build: ./backend/notification-service
     container_name: swiftdrop-notification-service
@@ -107,13 +106,27 @@ services:
     ports:
       - "8081:8081"
 
+  ai-assistant:
+    build: ./backend/ai-assistant
+    container_name: swiftdrop-ai-assistant
+    depends_on:
+      core-api:
+        condition: service_healthy
+    environment:
+      CORE_API_BASE_URL: http://core-api:8080
+      AI_ASSISTANT_PORT: 8083
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "8083:8083"
+
   frontend:
     build: ./frontend
     container_name: swiftdrop-frontend
     depends_on:
-      # nginx resolves both upstreams when it starts, so each container must already exist.
       - core-api
       - notification-service
+      - ai-assistant
     ports:
       - "3000:80"
 
