@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
 import { AssignDialog } from "../components/AssignDialog";
+import { AssignedParcelsPanel } from "../components/AssignedParcelsPanel";
 import { PageHeader } from "../components/PageHeader";
 import type { Page, UnassignedParcel, ZoneOption } from "../types";
 
@@ -28,6 +29,7 @@ export function UnassignedParcelsPage() {
   const [assigning, setAssigning] = useState<UnassignedParcel | null>(null);
   const [zones, setZones] = useState<ZoneOption[]>([]);
   const [dateError, setDateError] = useState("");
+  const [view, setView] = useState<"unassigned" | "assigned">("unassigned");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,9 +96,32 @@ export function UnassignedParcelsPage() {
     <div>
       <PageHeader
         eyebrow="Operations desk"
-        title="Unassigned parcels"
-        text="Parcels that are waiting for a courier, oldest first."
+        title={view === "unassigned" ? "Unassigned parcels" : "Assigned parcels"}
+        text={
+          view === "unassigned"
+            ? "Parcels that are waiting for a courier, oldest first."
+            : "Parcels that already have a courier. Reassign one while it has not left the sender."
+        }
       />
+
+      <div className="mb-6 inline-flex rounded-xl border border-ink/10 bg-white p-1">
+        {(["unassigned", "assigned"] as const).map((option) => (
+          <button
+            key={option}
+            onClick={() => setView(option)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              view === option ? "bg-ink text-white" : "text-ink/60 hover:text-ink"
+            }`}
+          >
+            {option === "unassigned" ? "Unassigned" : "Assigned"}
+          </button>
+        ))}
+      </div>
+
+      {view === "assigned" ? (
+        <AssignedParcelsPanel />
+      ) : (
+        <>
 
       {notice && <p className="mb-4 rounded-lg bg-mint/40 px-3 py-2 text-sm text-ink">{notice}</p>}
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
@@ -238,6 +263,8 @@ export function UnassignedParcelsPage() {
 
       {assigning && (
         <AssignDialog parcel={assigning} onClose={() => setAssigning(null)} onAssigned={handleAssigned} />
+      )}
+        </>
       )}
     </div>
   );

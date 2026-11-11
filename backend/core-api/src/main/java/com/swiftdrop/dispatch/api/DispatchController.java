@@ -1,6 +1,7 @@
 package com.swiftdrop.dispatch.api;
 
 import com.swiftdrop.dispatch.dto.AssignParcelRequest;
+import com.swiftdrop.dispatch.dto.AssignedParcelResponse;
 import com.swiftdrop.dispatch.dto.CourierWorkloadResponse;
 import com.swiftdrop.dispatch.dto.ParcelAssignmentResponse;
 import com.swiftdrop.dispatch.dto.UnassignedParcelResponse;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +36,15 @@ public class DispatchController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return service.listUnassigned(zoneId, district, from, to, pageable);
+    }
+
+    /** Parcels that already have a courier (still being delivered by default), newest assignment first. */
+    @GetMapping("/parcels/assigned")
+    public Page<AssignedParcelResponse> assigned(
+            @RequestParam(required = false) Long courierId,
+            @RequestParam(defaultValue = "true") boolean activeOnly,
+            @PageableDefault(size = 20, sort = "assignedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return service.listAssigned(courierId, activeOnly, pageable);
     }
 
     /** Least busy active courier in the parcel's zone (the dispatcher may still pick another). */
