@@ -1,13 +1,15 @@
 package com.swiftdrop.ai.controller;
 
 import com.swiftdrop.ai.service.AiService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/ai")
-@CrossOrigin(origins = "*")
 public class ChatController {
 
     private final AiService aiService;
@@ -22,7 +24,6 @@ public class ChatController {
         if (message.isBlank()) {
             return Map.of("reply", "Please ask a question.");
         }
-        String reply = aiService.chat(message);
-        return Map.of("reply", reply);
+        return Map.of("reply", aiService.chat(message));
     }
 }
