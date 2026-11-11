@@ -51,7 +51,15 @@ export function LoginPage() {
   const submit = async (data: LoginInput) => {
     setServerError("");
     try {
-      await login(data);
+      const user = await login(data);
+      if (user.status === "PENDING_ROLE") {
+        navigate("/select-role", { replace: true });
+        return;
+      }
+      if (user.status === "PENDING_APPROVAL") {
+        navigate("/waiting-approval", { replace: true });
+        return;
+      }
       navigate((location.state as { from?: string })?.from || "/dashboard", {
         replace: true,
       });
