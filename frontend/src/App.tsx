@@ -26,10 +26,15 @@ import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprov
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
 import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
+import { RoleSelectionPage } from "./features/auth/RoleSelectionPage";
+import { WaitingApprovalPage } from "./features/auth/WaitingApprovalPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
-  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.status === "PENDING_ROLE") return <Navigate to="/select-role" replace />;
+  if (user.status === "PENDING_APPROVAL") return <Navigate to="/waiting-approval" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 export function App() {
@@ -40,6 +45,8 @@ export function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/merchant/register" element={<MerchantRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/select-role" element={<RoleSelectionPage />} />
+        <Route path="/waiting-approval" element={<WaitingApprovalPage />} />
 
         <Route element={<PublicTrackingLayout />}>
           <Route path="/track" element={<TrackLookupPage />} />
