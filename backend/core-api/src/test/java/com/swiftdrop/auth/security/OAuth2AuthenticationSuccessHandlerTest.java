@@ -57,7 +57,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     }
 
     @Test
-    @DisplayName("New Google user is auto-provisioned with CUSTOMER role and redirected with JWT")
+    @DisplayName("New Google user is auto-provisioned with PENDING_ROLE and redirected with JWT")
     void onAuthenticationSuccess_newUser_provisionsCustomerAccountAndRedirectsWithJwt() throws Exception {
         when(oAuth2User.getAttribute("email_verified")).thenReturn(true);
         when(oAuth2User.getAttribute("email")).thenReturn("newcustomer@gmail.com");
@@ -71,6 +71,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
             return u;
         });
 
+        // Updated to 5 parameters
         when(jwtService.generateToken(101L, "newcustomer@gmail.com", "New Customer", "PENDING_ROLE", "PENDING_ROLE"))
                 .thenReturn("mocked.jwt.token");
 
@@ -100,6 +101,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         existingUser.setEmail("courier@swiftdrop.lk");
         existingUser.setFullName("Existing Courier");
         existingUser.setRole("COURIER");
+        existingUser.setStatus("ACTIVE");
         existingUser.setProvider("LOCAL");
         existingUser.setEnabled(true);
 
@@ -111,7 +113,8 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(userRepository.findByEmail("courier@swiftdrop.lk")).thenReturn(Optional.of(existingUser));
         when(userRepository.save(existingUser)).thenReturn(existingUser);
 
-        when(jwtService.generateToken(202L, "courier@swiftdrop.lk", "Existing Courier", "COURIER"))
+        // Updated to 5 parameters
+        when(jwtService.generateToken(202L, "courier@swiftdrop.lk", "Existing Courier", "COURIER", "ACTIVE"))
                 .thenReturn("mocked.courier.jwt");
 
         successHandler.onAuthenticationSuccess(request, response, authentication);
@@ -133,7 +136,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         successHandler.onAuthenticationSuccess(request, response, authentication);
 
         verify(userRepository, never()).save(any());
-        verify(jwtService, never()).generateToken(any(), any(), any(), any());
+        verify(jwtService, never()).generateToken(any(), any(), any(), any(), any());
 
         ArgumentCaptor<String> redirectCaptor = ArgumentCaptor.forClass(String.class);
         verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectCaptor.capture());
@@ -149,7 +152,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         successHandler.onAuthenticationSuccess(request, response, authentication);
 
         verify(userRepository, never()).save(any());
-        verify(jwtService, never()).generateToken(any(), any(), any(), any());
+        verify(jwtService, never()).generateToken(any(), any(), any(), any(), any());
 
         ArgumentCaptor<String> redirectCaptor = ArgumentCaptor.forClass(String.class);
         verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectCaptor.capture());
@@ -176,7 +179,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
         successHandler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(jwtService, never()).generateToken(any(), any(), any(), any());
+        verify(jwtService, never()).generateToken(any(), any(), any(), any(), any());
 
         ArgumentCaptor<String> redirectCaptor = ArgumentCaptor.forClass(String.class);
         verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectCaptor.capture());
