@@ -43,6 +43,20 @@ export function ParcelHistoryPage() {
     }
   }, [user, load]);
 
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const handleDownload = async (id: number, trackingNumber: string) => {
+    setError("");
+    setDownloadingId(id);
+    try {
+      await downloadReceipt(id, trackingNumber);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not download the receipt."));
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
       const CANCEL_ENABLED = true;
   const handleCancel = async (id: number) => {
 
@@ -132,10 +146,11 @@ export function ParcelHistoryPage() {
                 )}
                 <button
                   type="button"
-                              onClick={() => downloadReceipt(parcel.id, parcel.trackingNumber)} disabled={parcel.status === "CANCELLED"}      
+                  onClick={() => handleDownload(parcel.id, parcel.trackingNumber)}
+                  disabled={parcel.status === "CANCELLED" || downloadingId === parcel.id}
                   className="rounded-xl border border-ink px-4 py-1.5 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Download receipt
+                  {downloadingId === parcel.id ? "Downloading..." : "Download receipt"}
                 </button>
               </div>
             </li>
