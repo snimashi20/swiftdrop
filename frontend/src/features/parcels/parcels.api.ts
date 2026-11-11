@@ -102,3 +102,13 @@ export const cancelParcel = async (id: number): Promise<ParcelDetail> => {
   const res = await api.post<ParcelDetail>(`/parcels/${id}/cancel`);
   return res.data;
 };
+
+export const downloadReceipt = async (id: number, trackingNumber: string): Promise<void> => {
+  const res = await api.get<Blob>(`/parcels/${id}/receipt`, { responseType: "blob" });
+  const url = URL.createObjectURL(res.data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `receipt-${trackingNumber}.pdf`;
+  link.click();
+  URL.revokeObjectURL(url);
+};

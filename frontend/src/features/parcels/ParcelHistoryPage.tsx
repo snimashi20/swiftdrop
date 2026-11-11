@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../lib/api";
 import { useAuth } from "../auth/AuthContext";
-import { cancelParcel, listParcels, STATUSES } from "./parcels.api";
+import { cancelParcel, downloadReceipt, listParcels, STATUSES } from "./parcels.api";
 import type { ParcelPage, ParcelStatus } from "./parcels.api";
 
 const statusClass: Record<ParcelStatus, string> = {
@@ -130,6 +130,13 @@ export function ParcelHistoryPage() {
                     Cancel
                   </button>
                 )}
+                <button
+                  type="button"
+                              onClick={() => downloadReceipt(parcel.id, parcel.trackingNumber)} disabled={parcel.status === "CANCELLED"}      
+                  className="rounded-xl border border-ink px-4 py-1.5 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Download receipt
+                </button>
               </div>
             </li>
           ))}
