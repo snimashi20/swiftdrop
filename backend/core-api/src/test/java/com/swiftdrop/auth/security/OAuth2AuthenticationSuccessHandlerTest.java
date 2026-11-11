@@ -71,7 +71,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
             return u;
         });
 
-        when(jwtService.generateToken(101L, "newcustomer@gmail.com", "New Customer", "CUSTOMER"))
+        when(jwtService.generateToken(101L, "newcustomer@gmail.com", "New Customer", "PENDING_ROLE", "PENDING_ROLE"))
                 .thenReturn("mocked.jwt.token");
 
         successHandler.onAuthenticationSuccess(request, response, authentication);
@@ -82,14 +82,14 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
         assertEquals("newcustomer@gmail.com", savedUser.getEmail());
         assertEquals("New Customer", savedUser.getFullName());
-        assertEquals("CUSTOMER", savedUser.getRole());
+        assertEquals("PENDING_ROLE", savedUser.getRole());
         assertEquals("GOOGLE", savedUser.getProvider());
         assertEquals("google-sub-1001", savedUser.getProviderId());
         assertTrue(savedUser.isEnabled());
 
         ArgumentCaptor<String> redirectCaptor = ArgumentCaptor.forClass(String.class);
         verify(redirectStrategy).sendRedirect(eq(request), eq(response), redirectCaptor.capture());
-        assertEquals("http://localhost:5173/oauth/callback?token=mocked.jwt.token", redirectCaptor.getValue());
+        assertEquals("http://localhost:5173/oauth/callback?token=mocked.jwt.token&newUser=true", redirectCaptor.getValue());
     }
 
     @Test

@@ -21,6 +21,11 @@ class JwtTokenAuthenticationFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
+
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
