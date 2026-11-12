@@ -7,6 +7,7 @@ import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.dispatch.domain.CourierProfile;
 import com.swiftdrop.dispatch.domain.VehicleType;
+import com.swiftdrop.dispatch.dto.AssignedParcelResponse;
 import com.swiftdrop.dispatch.dto.CourierWorkloadResponse;
 import com.swiftdrop.dispatch.dto.ParcelAssignmentResponse;
 import com.swiftdrop.dispatch.dto.UnassignedParcelResponse;
@@ -298,6 +299,39 @@ class DispatchServiceTest {
         service.listUnassigned(null, null, LocalDate.of(2026, 11, 10), LocalDate.of(2026, 11, 10), pageable);
 
         verify(parcelRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    // ---------- assigned parcels ----------
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void listAssigned_addsTheCourierNameToEachParcel() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Parcel p = parcel(5L, ParcelStatus.IN_TRANSIT);
+        p.setAssignedCourierId(7L);
+        when(parcelRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(p)));
+        when(courierRepository.findAllById(any())).thenReturn(List.of(courier(7L, true)));
+        User user = new User();
+        user.setId(107L);
+        user.setFullName("Kasun Perera");
+        when(userRepository.findAllById(any())).thenReturn(List.of(user));
+
+        Page<AssignedParcelResponse> result = service.listAssigned(null, true, pageable);
+
+        assertEquals(1, result.getContent().size());
+        assertEquals("Kasun Perera", result.getContent().get(0).courierName());
+        assertEquals(7L, result.getContent().get(0).assignedCourierId());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void listAssigned_doesNotLookUpNamesWhenNothingIsAssigned() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(parcelRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(Page.empty());
+
+        service.listAssigned(null, true, pageable);
+
+        verifyNoInteractions(courierRepository, userRepository);
     }
 
     // ---------- terminal statuses ----------
