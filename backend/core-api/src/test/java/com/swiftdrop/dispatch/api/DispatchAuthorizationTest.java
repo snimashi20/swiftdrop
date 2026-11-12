@@ -87,6 +87,7 @@ class DispatchAuthorizationTest {
                 assign(),
                 () -> dispatchController.unassigned(null, null, null, null, Pageable.unpaged()),
                 () -> dispatchController.workload(null, null),
+                () -> dispatchController.assigned(null, true, Pageable.unpaged()),
                 () -> dispatchController.suggestedCourier(5L),
                 () -> reportController.summary(7),
                 () -> courierProfileController.list(null, null, Pageable.unpaged()),
