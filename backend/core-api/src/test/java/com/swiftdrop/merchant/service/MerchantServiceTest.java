@@ -74,7 +74,7 @@ class MerchantServiceTest {
         savedUser.setEnabled(true);
         savedUser.setProvider("LOCAL");
         when(authService.createLocalUser(
-                "shop@example.com", "secret123", "John Doe", "0712345678", "MERCHANT"))
+                "shop@example.com", "secret123", "John Doe", "0712345678", "ROLE_MERCHANT"))
                 .thenReturn(savedUser);
 
         Merchant savedMerchant = Merchant.builder()
@@ -111,7 +111,7 @@ class MerchantServiceTest {
         assertEquals(MerchantStatus.PENDING, result.getStatus());
 
         verify(authService).createLocalUser(
-                "shop@example.com", "secret123", "John Doe", "0712345678", "MERCHANT");
+                "shop@example.com", "secret123", "John Doe", "0712345678", "ROLE_MERCHANT");
 
         // Verify Merchant properties
         ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);

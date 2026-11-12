@@ -23,7 +23,7 @@ public class WebhookEndpoint {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "merchant_id", nullable = false)
+    @Column(name = "merchant_id", nullable = false, unique = true)
     private Long merchantId;
 
     @Column(name = "url", nullable = false, length = 500)

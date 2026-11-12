@@ -1,5 +1,6 @@
 package com.swiftdrop.courier.service;
 
+import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ForbiddenException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.courier.domain.DeliveryProof;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,20 +40,30 @@ public class CourierService {
         Instant startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
         List<Parcel> assignedParcels = parcelRepository.findTodayDeliveriesForCourier(courierId, startOfDay);
         return assignedParcels.stream()
-                .map(this::mapToResponse)
+                .map(parcel -> mapToResponse(parcel, parcel.getStatus()))
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public CourierDeliveryResponse updateStatus(Long courierId, Long parcelId, UpdateStatusRequest request) {
+        return updateStatus(courierId, null, parcelId, request);
+    }
+
+    @Transactional
+    public CourierDeliveryResponse updateStatus(Long courierId, Long courierUserId, Long parcelId, UpdateStatusRequest request) {
         Parcel parcel = getAndValidateParcelOwnership(courierId, parcelId);
-        parcelStatusService.changeStatus(parcel.getId(), request.getStatus(), "COURIER", request.getNote());
-        parcel.setStatus(ParcelStatus.valueOf(request.getStatus()));
-        return mapToResponse(parcel);
+        ParcelStatus targetStatus = parseStatus(request.getStatus());
+        parcelStatusService.changeStatus(parcel.getId(), targetStatus, "COURIER", courierUserId, request.getNote());
+        return mapToResponse(parcel, targetStatus);
     }
 
     @Transactional
     public CourierDeliveryResponse deliverParcel(Long courierId, Long parcelId, DeliverParcelRequest request, MultipartFile photo) {
+        return deliverParcel(courierId, null, parcelId, request, photo);
+    }
+
+    @Transactional
+    public CourierDeliveryResponse deliverParcel(Long courierId, Long courierUserId, Long parcelId, DeliverParcelRequest request, MultipartFile photo) {
         Parcel parcel = getAndValidateParcelOwnership(courierId, parcelId);
 
         String photoPath = fileStorageService.store(photo);
@@ -66,26 +78,45 @@ public class CourierService {
 
         deliveryProofRepository.save(proof);
 
-        parcelStatusService.changeStatus(parcel.getId(), "DELIVERED", "COURIER",
-                "Delivered to " + request.getRecipientName());
+        parcelStatusService.changeStatus(
+                parcel.getId(),
+                ParcelStatus.DELIVERED,
+                "COURIER",
+                courierUserId,
+                "Delivered to " + request.getRecipientName()
+        );
 
-        parcel.setStatus(ParcelStatus.DELIVERED);
-        return mapToResponse(parcel);
+        return mapToResponse(parcel, ParcelStatus.DELIVERED);
     }
 
     @Transactional
     public CourierDeliveryResponse failParcel(Long courierId, Long parcelId, FailParcelRequest request) {
+        return failParcel(courierId, null, parcelId, request);
+    }
+
+    @Transactional
+    public CourierDeliveryResponse failParcel(Long courierId, Long courierUserId, Long parcelId, FailParcelRequest request) {
         Parcel parcel = getAndValidateParcelOwnership(courierId, parcelId);
 
         parcel.setFailureReason(request.getReason().name());
         parcel.setFailureNote(request.getNote());
         parcelRepository.save(parcel);
 
-        parcelStatusService.changeStatus(parcel.getId(), "FAILED", "COURIER",
-                "Failed: " + request.getReason() + " - " + request.getNote());
+        String note = "Failed: " + request.getReason() + (request.getNote() != null ? " - " + request.getNote() : "");
+        parcelStatusService.changeStatus(parcel.getId(), ParcelStatus.FAILED, "COURIER", courierUserId, note);
 
-        parcel.setStatus(ParcelStatus.FAILED);
-        return mapToResponse(parcel);
+        return mapToResponse(parcel, ParcelStatus.FAILED);
+    }
+
+    private ParcelStatus parseStatus(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException("Status is required");
+        }
+        try {
+            return ParcelStatus.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown parcel status: " + value);
+        }
     }
 
     /**
@@ -102,7 +133,7 @@ public class CourierService {
         return parcel;
     }
 
-    private CourierDeliveryResponse mapToResponse(Parcel parcel) {
+    private CourierDeliveryResponse mapToResponse(Parcel parcel, ParcelStatus effectiveStatus) {
         String photoUrl = deliveryProofRepository.findByParcelId(parcel.getId())
                 .map(DeliveryProof::getPhotoPath)
                 .orElse(null);
@@ -121,7 +152,7 @@ public class CourierService {
                 .recipientName(parcel.getReceiverName())
                 .recipientPhone(parcel.getReceiverPhone())
                 .deliveryAddress(fullAddress)
-                .status(parcel.getStatus().name())
+                .status(effectiveStatus != null ? effectiveStatus.name() : null)
                 .weightKg(parcel.getWeightKg())
                 .deliveryInstructions(parcel.getDeliveryInstructions())
                 .assignedAt(parcel.getAssignedAt())

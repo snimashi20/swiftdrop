@@ -13,9 +13,11 @@ const client = axios.create({
 });
 
 client.interceptors.request.use((config) => {
-  const token = 
-    localStorage.getItem('swiftdrop_access_token') || 
-    localStorage.getItem('token') || 
+  const token =
+    localStorage.getItem('swiftdrop_access_token') ||
+    sessionStorage.getItem('swiftdrop_access_token') ||
+    localStorage.getItem('swiftdrop_token') ||
+    localStorage.getItem('token') ||
     localStorage.getItem('jwt');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

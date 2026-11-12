@@ -6,6 +6,7 @@ import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.dispatch.domain.CourierProfile;
+import com.swiftdrop.dispatch.dto.AssignedParcelResponse;
 import com.swiftdrop.dispatch.dto.CourierWorkloadResponse;
 import com.swiftdrop.dispatch.dto.ParcelAssignmentResponse;
 import com.swiftdrop.dispatch.dto.UnassignedParcelResponse;
@@ -127,6 +128,64 @@ public class DispatchService {
         return workload(zoneId, true).stream()
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("No active courier in this zone"));
+    }
+
+    /**
+     * Parcels that already have a courier, newest assignment first, with the courier's name.
+     * By default only parcels that are still being delivered; reassign uses the same assign call.
+     */
+    @Transactional(readOnly = true)
+    public Page<AssignedParcelResponse> listAssigned(Long courierProfileId, boolean activeOnly, Pageable pageable) {
+        var terminal = TerminalStatuses.values();
+        Specification<Parcel> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isNotNull(root.get("assignedCourierId")));
+            if (courierProfileId != null) {
+                predicates.add(cb.equal(root.get("assignedCourierId"), courierProfileId));
+            }
+            if (activeOnly) {
+                predicates.add(cb.not(root.get("status").in(terminal)));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        Page<Parcel> page = parcelRepository.findAll(spec, pageable);
+        Map<Long, String> courierNames = courierNamesFor(page.getContent());
+        return page.map(parcel -> toAssignedResponse(parcel, courierNames.get(parcel.getAssignedCourierId())));
+    }
+
+    /** courier profile id -> the courier's full name, looked up in two queries for the whole page. */
+    private Map<Long, String> courierNamesFor(List<Parcel> parcels) {
+        Map<Long, String> result = new HashMap<>();
+        if (parcels.isEmpty()) {
+            return result;
+        }
+        var courierIds = parcels.stream().map(Parcel::getAssignedCourierId).collect(Collectors.toSet());
+        Map<Long, Long> userIdByCourier = new HashMap<>();
+        courierRepository.findAllById(courierIds)
+                .forEach(profile -> userIdByCourier.put(profile.getId(), profile.getUserId()));
+        Map<Long, String> nameByUser = new HashMap<>();
+        userRepository.findAllById(userIdByCourier.values())
+                .forEach(user -> nameByUser.put(user.getId(), user.getFullName()));
+        userIdByCourier.forEach((courierId, userId) -> result.put(courierId, nameByUser.get(userId)));
+        return result;
+    }
+
+    private AssignedParcelResponse toAssignedResponse(Parcel p, String courierName) {
+        Address pickup = p.getPickup();
+        Address dropoff = p.getDropoff();
+        return new AssignedParcelResponse(
+                p.getId(),
+                p.getTrackingNumber(),
+                p.getStatus(),
+                pickup == null ? null : pickup.getCity(),
+                pickup == null ? null : pickup.getDistrict(),
+                dropoff == null ? null : dropoff.getCity(),
+                dropoff == null ? null : dropoff.getDistrict(),
+                p.getSize(),
+                p.getWeightKg(),
+                p.getAssignedCourierId(),
+                courierName,
+                p.getAssignedAt());
     }
 
     /** Couriers with their number of active deliveries, least busy first. */

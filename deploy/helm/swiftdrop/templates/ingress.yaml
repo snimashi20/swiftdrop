@@ -1,0 +1,80 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}-ingress
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "core-api-service"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.hosts.core }}
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: core-api-service
+                port:
+                  number: {{ .Values.coreApi.port }}
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: core-api-service
+                port:
+                  number: {{ .Values.coreApi.port }}
+          - path: /swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: core-api-service
+                port:
+                  number: {{ .Values.coreApi.port }}
+          - path: /api-docs
+            pathType: Prefix
+            backend:
+              service:
+                name: core-api-service
+                port:
+                  number: {{ .Values.coreApi.port }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: {{ .Values.frontend.port }}
+
+    {{- if .Values.mockMerchantStore.enabled }}
+    - host: {{ .Values.ingress.hosts.mockStore }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mock-merchant-service
+                port:
+                  number: {{ .Values.mockMerchantStore.port }}
+    {{- end }}
+
+    {{- if .Values.mailpit.enabled }}
+    - host: {{ .Values.ingress.hosts.mailpit }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mailpit-service
+                port:
+                  number: 8025
+    {{- end }}
+{{- end }}

@@ -1,0 +1,26 @@
+server:
+  port: ${AI_ASSISTANT_PORT:8083}
+
+spring:
+  application:
+    name: ai-assistant
+  ai:
+    openai:
+      api-key: ${GEMINI_API_KEY:disabled}
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      chat:
+        options:
+          model: gemini-2.0-flash
+          temperature: 0.2
+
+core-api:
+  base-url: ${CORE_API_BASE_URL:http://core-api:8080}
+
+ai:
+  provider: ${AI_PROVIDER:mock}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

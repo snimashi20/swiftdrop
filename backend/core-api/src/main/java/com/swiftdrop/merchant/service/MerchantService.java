@@ -51,7 +51,7 @@ public class MerchantService {
                 request.getPassword(),
                 request.getContactName().trim(),
                 request.getContactPhone().trim(),
-                "MERCHANT");
+                "ROLE_MERCHANT");
 
         Merchant merchant = Merchant.builder()
                 .userId(savedUser.getId())
@@ -89,6 +89,15 @@ public class MerchantService {
         merchant.setStatus(MerchantStatus.APPROVED);
         merchant.setRejectionReason(null);
         setReviewFields(merchant, authentication);
+
+        if (merchant.getUserId() != null) {
+            userRepository.findById(merchant.getUserId()).ifPresent(user -> {
+                user.setStatus("ACTIVE");
+                user.setEnabled(true);
+                userRepository.save(user);
+            });
+        }
+
         return merchantMapper.toDto(merchantRepository.save(merchant));
     }
 
@@ -98,6 +107,15 @@ public class MerchantService {
         merchant.setStatus(MerchantStatus.REJECTED);
         merchant.setRejectionReason(reason.trim());
         setReviewFields(merchant, authentication);
+
+        if (merchant.getUserId() != null) {
+            userRepository.findById(merchant.getUserId()).ifPresent(user -> {
+                user.setStatus("REJECTED");
+                user.setEnabled(false);
+                userRepository.save(user);
+            });
+        }
+
         return merchantMapper.toDto(merchantRepository.save(merchant));
     }
 

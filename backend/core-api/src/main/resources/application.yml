@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: swiftdrop-core-api
+  profiles:
+    default: dev
 
   datasource:
     url: ${DB_URL}
@@ -16,16 +18,17 @@ spring:
     open-in-view: false
 
   flyway:
+    enabled: true
     out-of-order: true
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
+    host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
 
   mail:
-    host: ${MAIL_HOST:localhost}
+    host: ${MAIL_HOST}
     port: ${MAIL_PORT:1025}
 
   security:
