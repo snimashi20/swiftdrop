@@ -77,7 +77,7 @@ class WebhookServiceTest {
         user.setId(200L);
         user.setEmail("merchant@shop.com");
 
-        Merchant merchant = Merchant.builder().id(55L).user(user).build();
+        Merchant merchant = Merchant.builder().id(55L).userId(user.getId()).build();
 
         when(userRepository.findByEmailIgnoreCase("merchant@shop.com")).thenReturn(Optional.of(user));
         when(merchantRepository.findByUserId(200L)).thenReturn(Optional.of(merchant));
@@ -90,7 +90,7 @@ class WebhookServiceTest {
     @Test
     @DisplayName("resolveCurrentMerchantId should resolve directly when principal is MerchantPrincipal")
     void shouldResolveFromMerchantPrincipal() {
-        MerchantPrincipal principal = new MerchantPrincipal(77L, "merchant@shop.com", "ROLE_MERCHANT");
+        MerchantPrincipal principal = new MerchantPrincipal(77L);
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(principal, "credentials");
         SecurityContextHolder.getContext().setAuthentication(auth);
