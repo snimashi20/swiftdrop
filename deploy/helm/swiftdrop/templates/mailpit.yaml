@@ -1,0 +1,52 @@
+{{- if .Values.mailpit.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit-service
+  labels:
+    app: mailpit
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 1025
+      targetPort: 1025
+      name: smtp
+    - port: 8025
+      targetPort: 8025
+      name: http-ui
+  selector:
+    app: mailpit
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}-mailpit
+  labels:
+    app: mailpit
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: "{{ .Values.mailpit.image.repository }}:{{ .Values.mailpit.image.tag }}"
+          ports:
+            - containerPort: 1025
+              name: smtp
+            - containerPort: 8025
+              name: http-ui
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+{{- end }}
