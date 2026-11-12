@@ -90,7 +90,7 @@ class WebhookServiceTest {
     @Test
     @DisplayName("resolveCurrentMerchantId should resolve directly when principal is MerchantPrincipal")
     void shouldResolveFromMerchantPrincipal() {
-        MerchantPrincipal principal = new MerchantPrincipal(77L, "merchant@shop.com", "ROLE_MERCHANT");
+        MerchantPrincipal principal = new MerchantPrincipal(77L);
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(principal, "credentials");
         SecurityContextHolder.getContext().setAuthentication(auth);
