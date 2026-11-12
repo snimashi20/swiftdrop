@@ -74,7 +74,7 @@ class MerchantServiceTest {
         savedUser.setEnabled(true);
         savedUser.setProvider("LOCAL");
         when(authService.createLocalUser(
-                "shop@example.com", "secret123", "John Doe", "0712345678", "ROLE_MERCHANT"))
+                "shop@example.com", "secret123", "John Doe", "0712345678", "MERCHANT"))
                 .thenReturn(savedUser);
 
         Merchant savedMerchant = Merchant.builder()
@@ -111,7 +111,7 @@ class MerchantServiceTest {
         assertEquals(MerchantStatus.PENDING, result.getStatus());
 
         verify(authService).createLocalUser(
-                "shop@example.com", "secret123", "John Doe", "0712345678", "ROLE_MERCHANT");
+                "shop@example.com", "secret123", "John Doe", "0712345678", "MERCHANT");
 
         // Verify Merchant properties
         ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);
@@ -226,9 +226,16 @@ class MerchantServiceTest {
         Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.PENDING).build();
         User admin = new User();
         admin.setId(7L);
+        User merchantUser = new User();
+        merchantUser.setId(9L);
+        merchantUser.setRole("MERCHANT");
+        merchantUser.setStatus("PENDING_APPROVAL");
+        merchantUser.setEnabled(false);
         when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
+        merchant.setUserId(9L);
         when(authentication.getName()).thenReturn("admin@example.com");
         when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(9L)).thenReturn(Optional.of(merchantUser));
         when(merchantRepository.save(merchant)).thenReturn(merchant);
         when(merchantMapper.toDto(merchant)).thenReturn(MerchantResponseDto.builder()
                 .id(55L).status(MerchantStatus.APPROVED).reviewedBy(7L).build());
@@ -236,6 +243,9 @@ class MerchantServiceTest {
         MerchantResponseDto result = merchantService.approve(55L, authentication);
 
         assertEquals(MerchantStatus.APPROVED, merchant.getStatus());
+        assertEquals("ACTIVE", merchantUser.getStatus());
+        assertTrue(merchantUser.isEnabled());
+        verify(userRepository).save(merchantUser);
         assertEquals(7L, merchant.getReviewedBy());
         assertNotNull(merchant.getReviewedAt());
         assertEquals(MerchantStatus.APPROVED, result.getStatus());

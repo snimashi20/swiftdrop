@@ -51,7 +51,7 @@ public class MerchantService {
                 request.getPassword(),
                 request.getContactName().trim(),
                 request.getContactPhone().trim(),
-                "ROLE_MERCHANT");
+                "MERCHANT");
 
         Merchant merchant = Merchant.builder()
                 .userId(savedUser.getId())
