@@ -22,6 +22,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.swiftdrop.auth.security.CustomOAuth2AuthorizationRequestResolver;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -33,6 +36,7 @@ public class SecurityConfig {
 
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
     private final JwtTokenAuthenticationFilter jwtTokenAuthenticationFilter;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
     @Bean
     public UserDetailsService userDetailsService(UserRepository userRepository) {
@@ -119,9 +123,14 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth -> oauth
-                .successHandler(oAuth2SuccessHandler)
-            );
+            .oauth2Login(oauth -> {
+                clientRegistrationRepositoryProvider.ifAvailable(clientRegistrationRepository ->
+                    oauth.authorizationEndpoint(auth -> auth
+                        .authorizationRequestResolver(new CustomOAuth2AuthorizationRequestResolver(clientRegistrationRepository))
+                    )
+                );
+                oauth.successHandler(oAuth2SuccessHandler);
+            });
 
         return http.build();
     }
