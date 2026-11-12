@@ -1,5 +1,0 @@
-spring:
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/swiftdrop}
-    username: ${DB_USERNAME:swiftdrop}
-    password: ${DB_PASSWORD:swiftdrop}
