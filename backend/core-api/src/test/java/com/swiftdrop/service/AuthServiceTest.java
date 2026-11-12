@@ -7,6 +7,7 @@ import com.swiftdrop.dto.auth.RegisterRequest;
 import com.swiftdrop.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,6 +56,27 @@ class AuthServiceTest {
 
         assertThat(response.roles()).containsExactly("ROLE_MERCHANT");
         assertThat(response.token()).isEqualTo("token");
+    }
+
+    @Test
+    void createLocalUser_encodesPasswordAndSetsLocalUserFields() {
+        when(passwordEncoder.encode("password")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = authService.createLocalUser(
+                " Shop@Example.COM ", "password", "Shop Owner", "0712345678", "MERCHANT");
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertThat(result).isSameAs(saved);
+        assertThat(saved.getEmail()).isEqualTo("shop@example.com");
+        assertThat(saved.getPasswordHash()).isEqualTo("encoded-password");
+        assertThat(saved.getFullName()).isEqualTo("Shop Owner");
+        assertThat(saved.getPhoneNumber()).isEqualTo("0712345678");
+        assertThat(saved.getRole()).isEqualTo("MERCHANT");
+        assertThat(saved.getProvider()).isEqualTo("LOCAL");
+        assertThat(saved.isEnabled()).isTrue();
     }
 
     @Test

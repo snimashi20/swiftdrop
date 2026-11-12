@@ -37,14 +37,32 @@ public class AuthService {
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ConflictException("Email is already registered");
         }
-        User user = User.builder()
-                .fullName(request.name())
-                .email(request.email().trim().toLowerCase())
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .role(normalizeRole(request.role()))
-                .build();
-        User saved = userRepository.save(user);
+        User saved = createLocalUser(
+                request.email(),
+                request.password(),
+                request.name(),
+                null,
+                normalizeRole(request.role()));
         return response(saved, tokenProvider.generateToken(saved.getId(), saved.getEmail(), Set.of(saved.getRole())));
+    }
+
+    /**
+     * Creates a local user for a domain workflow that needs to persist additional records.
+     * The caller owns duplicate checks and the surrounding transaction.
+     */
+    @Transactional
+    public User createLocalUser(String email, String rawPassword, String fullName,
+                                String phoneNumber, String role) {
+        User user = User.builder()
+                .fullName(fullName)
+                .email(email.trim().toLowerCase())
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .phoneNumber(phoneNumber)
+                .role(role)
+                .provider("LOCAL")
+                .enabled(true)
+                .build();
+        return userRepository.save(user);
     }
 
     public AuthResponse login(LoginRequest request) {
