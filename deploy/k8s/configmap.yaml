@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: swiftdrop-config
+  namespace: swiftdrop
+data:
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "swiftdrop"
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+  MAIL_HOST: "mailpit-service"
+  MAIL_PORT: "1025"
+  SPRING_PROFILES_ACTIVE: "k8s"

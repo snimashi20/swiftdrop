@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-api-service
+  labels:
+    app: core-api
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.coreApi.port }}
+      targetPort: 8080
+      name: http
+  selector:
+    app: core-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}-core-api
+  labels:
+    app: core-api
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.coreApi.replicaCount }}
+  selector:
+    matchLabels:
+      app: core-api
+  template:
+    metadata:
+      labels:
+        app: core-api
+    spec:
+      containers:
+        - name: core-api
+          image: "{{ .Values.coreApi.image.repository }}:{{ .Values.coreApi.image.tag }}"
+          imagePullPolicy: {{ .Values.coreApi.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: DB_URL
+              value: "jdbc:postgresql://postgres-service:5432/{{ .Values.database.name }}"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: POSTGRES_PASSWORD
+            - name: RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-config
+                  key: RABBITMQ_HOST
+            - name: RABBITMQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-config
+                  key: RABBITMQ_PORT
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: MAIL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-config
+                  key: MAIL_HOST
+            - name: MAIL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-config
+                  key: MAIL_PORT
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "swiftdrop.fullname" . }}-secret
+                  key: GOOGLE_CLIENT_SECRET
+          resources:
+            {{- toYaml .Values.coreApi.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3

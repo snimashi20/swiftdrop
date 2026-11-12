@@ -40,15 +40,19 @@ public class WebhookReceiverService {
         boolean valid = verifyHmacSha256(payload, signatureHeader, webhookSecret);
         String trackingNumber = "UNKNOWN";
         String eventId = "UNKNOWN";
-        String oldStatus = "UNKNOWN";
+        String oldStatus = null;
         String newStatus = "UNKNOWN";
 
         try {
             JsonNode node = objectMapper.readTree(payload);
-            if (node.has("trackingNumber")) trackingNumber = node.get("trackingNumber").asText();
-            if (node.has("eventId")) eventId = node.get("eventId").asText();
-            if (node.has("oldStatus")) oldStatus = node.get("oldStatus").asText();
-            if (node.has("newStatus")) newStatus = node.get("newStatus").asText();
+            if (node.has("trackingNumber") && !node.get("trackingNumber").isNull()) trackingNumber = node.get("trackingNumber").asText();
+            if (node.has("eventId") && !node.get("eventId").isNull()) eventId = node.get("eventId").asText();
+            if (node.has("oldStatus") && !node.get("oldStatus").isNull()) {
+                oldStatus = node.get("oldStatus").asText();
+            } else {
+                oldStatus = null; // null on initial parcel creation event
+            }
+            if (node.has("newStatus") && !node.get("newStatus").isNull()) newStatus = node.get("newStatus").asText();
         } catch (Exception e) {
             log.warn("Could not parse webhook JSON payload: {}", e.getMessage());
         }

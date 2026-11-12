@@ -1,0 +1,58 @@
+{{- if .Values.mockMerchantStore.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-merchant-service
+  labels:
+    app: mock-merchant-store
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.mockMerchantStore.port }}
+      targetPort: 8085
+      name: http
+  selector:
+    app: mock-merchant-store
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}-mock-merchant-store
+  labels:
+    app: mock-merchant-store
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.mockMerchantStore.replicaCount }}
+  selector:
+    matchLabels:
+      app: mock-merchant-store
+  template:
+    metadata:
+      labels:
+        app: mock-merchant-store
+    spec:
+      containers:
+        - name: mock-merchant-store
+          image: "{{ .Values.mockMerchantStore.image.repository }}:{{ .Values.mockMerchantStore.image.tag }}"
+          imagePullPolicy: {{ .Values.mockMerchantStore.image.pullPolicy }}
+          ports:
+            - containerPort: 8085
+              name: http
+          env:
+            - name: SERVER_PORT
+              value: "8085"
+            - name: MOCK_MERCHANT_WEBHOOK_SECRET
+              value: {{ .Values.mockMerchantStore.webhookSecret | quote }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8085
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8085
+            initialDelaySeconds: 25
+            periodSeconds: 15
+{{- end }}
