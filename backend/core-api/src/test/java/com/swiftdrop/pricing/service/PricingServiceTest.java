@@ -1,5 +1,6 @@
 package com.swiftdrop.pricing.service;
 
+import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.parcel.domain.ParcelSize;
 import com.swiftdrop.pricing.domain.PricingRule;
 import com.swiftdrop.pricing.domain.Zone;
@@ -16,7 +17,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 class PricingServiceTest {
@@ -36,7 +37,6 @@ class PricingServiceTest {
         );
 
         pricingService = new PricingService(zoneRepository, pricingRuleRepository, strategies);
-        
         ReflectionTestUtils.setField(pricingService, "activeStrategyName", "STANDARD");
     }
 
@@ -66,5 +66,64 @@ class PricingServiceTest {
         assertEquals(new BigDecimal("1000.00"), response.getFee());
         assertEquals(1L, response.getPickupZoneId());
         assertEquals(2L, response.getDropoffZoneId());
+    }
+
+    @Test
+    void calculateQuote_zoneNotFound_throwsNotFoundException() {
+        when(zoneRepository.findByDistrict("Unknown")).thenReturn(Optional.empty());
+
+        QuoteRequest request = new QuoteRequest();
+        request.setPickupDistrict("Unknown");
+        request.setDropoffDistrict("Colombo");
+        request.setSize(ParcelSize.M);
+        request.setWeightKg(new BigDecimal("2.0"));
+
+        assertThrows(NotFoundException.class, () -> pricingService.calculateQuote(request));
+    }
+
+    @Test
+    void calculateQuote_ruleNotFound_throwsNotFoundException() {
+        Zone pickup = Zone.builder().id(1L).name("Colombo").build();
+        Zone dropoff = Zone.builder().id(2L).name("Kandy").build();
+        when(zoneRepository.findByDistrict("Colombo")).thenReturn(Optional.of(pickup));
+        when(zoneRepository.findByDistrict("Kandy")).thenReturn(Optional.of(dropoff));
+        when(pricingRuleRepository.findByZoneId(1L)).thenReturn(Optional.empty());
+
+        QuoteRequest request = new QuoteRequest();
+        request.setPickupDistrict("Colombo");
+        request.setDropoffDistrict("Kandy");
+        request.setSize(ParcelSize.M);
+        request.setWeightKg(new BigDecimal("2.0"));
+
+        assertThrows(NotFoundException.class, () -> pricingService.calculateQuote(request));
+    }
+
+    @Test
+    void calculateQuote_expressStrategy_usedWhenConfigured() {
+        ReflectionTestUtils.setField(pricingService, "activeStrategyName", "EXPRESS");
+
+        Zone pickup = Zone.builder().id(1L).name("Colombo").build();
+        Zone dropoff = Zone.builder().id(2L).name("Kandy").build();
+        PricingRule rule = PricingRule.builder()
+                .baseFee(new BigDecimal("300.00"))
+                .perKgFee(new BigDecimal("100.00"))
+                .interZoneSurcharge(new BigDecimal("250.00"))
+                .sizeFactorM(new BigDecimal("1.50"))
+                .build();
+
+        when(zoneRepository.findByDistrict("Colombo")).thenReturn(Optional.of(pickup));
+        when(zoneRepository.findByDistrict("Kandy")).thenReturn(Optional.of(dropoff));
+        when(pricingRuleRepository.findByZoneId(1L)).thenReturn(Optional.of(rule));
+
+        QuoteRequest request = new QuoteRequest();
+        request.setPickupDistrict("Colombo");
+        request.setDropoffDistrict("Kandy");
+        request.setSize(ParcelSize.M);
+        request.setWeightKg(new BigDecimal("2.0"));
+
+        QuoteResponse response = pricingService.calculateQuote(request);
+
+        // Standard = 1000, Express = 1500
+        assertEquals(new BigDecimal("1500.00"), response.getFee());
     }
 }

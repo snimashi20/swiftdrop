@@ -9,10 +9,11 @@ import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.merchant.repository.MerchantRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -35,8 +36,15 @@ class AdminUserControllerTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @InjectMocks
+    @Mock
+    private MerchantRepository merchantRepository;
+
     private AdminUserController adminUserController;
+
+    @BeforeEach
+    void setUp() {
+        adminUserController = new AdminUserController(userRepository, passwordEncoder, merchantRepository);
+    }
 
     @Test
     @DisplayName("Admin gets all users without role filter")
@@ -53,7 +61,7 @@ class AdminUserControllerTest {
 
         when(userRepository.findAll()).thenReturn(List.of(u1, u2));
 
-        ResponseEntity<List<UserResponseDto>> response = adminUserController.getAllUsers(null);
+        ResponseEntity<List<UserResponseDto>> response = adminUserController.getAllUsers(null, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -72,7 +80,7 @@ class AdminUserControllerTest {
 
         when(userRepository.findByRoleIgnoreCase("COURIER")).thenReturn(List.of(u1));
 
-        ResponseEntity<List<UserResponseDto>> response = adminUserController.getAllUsers("COURIER");
+        ResponseEntity<List<UserResponseDto>> response = adminUserController.getAllUsers("COURIER", null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -231,5 +239,47 @@ class AdminUserControllerTest {
         assertThrows(NotFoundException.class, () ->
                 adminUserController.toggleUserStatus(99L, toggle)
         );
+    }
+
+    @Test
+    @DisplayName("Admin approves a pending user account")
+    void approveUser_activatesAccount() {
+        User user = new User();
+        user.setId(10L);
+        user.setEmail("pending@example.com");
+        user.setRole("COURIER");
+        user.setStatus("PENDING_APPROVAL");
+        user.setEnabled(false);
+
+        when(userRepository.findById(10L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        ResponseEntity<UserResponseDto> response = adminUserController.approveUser(10L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().isEnabled());
+        assertEquals("ACTIVE", response.getBody().getStatus());
+    }
+
+    @Test
+    @DisplayName("Admin rejects a pending user account")
+    void rejectUser_deactivatesAccount() {
+        User user = new User();
+        user.setId(11L);
+        user.setEmail("rejected@example.com");
+        user.setRole("MERCHANT");
+        user.setStatus("PENDING_APPROVAL");
+        user.setEnabled(false);
+
+        when(userRepository.findById(11L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        ResponseEntity<UserResponseDto> response = adminUserController.rejectUser(11L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isEnabled());
+        assertEquals("REJECTED", response.getBody().getStatus());
     }
 }

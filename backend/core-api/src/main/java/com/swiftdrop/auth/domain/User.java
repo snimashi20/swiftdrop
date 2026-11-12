@@ -54,6 +54,10 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean enabled = true;
 
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private String status = "ACTIVE";
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -62,7 +66,11 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role));
+        if (role == null || role.isBlank()) {
+            return List.of();
+        }
+        String authRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        return List.of(new SimpleGrantedAuthority(authRole));
     }
 
     @Override

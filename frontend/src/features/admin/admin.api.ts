@@ -35,6 +35,22 @@ export const toggleUserStatus = async (userId: number, enabled: boolean): Promis
 };
 
 /**
+ * Approve a pending user account (PATCH /api/v1/admin/users/{id}/approve).
+ */
+export const approveUser = async (userId: number): Promise<AdminUser> => {
+  const response = await api.patch<AdminUser>(`/admin/users/${userId}/approve`);
+  return response.data;
+};
+
+/**
+ * Reject a user account (PATCH /api/v1/admin/users/{id}/reject).
+ */
+export const rejectUser = async (userId: number): Promise<AdminUser> => {
+  const response = await api.patch<AdminUser>(`/admin/users/${userId}/reject`);
+  return response.data;
+};
+
+/**
  * Create a Courier or Dispatcher staff account (POST /api/v1/admin/users/staff).
  */
 export const createStaffAccount = async (

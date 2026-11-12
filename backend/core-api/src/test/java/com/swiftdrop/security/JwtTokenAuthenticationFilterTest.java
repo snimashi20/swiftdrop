@@ -3,6 +3,7 @@ package com.swiftdrop.security;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,6 +21,11 @@ class JwtTokenAuthenticationFilterTest {
 
     @Mock
     private FilterChain filterChain;
+
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
 
     @AfterEach
     void clearContext() {

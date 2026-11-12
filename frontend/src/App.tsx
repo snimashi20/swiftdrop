@@ -13,6 +13,8 @@ import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPag
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
+import { ChatWidget } from './features/ai/ChatWidget';
+import { PriceCalculator } from './features/pricing/components/PriceCalculator';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -26,10 +28,16 @@ import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprov
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
 import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
+import { RoleSelectionPage } from "./features/auth/RoleSelectionPage";
+import { WaitingApprovalPage } from "./features/auth/WaitingApprovalPage";
+import { MyNotificationsPage } from "./features/notifications/MyNotificationsPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
-  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.status === "PENDING_ROLE") return <Navigate to="/select-role" replace />;
+  if (user.status === "PENDING_APPROVAL") return <Navigate to="/waiting-approval" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 export function App() {
@@ -40,6 +48,9 @@ export function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/merchant/register" element={<MerchantRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/calculator" element={<PriceCalculator />} />
+        <Route path="/select-role" element={<RoleSelectionPage />} />
+        <Route path="/waiting-approval" element={<WaitingApprovalPage />} />
 
         <Route element={<PublicTrackingLayout />}>
           <Route path="/track" element={<TrackLookupPage />} />
@@ -55,6 +66,7 @@ export function App() {
             <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
               <Route index element={<TodayDeliveriesPage />} />
             </Route>
+            <Route path="/notifications" element={<MyNotificationsPage />} />
             <Route path="/parcels" element={<ParcelHistoryPage />} />
             <Route path="/parcels/new" element={<BookParcelPage />} />
                         <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
@@ -82,16 +94,15 @@ export function App() {
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
             </Route>
-            
             <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminPricingPage />} />
             </Route>
-
           </Route>
         </Route>
 
         <Route path="*" element={<PublicRedirect />} />
       </Routes>
+      <ChatWidget />
     </AuthProvider>
   );
 }
