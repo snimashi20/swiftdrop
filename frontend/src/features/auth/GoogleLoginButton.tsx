@@ -1,17 +1,24 @@
 import React from "react";
+import type { SelfRegisterRole } from "./auth.types";
 
 interface GoogleLoginButtonProps {
   className?: string;
   text?: string;
+  role?: SelfRegisterRole;
 }
 
 export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   className = "",
   text = "Continue with Google",
+  role,
 }) => {
   const handleLogin = () => {
-    // Directs to Spring Boot OAuth2 authorization endpoint
-    window.location.href = "/oauth2/authorization/google";
+    if (role) {
+      sessionStorage.setItem("swiftdrop_pending_oauth_role", role);
+      window.location.href = `/oauth2/authorization/google?role=${encodeURIComponent(role)}`;
+    } else {
+      window.location.href = "/oauth2/authorization/google";
+    }
   };
 
   return (

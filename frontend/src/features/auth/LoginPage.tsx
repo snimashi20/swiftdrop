@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -32,11 +32,16 @@ export function LoginPage() {
     defaultValues: { remember: true },
   });
 
+  const isPendingApproval =
+    new URLSearchParams(location.search).get("error") === "PendingAdminApproval";
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const errorParam = params.get("error");
     if (errorParam) {
-      if (errorParam === "account_disabled") {
+      if (errorParam === "PendingAdminApproval") {
+        setServerError("");
+      } else if (errorParam === "account_disabled") {
         setServerError("Your account has been deactivated. Please contact support.");
       } else if (errorParam === "email_not_verified") {
         setServerError("Your Google account email is not verified.");
@@ -71,6 +76,22 @@ export function LoginPage() {
   return (
     <AuthFrame title="Welcome back." subtitle="Your delivery network, in one clear view.">
       <div className="space-y-4">
+        {isPendingApproval && (
+          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 p-4 text-amber-900 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Clock3 className="mt-0.5 h-5 w-5 text-amber-600 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-sm text-amber-900">
+                  Account Pending Admin Approval
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-amber-800/90">
+                  Your Merchant or Courier account registration has been received and is currently under review by a SwiftDrop administrator. You will be able to sign in as soon as your account is approved.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Continue with Google Button */}
         <GoogleLoginButton />
 

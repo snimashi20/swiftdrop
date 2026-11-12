@@ -3,16 +3,52 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { decodeJwt, persistAuth } from "./auth.storage";
 import type { User, UserStatus } from "./auth.types";
 
+/**
+ * Maps the decoded role to its designated operational portal route in App.tsx
+ */
+const getRolePortalRoute = (rawRole?: string): string => {
+  const role = rawRole?.replace(/^ROLE_/, "").toUpperCase();
+  switch (role) {
+    case "ADMIN":
+      return "/admin/users";
+    case "DISPATCHER":
+      return "/fleet";
+    case "COURIER":
+      return "/courier/today";
+    case "MERCHANT":
+      return "/merchant/orders";
+    case "CUSTOMER":
+    default:
+      return "/dashboard";
+  }
+};
+
 export const OAuthCallbackPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1. Clean up temporary OAuth registration role state
+    sessionStorage.removeItem("swiftdrop_pending_oauth_role");
+
     const token = searchParams.get("token");
     const error = searchParams.get("error");
-    const isNewUserParam = searchParams.get("newUser") === "true";
     const statusParam = searchParams.get("status");
 
+    // 2. Immediate redirect for PendingAdminApproval (DO NOT save any token)
+    if (error === "PendingAdminApproval") {
+      navigate("/login?error=PendingAdminApproval", { replace: true });
+      return;
+    }
+
+    // 3. Handle other OAuth errors (e.g. account_disabled, email_not_verified)
+    if (error) {
+      console.error("OAuth Authentication Error:", error);
+      navigate(`/login?error=${encodeURIComponent(error)}`, { replace: true });
+      return;
+    }
+
+    // 4. Valid token processing
     if (token) {
       try {
         const decoded = decodeJwt(token);
@@ -28,21 +64,22 @@ export const OAuthCallbackPage: React.FC = () => {
         // Persist token in swiftdrop_access_token and user info
         persistAuth(token, user, true);
 
-        // Routing logic based on user role and approval status
-        if (isNewUserParam || user.status === "PENDING_ROLE") {
+        // Routing logic based on user status and role
+        if (user.status === "PENDING_ROLE") {
           window.location.href = "/select-role";
-        } else if (user.status === "PENDING_APPROVAL" || statusParam === "PENDING_APPROVAL") {
-          window.location.href = "/waiting-approval";
-        } else {
-          window.location.href = "/dashboard";
+          return;
         }
+        if (user.status === "PENDING_APPROVAL" || statusParam === "PENDING_APPROVAL") {
+          window.location.href = "/waiting-approval";
+          return;
+        }
+
+        // Navigate to exact role portal route defined in App.tsx
+        window.location.href = getRolePortalRoute(decoded.role || user.role);
       } catch (e) {
         console.error("Failed to decode token", e);
         navigate("/login?error=token_invalid", { replace: true });
       }
-    } else if (error) {
-      console.error("OAuth Authentication Error:", error);
-      navigate(`/login?error=${encodeURIComponent(error)}`, { replace: true });
     } else {
       navigate("/login", { replace: true });
     }
