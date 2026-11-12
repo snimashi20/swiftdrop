@@ -77,7 +77,7 @@ class WebhookServiceTest {
         user.setId(200L);
         user.setEmail("merchant@shop.com");
 
-        Merchant merchant = Merchant.builder().id(55L).user(user).build();
+        Merchant merchant = Merchant.builder().id(55L).userId(user.getId()).build();
 
         when(userRepository.findByEmailIgnoreCase("merchant@shop.com")).thenReturn(Optional.of(user));
         when(merchantRepository.findByUserId(200L)).thenReturn(Optional.of(merchant));
