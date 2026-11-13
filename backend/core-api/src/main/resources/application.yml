@@ -2,11 +2,6 @@ spring:
   profiles:
     default: dev
 
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 10MB
-
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -43,6 +38,11 @@ spring:
               - email
               - profile
             redirect-uri: "${GOOGLE_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}"
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 app:
   jwt:
