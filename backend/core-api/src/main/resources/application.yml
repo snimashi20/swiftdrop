@@ -1,77 +1,15 @@
-server:
-  port: 8080
-
 spring:
-  application:
-    name: swiftdrop-core-api
   profiles:
     default: dev
-
-  # --- Database (PostgreSQL) ---
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://postgres:5432/swiftdrop}
-    username: ${DB_USERNAME:swiftdrop}
-    password: ${DB_PASSWORD:swiftdrop_pass}
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: validate # Flyway manages the schema, Hibernate just validates
-    open-in-view: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: false
-
-  # --- Flyway (Database Migrations) ---
-  flyway:
-    enabled: true
-    out-of-order: true
-    baseline-on-migrate: true
-
-  # --- RabbitMQ ---
-  rabbitmq:
-    host: ${RABBITMQ_HOST:rabbitmq}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-
-  # --- Mail (Mailpit) ---
-  mail:
-    host: ${MAIL_HOST:mailpit}
-    port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
-
-  # --- Google OAuth2 (M2) ---
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope:
-              - openid
-              - email
-              - profile
-            redirect-uri: "${GOOGLE_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}"
 
   servlet:
     multipart:
       max-file-size: 5MB
-      max-request-size: 5MB
+      max-request-size: 10MB
 
-# --- Custom App Properties ---
 app:
   jwt:
-    secret: ${JWT_SECRET:super_secret_jwt_key_that_is_at_least_32_characters_long_for_security}
+    secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
   cors:
@@ -79,24 +17,11 @@ app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
 
 springdoc:
-  api-docs:
-    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
 
-# --- Actuator (Health checks for Docker) ---
 management:
   endpoints:
     web:
       exposure:
         include: health, info, metrics
-  endpoint:
-    health:
-      show-details: always
-
-# --- Logging ---
-logging:
-  level:
-    org.springframework.security: INFO
-    org.flywaydb: INFO
-    com.swiftdrop: INFO
