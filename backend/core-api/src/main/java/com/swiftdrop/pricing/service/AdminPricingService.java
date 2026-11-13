@@ -22,7 +22,7 @@ public class AdminPricingService {
     private final PricingRuleRepository pricingRuleRepository;
 
     // Zones
-    
+    @Transactional(readOnly = true)
     public List<ZoneResponse> getAllZones() {
         return zoneRepository.findAll().stream()
                 .map(this::mapToZoneResponse)
@@ -65,6 +65,7 @@ public class AdminPricingService {
 
     // Pricing Rules
 
+    @Transactional(readOnly = true)
     public List<PricingRuleResponse> getAllRules() {
         return pricingRuleRepository.findAll().stream()
                 .map(this::mapToRuleResponse)
