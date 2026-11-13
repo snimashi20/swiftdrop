@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
-import type { CourierWorkload, UnassignedParcel, VehicleType, ZoneOption } from "../types";
+import type { ParcelSummary } from "../assigned";
+import type { CourierWorkload, VehicleType, ZoneOption } from "../types";
 import { Modal } from "./Modal";
 
 const VEHICLE_LABELS: Record<VehicleType, string> = {
@@ -13,12 +14,14 @@ const VEHICLE_LABELS: Record<VehicleType, string> = {
 };
 
 type AssignDialogProps = {
-  parcel: UnassignedParcel;
+  parcel: ParcelSummary;
+  /** Set when the parcel already has a courier: the dialog then reassigns. */
+  currentCourierId?: number;
   onClose: () => void;
   onAssigned: (message: string) => void;
 };
 
-export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps) {
+export function AssignDialog({ parcel, currentCourierId, onClose, onAssigned }: AssignDialogProps) {
   const [couriers, setCouriers] = useState<CourierWorkload[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>([]);
   const [suggested, setSuggested] = useState<CourierWorkload | null>(null);
@@ -73,7 +76,7 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
     try {
       await dispatchApi.assignParcel(parcel.id, selected);
       const chosen = couriers.find((c) => c.courierProfileId === selected);
-      onAssigned(`Parcel ${parcel.trackingNumber} assigned to ${chosen ? courierName(chosen) : `courier #${selected}`}.`);
+      onAssigned(`Parcel ${parcel.trackingNumber} ${currentCourierId ? "reassigned" : "assigned"} to ${chosen ? courierName(chosen) : `courier #${selected}`}.`);
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not assign the parcel."));
       setSaving(false);
@@ -81,7 +84,7 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
   };
 
   return (
-    <Modal title="Assign parcel" onClose={onClose}>
+    <Modal title={currentCourierId ? "Reassign parcel" : "Assign parcel"} onClose={onClose}>
       <div className="mb-4 rounded-xl bg-mist p-3 text-sm">
         <p className="font-semibold">{parcel.trackingNumber}</p>
         <p className="text-ink/60">
@@ -145,6 +148,11 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
                           Suggested
                         </span>
                       )}
+                      {courier.courierProfileId === currentCourierId && (
+                        <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                          Current
+                        </span>
+                      )}
                     </label>
                   </li>
                 );
@@ -163,7 +171,7 @@ export function AssignDialog({ parcel, onClose, onAssigned }: AssignDialogProps)
           disabled={selected === null || saving}
           className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {saving ? "Assigning…" : "Assign parcel"}
+          {saving ? "Saving…" : currentCourierId ? "Reassign parcel" : "Assign parcel"}
         </button>
       </div>
     </Modal>

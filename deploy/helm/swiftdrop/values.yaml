@@ -1,0 +1,81 @@
+global:
+  environment: local
+  domain: local
+
+namespace: swiftdrop
+
+database:
+  name: swiftdrop
+  user: swiftdrop
+  password: swiftdrop_secure_password
+  storage: 5Gi
+  image:
+    repository: postgres
+    tag: 16-alpine
+
+rabbitmq:
+  username: guest
+  password: guest
+  storage: 2Gi
+  image:
+    repository: rabbitmq
+    tag: 3.13-management-alpine
+
+mailpit:
+  enabled: true
+  image:
+    repository: axllent/mailpit
+    tag: latest
+
+coreApi:
+  replicaCount: 2
+  image:
+    repository: swiftdrop-core-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8080
+  jwtSecret: "swiftdrop-jwt-super-secret-key-at-least-256-bits-long-production-grade"
+  googleClientId: "sample-google-client-id"
+  googleClientSecret: "sample-google-client-secret"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+
+mockMerchantStore:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiftdrop-mock-store
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8085
+  webhookSecret: "dev-webhook-secret-key-12345"
+
+notificationService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiftdrop-notification-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8081
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: swiftdrop-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    core: swiftdrop.local
+    mockStore: mock-store.local
+    mailpit: mailpit.local
