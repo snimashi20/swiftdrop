@@ -10,7 +10,13 @@ export const PriceCalculator = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const districts = ['Colombo', 'Gampaha', 'Kandy', 'Galle', 'Jaffna'];
+  const districts = [
+    "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", 
+    "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara", 
+    "Kandy", "Kegalle", "Kilinochchi", "Kurunegala", "Mannar", 
+    "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya", 
+    "Polonnaruwa", "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya"
+  ];
 
   const handleCalculate = async () => {
     setLoading(true);
