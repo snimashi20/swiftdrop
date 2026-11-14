@@ -16,8 +16,8 @@ export const ChatWidget = () => {
     setLoading(true);
 
     try {
-      const baseUrl = import.meta.env.VITE_AI_BASE_URL || 'http://localhost:8083';
-      const res = await fetch(`${baseUrl}/api/v1/ai/chat`, {
+      // Use the relative path so Nginx proxies it and avoids CORS
+      const res = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input }),
