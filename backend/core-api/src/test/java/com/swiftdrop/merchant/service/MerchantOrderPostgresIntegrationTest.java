@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -58,6 +59,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(classes = {CoreApiApplication.class, MerchantOrderPostgresIntegrationTest.Mocks.class})
+@ActiveProfiles("test")
 @Timeout(value = 60, unit = TimeUnit.SECONDS)
 class MerchantOrderPostgresIntegrationTest {
     @Container
@@ -72,6 +74,10 @@ class MerchantOrderPostgresIntegrationTest {
         registry.add("app.jwt.secret", () -> "integration-test-secret-integration-test-secret");
         registry.add("GOOGLE_CLIENT_ID", () -> "integration-test");
         registry.add("GOOGLE_CLIENT_SECRET", () -> "integration-test");
+        registry.add("RABBITMQ_HOST", () -> "localhost");
+        registry.add("RABBITMQ_USERNAME", () -> "guest");
+        registry.add("RABBITMQ_PASSWORD", () -> "guest");
+        registry.add("MAIL_HOST", () -> "localhost");
         registry.add("spring.datasource.hikari.maximum-pool-size", () -> "6");
         registry.add("spring.datasource.hikari.minimum-idle", () -> "2");
     }
