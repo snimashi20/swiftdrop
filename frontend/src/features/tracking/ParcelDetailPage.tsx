@@ -13,13 +13,40 @@ export default function ParcelDetailPage() {
   const normalized = trackingNumber.toUpperCase();
   const [copied, setCopied] = useState(false);
 
-  const shareLink = async () => {
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  const copyFallback = (text: string): boolean => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.setAttribute('readonly', '');
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/track/${normalized}`);
+      return document.execCommand('copy');
+    } catch {
+      return false;
+    } finally {
+      document.body.removeChild(el);
+    }
+  };
+
+  const shareLink = async () => {
+    const url = `${window.location.origin}/track/${normalized}`;
+    setShareError(null);
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      ok = copyFallback(url); // Clipboard API needs HTTPS; fall back to execCommand
+    }
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard not available (e.g. insecure context): nothing to do
+    } else {
+      setShareError(`Couldn't copy automatically. Copy this link: ${url}`);
     }
   };
 
@@ -43,6 +70,11 @@ export default function ParcelDetailPage() {
           </Link>
         </div>
       </div>
+      {shareError && (
+        <p role="alert" className="select-all break-all rounded-xl bg-red-50 px-4 py-2 text-sm text-red-700">
+          {shareError}
+        </p>
+      )}
       <Link to="/parcels" className="inline-block text-sm font-medium text-ink/70 hover:text-ink hover:underline">
         ← Back to my parcels
       </Link>
