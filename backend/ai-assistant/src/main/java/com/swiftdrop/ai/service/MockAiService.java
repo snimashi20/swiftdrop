@@ -52,7 +52,14 @@ public class MockAiService implements AiService {
         double weight = Double.parseDouble(weightMatcher.group(1));
 
         // Try to find two districts mentioned
-        String[] districts = {"Colombo", "Gampaha", "Kandy", "Galle", "Jaffna"};
+        String[] districts = {
+            "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", 
+            "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara", 
+            "Kandy", "Kegalle", "Kilinochchi", "Kurunegala", "Mannar", 
+            "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya", 
+            "Polonnaruwa", "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya"
+        };
+        
         String from = null, to = null;
         for (String d : districts) {
             if (message.toLowerCase().contains(d.toLowerCase())) {
@@ -62,7 +69,7 @@ public class MockAiService implements AiService {
         }
 
         if (from == null || to == null) {
-            return "Please tell me the pickup and dropoff districts (Colombo, Gampaha, Kandy, Galle, Jaffna).";
+            return "Please tell me the pickup and dropoff districts (e.g., Colombo, Kandy, Galle).";
         }
 
         return "Here is the estimate for " + weight + "kg from " + from + " to " + to + ":\n"
