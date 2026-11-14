@@ -11,8 +11,8 @@ type Filter = "all" | "active" | "inactive";
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
+  { value: "active", label: "Available" },
+  { value: "inactive", label: "Unavailable" },
 ];
 
 const inputClass =
@@ -35,7 +35,7 @@ export function CouriersPage() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? `Zone #${id}`;
+  const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? "Unknown area";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,7 +44,7 @@ export function CouriersPage() {
       const active = filter === "all" ? undefined : filter === "active";
       setCouriers(await dispatchApi.workload({ active }));
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not load couriers."));
+      setError(getApiErrorMessage(err, "We couldn't load the couriers. Please refresh the page."));
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export function CouriersPage() {
       setZones(zoneList);
       setCandidates(candidateList);
     } catch (err) {
-      setFormError(getApiErrorMessage(err, "Could not load the courier account and zone lists."));
+      setFormError(getApiErrorMessage(err, "We couldn't load the couriers and delivery areas. Please refresh the page."));
     }
   }, []);
 
@@ -75,11 +75,11 @@ export function CouriersPage() {
     try {
       await dispatchApi.updateCourier(courier.courierProfileId, { active: !courier.active });
       setNotice(
-        `${courier.courierName ?? `Courier #${courier.courierProfileId}`} is now ${courier.active ? "inactive" : "active"}.`,
+        `${courier.courierName ?? `Courier #${courier.courierProfileId}`} is now ${courier.active ? "unavailable" : "available"}.`,
       );
       await load();
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not update the courier."));
+      setError(getApiErrorMessage(err, "We couldn't update this courier. Please try again."));
     } finally {
       setBusyId(null);
     }
@@ -92,18 +92,18 @@ export function CouriersPage() {
     const userIdNumber = Number(userId);
     const zoneIdNumber = Number(zoneId);
     if (!userId || !zoneId || !Number.isInteger(userIdNumber) || !Number.isInteger(zoneIdNumber)) {
-      setFormError("Select a courier account and a zone.");
+      setFormError("Please choose a courier and a delivery area.");
       return;
     }
     setSaving(true);
     try {
       await dispatchApi.createCourier({ userId: userIdNumber, vehicleType, zoneId: zoneIdNumber });
-      setNotice("Courier profile created.");
+      setNotice("Courier added.");
       setUserId("");
       setZoneId("");
       await Promise.all([load(), loadLookups()]);
     } catch (err) {
-      setFormError(getApiErrorMessage(err, "Could not create the courier profile."));
+      setFormError(getApiErrorMessage(err, "We couldn't add this courier. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -114,7 +114,7 @@ export function CouriersPage() {
       <PageHeader
         eyebrow="Operations desk"
         title="Couriers"
-        text="Courier profiles, how busy each courier is, and who is available for assignments."
+        text="See your couriers, how many deliveries each one has right now, and who is available."
       />
 
       {notice && <p className="mb-4 rounded-lg bg-mint/40 px-3 py-2 text-sm text-ink">{notice}</p>}
@@ -145,7 +145,7 @@ export function CouriersPage() {
         ) : couriers.length === 0 ? (
           error ? null : (
             <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
-              No couriers found. Create a courier profile below.
+              No couriers found. Add a courier below.
             </p>
           )
         ) : (
@@ -155,7 +155,7 @@ export function CouriersPage() {
                 <tr className="border-b border-ink/10 text-xs uppercase tracking-wider text-ink/45">
                   <th className="py-2 pr-4 font-semibold">Courier</th>
                   <th className="py-2 pr-4 font-semibold">Vehicle</th>
-                  <th className="py-2 pr-4 font-semibold">Zone</th>
+                  <th className="py-2 pr-4 font-semibold">Delivery area</th>
                   <th className="py-2 pr-4 font-semibold">Active deliveries</th>
                   <th className="py-2 pr-4 font-semibold">Status</th>
                   <th className="py-2 font-semibold" />
@@ -164,7 +164,7 @@ export function CouriersPage() {
               <tbody>
                 {couriers.map((courier) => (
                   <tr key={courier.courierProfileId} className="border-b border-ink/5 last:border-0">
-                    <td className="py-3 pr-4 font-medium">{courier.courierName ?? `User #${courier.userId}`}</td>
+                    <td className="py-3 pr-4 font-medium">{courier.courierName ?? "Courier"}</td>
                     <td className="py-3 pr-4">{vehicleLabel(courier.vehicleType)}</td>
                     <td className="py-3 pr-4">{zoneName(courier.zoneId)}</td>
                     <td className="py-3 pr-4 font-semibold">{courier.activeDeliveries}</td>
@@ -174,23 +174,23 @@ export function CouriersPage() {
                           courier.active ? "bg-mint text-ink" : "bg-ink/10 text-ink/55"
                         }`}
                       >
-                        {courier.active ? "Active" : "Inactive"}
+                        {courier.active ? "Available" : "Unavailable"}
                       </span>
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => setEditing(courier)}
-                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink/5"
+                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink hover:text-white transition"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => toggleActive(courier)}
                           disabled={busyId === courier.courierProfileId}
-                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink/5 disabled:opacity-50"
+                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink hover:text-white transition disabled:opacity-50"
                         >
-                          {courier.active ? "Deactivate" : "Activate"}
+                          {courier.active ? "Make unavailable" : "Make available"}
                         </button>
                       </div>
                     </td>
@@ -200,28 +200,28 @@ export function CouriersPage() {
             </table>
           </div>
         )}
-        <p className="mt-3 text-xs text-ink/40">Sorted by workload: the least busy courier comes first.</p>
+        <p className="mt-3 text-xs text-ink/40">Couriers with the fewest deliveries are listed first.</p>
       </section>
 
       <section className="rounded-2xl border border-ink/10 bg-white p-5">
-        <h2 className="font-display text-xl font-bold">Create a courier profile</h2>
+        <h2 className="font-display text-xl font-bold">Add a courier</h2>
         <p className="mt-1 text-sm text-ink/55">
-          Pick a user who already has an account with the COURIER role (an admin can create one on the Users page).
+          Choose a courier, then set their vehicle and delivery area.
         </p>
         <form onSubmit={createCourier} className="mt-5 grid gap-4 sm:grid-cols-3">
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-ink/80">Courier account</span>
+            <span className="text-sm font-semibold text-ink/80">Courier</span>
             <select className={inputClass} value={userId} onChange={(e) => setUserId(e.target.value)}>
-              <option value="">Select a courier account</option>
+              <option value="">Choose a courier</option>
               {candidates.map((candidate) => (
                 <option key={candidate.userId} value={candidate.userId}>
-                  {candidate.fullName ?? `User #${candidate.userId}`}
+                  {candidate.fullName ?? "Unnamed courier"}
                 </option>
               ))}
             </select>
             {candidates.length === 0 && (
               <span className="block text-xs text-ink/45">
-                No courier accounts without a profile yet. An admin can create a user with the COURIER role.
+                Everyone with a courier account has already been added. Ask an administrator to create a new courier account first.
               </span>
             )}
           </label>
@@ -240,9 +240,9 @@ export function CouriersPage() {
             </select>
           </label>
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-ink/80">Zone</span>
+            <span className="text-sm font-semibold text-ink/80">Delivery area</span>
             <select className={inputClass} value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
-              <option value="">Select a zone</option>
+              <option value="">Choose a delivery area</option>
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>
                   {zone.name} ({zone.district})
@@ -255,9 +255,9 @@ export function CouriersPage() {
           )}
           <button
             disabled={saving}
-            className="rounded-xl bg-ink px-4 py-3 font-semibold text-white disabled:opacity-60 sm:col-span-3 sm:w-fit"
+            className="rounded-xl bg-ink px-4 py-3 font-semibold text-white disabled:opacity-60 sm:col-span-3 sm:w-fit transition hover:bg-coral"
           >
-            {saving ? "Creating…" : "Create profile"}
+            {saving ? "Adding…" : "Add courier"}
           </button>
         </form>
       </section>

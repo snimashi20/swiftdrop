@@ -110,6 +110,11 @@ export default function TrackingMap({ pickupCity, dropoffCity, status, timeline,
     return (
       <div className="flex h-full items-center justify-center bg-ink/5 p-6 text-center text-ink/60">
         The map isn’t available for this route yet.
+        {(!from || !to) && (
+          <span className="mt-1 block text-xs text-ink/40">
+            Unknown city: {[!from && pickupCity, !to && dropoffCity].filter(Boolean).join(', ') || '(empty)'}
+          </span>
+        )}
       </div>
     );
   }

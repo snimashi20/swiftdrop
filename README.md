@@ -92,10 +92,10 @@ It is safe to run twice. Every demo account uses the password `Demo@1234`:
 | `ADMIN` | `admin@demo.swiftdrop.lk` |
 | `DISPATCHER` | `dispatcher@demo.swiftdrop.lk` |
 | `COURIER` | `courier@demo.swiftdrop.lk` |
-| `MERCHANT` | `merchant@demo.swiftdrop.lk` |
+| `MERCHANT` | `merchant@demo.swiftdrop.lk` (APPROVED), `pending-merchant@demo.swiftdrop.lk` (PENDING) |
 | `CUSTOMER` | `customer@demo.swiftdrop.lk` and `customer2@demo.swiftdrop.lk` |
 
-The script also creates 8 parcels, `SDDEMO000001` to `SDDEMO000008`: one in each status (`CREATED` to `CANCELLED`), plus one that belongs to the second customer.
+The script also creates 8 customer parcels, `SDDEMO000001` to `SDDEMO000008`, one in each status (`CREATED` to `CANCELLED`), plus two approved-merchant sample orders, `SDM9DEMO0001` and `SDM9DEMO0002`. It is safe to rerun after the base demo data already exists.
 
 ---
 

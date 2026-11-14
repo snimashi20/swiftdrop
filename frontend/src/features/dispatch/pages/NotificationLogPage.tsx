@@ -47,7 +47,7 @@ export function NotificationLogPage() {
         }),
       );
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not load the notification log."));
+      setError(getApiErrorMessage(err, "We couldn't load the messages. Please refresh the page."));
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export function NotificationLogPage() {
       <PageHeader
         eyebrow="Admin"
         title="Notification log"
-        text="Every e-mail and mock SMS the notification service has sent, newest first. Recipients are masked."
+        text="Every e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
       />
 
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
@@ -117,7 +117,7 @@ export function NotificationLogPage() {
           />
         </label>
         <div className="flex items-end gap-2">
-          <button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white">Apply</button>
+          <button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-coral">Apply</button>
           <button
             type="button"
             onClick={clearFilters}

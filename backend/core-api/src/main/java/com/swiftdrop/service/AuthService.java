@@ -26,11 +26,11 @@ import java.util.Set;
 @Service
 public class AuthService {
 
-    private static final String DEFAULT_ROLE = "ROLE_CUSTOMER";
+    private static final String DEFAULT_ROLE = "CUSTOMER";
     private static final Set<String> SELF_REGISTRATION_ROLES = Set.of(
-            "ROLE_CUSTOMER",
-            "ROLE_MERCHANT",
-            "ROLE_COURIER");
+            "CUSTOMER",
+            "MERCHANT",
+            "COURIER");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -63,27 +63,38 @@ public class AuthService {
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ConflictException("Email is already registered");
         }
-
         String normalizedRole = normalizeRole(request.role());
-        boolean isPending = "ROLE_MERCHANT".equalsIgnoreCase(normalizedRole) || "ROLE_COURIER".equalsIgnoreCase(normalizedRole);
-        String initialStatus = isPending ? "PENDING_APPROVAL" : "ACTIVE";
+        User saved = createLocalUser(request.email(), request.password(), request.name(), null, normalizedRole);
 
-        User user = User.builder()
-                .fullName(request.name())
-                .email(request.email().trim().toLowerCase())
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .role(normalizedRole)
-                .status(initialStatus)
-                .enabled(!isPending)
-                .build();
-        User saved = userRepository.save(user);
-
-        if ("ROLE_MERCHANT".equalsIgnoreCase(normalizedRole)) {
+        if ("MERCHANT".equalsIgnoreCase(normalizedRole)) {
             createMerchantProfileIfMissing(saved);
         }
 
         String token = tokenProvider.generateToken(saved.getId(), saved.getEmail(), Set.of(saved.getRole()), saved.getStatus());
         return response(saved, token);
+    }
+
+    /**
+     * Creates a local user for a domain workflow that needs to persist additional records.
+     * The caller owns duplicate checks and the surrounding transaction.
+     */
+    @Transactional
+    public User createLocalUser(String email, String rawPassword, String fullName,
+                                String phoneNumber, String role) {
+        String normalizedRole = normalizeRole(role);
+        boolean isPending = "MERCHANT".equalsIgnoreCase(normalizedRole)
+                || "COURIER".equalsIgnoreCase(normalizedRole);
+        User user = User.builder()
+                .fullName(fullName)
+                .email(email.trim().toLowerCase())
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .phoneNumber(phoneNumber)
+                .role(normalizedRole)
+                .status(isPending ? "PENDING_APPROVAL" : "ACTIVE")
+                .provider("LOCAL")
+                .enabled(!isPending)
+                .build();
+        return userRepository.save(user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -122,7 +133,7 @@ public class AuthService {
                 .orElseThrow(() -> new NotFoundException("User not found for email: " + email));
 
         String normalizedRole = normalizeRole(chosenRole);
-        boolean isPending = "ROLE_MERCHANT".equalsIgnoreCase(normalizedRole) || "ROLE_COURIER".equalsIgnoreCase(normalizedRole);
+        boolean isPending = "MERCHANT".equalsIgnoreCase(normalizedRole) || "COURIER".equalsIgnoreCase(normalizedRole);
         String nextStatus = isPending ? "PENDING_APPROVAL" : "ACTIVE";
 
         user.setRole(normalizedRole);
@@ -130,7 +141,7 @@ public class AuthService {
         user.setEnabled(!isPending);
         User saved = userRepository.save(user);
 
-        if ("ROLE_MERCHANT".equalsIgnoreCase(normalizedRole)) {
+        if ("MERCHANT".equalsIgnoreCase(normalizedRole)) {
             createMerchantProfileIfMissing(saved);
         }
 
@@ -163,7 +174,7 @@ public class AuthService {
             return DEFAULT_ROLE;
         }
         String normalized = role.trim().toUpperCase();
-        String normalizedRole = normalized.startsWith("ROLE_") ? normalized : "ROLE_" + normalized;
+        String normalizedRole = normalized.startsWith("ROLE_") ? normalized.substring("ROLE_".length()) : normalized;
         if (!SELF_REGISTRATION_ROLES.contains(normalizedRole)) {
             throw new IllegalArgumentException("Unauthorized self-registration role: " + role);
         }

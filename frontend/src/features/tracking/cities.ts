@@ -31,6 +31,52 @@ const CITIES: Record<string, LatLng> = {
   mullaitivu: [9.2671, 80.8142],
 };
 
-export function coordsFor(city: string): LatLng | null {
-  return CITIES[city.trim().toLowerCase()] ?? null;
+// Parcel cities are free text, so common suburbs / spellings map onto a table entry.
+const ALIASES: Record<string, string> = {
+  nugegoda: 'colombo',
+  'mount lavinia': 'colombo',
+  dehiwala: 'colombo',
+  moratuwa: 'colombo',
+  maharagama: 'colombo',
+  kotte: 'colombo',
+  'sri jayawardenepura kotte': 'colombo',
+  battaramulla: 'colombo',
+  rajagiriya: 'colombo',
+  kollupitiya: 'colombo',
+  bambalapitiya: 'colombo',
+  wellawatte: 'colombo',
+  'ja ela': 'negombo',
+  kadawatha: 'gampaha',
+  kiribathgoda: 'gampaha',
+  panadura: 'kalutara',
+  hikkaduwa: 'galle',
+  unawatuna: 'galle',
+  peradeniya: 'kandy',
+  katugastota: 'kandy',
+  kurunagala: 'kurunegala',
+  nuwaraeliya: 'nuwara eliya',
+  moneragala: 'monaragala',
+  trinco: 'trincomalee',
+};
+
+function normalize(city: string): string {
+  return city
+    .toLowerCase()
+    .replace(/[0-9]+/g, ' ') // "Colombo 03" -> "colombo"
+    .replace(/[^a-z\s]/g, ' ') // punctuation
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function coordsFor(city: string | null | undefined): LatLng | null {
+  if (!city) return null;
+  const key = normalize(city);
+  if (!key) return null;
+  const direct = CITIES[key] ?? CITIES[ALIASES[key] ?? ''];
+  if (direct) return direct;
+  // "Galle Fort", "Kandy City": match a known name or alias inside the text.
+  for (const name of [...Object.keys(CITIES), ...Object.keys(ALIASES)]) {
+    if (` ${key} `.includes(` ${name} `)) return CITIES[name] ?? CITIES[ALIASES[name]];
+  }
+  return null;
 }

@@ -34,7 +34,7 @@ public class JwtTokenProvider {
         Date issuedAt = new Date();
         Date expiration = new Date(issuedAt.getTime() + expirationMs);
         Set<String> authorities = Set.copyOf(roles);
-        String role = authorities.stream().sorted().findFirst().orElse("ROLE_CUSTOMER");
+        String role = authorities.stream().sorted().findFirst().orElse("CUSTOMER");
 
         return Jwts.builder()
                 .subject(email)

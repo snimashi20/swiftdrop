@@ -12,7 +12,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up -d
 ```
 
-Wait until Core API is healthy (`docker compose ps`). Load the demo users and parcel fixtures from the repository root. The seed script exits without changes if its demo customer already exists.
+Wait until Core API is healthy (`docker compose ps`). Load the demo users, merchant fixtures, and parcel fixtures from the repository root. The seed script preserves existing records when rerun.
 
 PowerShell:
 
