@@ -1,6 +1,6 @@
 -- SwiftDrop demo data: one user for every role and one parcel in every status.
 -- Run once after the app has started (Flyway has created the tables).
--- Safe to run again: it does nothing if the demo customer already exists.
+-- Safe to run again: existing base and M9 demo records are preserved.
 -- Password for every demo account: Demo@1234
 
 DO $$
@@ -14,11 +14,13 @@ DECLARE
     v_customer2_id BIGINT;
     v_colombo_zone BIGINT;
     v_courier_id   BIGINT;
+    v_approved_merchant_id BIGINT;
+    v_pending_merchant_user_id BIGINT;
+    v_merchant_parcel_id BIGINT;
 BEGIN
     IF EXISTS (SELECT 1 FROM users WHERE email = 'customer@demo.swiftdrop.lk') THEN
-        RAISE NOTICE 'Demo data already exists, nothing to do.';
-        RETURN;
-    END IF;
+        RAISE NOTICE 'Base demo data already exists; checking M9 demo data.';
+    ELSE
 
     -- Users: one per role (plus a second customer to test "cannot open another customer's parcel")
     INSERT INTO users (email, password_hash, full_name, phone_number, role)
@@ -139,5 +141,88 @@ BEGIN
     SET updated_at = (SELECT max(h.changed_at) FROM status_history h WHERE h.parcel_id = p.id)
     WHERE p.tracking_number LIKE 'SDDEMO%';
 
-    RAISE NOTICE 'Demo data created. Log in with any demo account, password Demo@1234.';
+    END IF;
+
+    -- M9 merchant fixtures. These statements are idempotent so the seed can be rerun.
+    SELECT id INTO v_colombo_zone
+    FROM zones
+    WHERE district = 'Colombo';
+
+    SELECT id INTO v_approved_merchant_id
+    FROM merchants
+    WHERE contact_email = 'merchant@demo.swiftdrop.lk';
+
+    INSERT INTO users (email, password_hash, full_name, phone_number, role)
+    SELECT 'pending-merchant@demo.swiftdrop.lk', pw, 'Pending Demo Merchant', '0711000010', 'MERCHANT'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM users WHERE email = 'pending-merchant@demo.swiftdrop.lk'
+    );
+
+    SELECT id INTO v_pending_merchant_user_id
+    FROM users
+    WHERE email = 'pending-merchant@demo.swiftdrop.lk';
+
+    INSERT INTO merchants (user_id, business_name, registration_number, contact_name,
+                           contact_email, contact_phone, status)
+    SELECT v_pending_merchant_user_id, 'Pending Demo Store', 'REG-DEMO-PENDING',
+           'Pending Demo Merchant', 'pending-merchant@demo.swiftdrop.lk', '0711000010', 'PENDING'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM merchants
+        WHERE contact_email = 'pending-merchant@demo.swiftdrop.lk'
+           OR registration_number = 'REG-DEMO-PENDING'
+    );
+
+    INSERT INTO parcels (tracking_number, merchant_id, status,
+                         pickup_line1, pickup_city, pickup_district,
+                         dropoff_line1, dropoff_city, dropoff_district,
+                         receiver_name, receiver_phone, size, weight_kg, fee,
+                         pickup_zone_id, created_at, updated_at)
+    SELECT 'SDM9DEMO0001', v_approved_merchant_id, 'CREATED',
+           '100 Merchant Street', 'Colombo', 'Colombo',
+           '200 Lake Road', 'Kandy', 'Kandy',
+           'Merchant Demo Receiver', '0771234510', 'M', 2.00, 700.00,
+           v_colombo_zone, now() - interval '12 hours', now() - interval '12 hours'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM parcels WHERE tracking_number = 'SDM9DEMO0001'
+    );
+
+    INSERT INTO parcels (tracking_number, merchant_id, status,
+                         pickup_line1, pickup_city, pickup_district,
+                         dropoff_line1, dropoff_city, dropoff_district,
+                         receiver_name, receiver_phone, size, weight_kg, fee,
+                         pickup_zone_id, created_at, updated_at)
+    SELECT 'SDM9DEMO0002', v_approved_merchant_id, 'DELIVERED',
+           '300 Merchant Avenue', 'Colombo', 'Colombo',
+           '400 Temple Road', 'Galle', 'Galle',
+           'Merchant Demo Customer', '0771234511', 'S', 1.25, 650.00,
+           v_colombo_zone, now() - interval '3 days', now() - interval '1 day'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM parcels WHERE tracking_number = 'SDM9DEMO0002'
+    );
+
+    SELECT id INTO v_merchant_parcel_id
+    FROM parcels
+    WHERE tracking_number = 'SDM9DEMO0001';
+
+    INSERT INTO merchant_orders (merchant_id, parcel_id, idempotency_key, external_order_id, created_at)
+    SELECT v_approved_merchant_id, v_merchant_parcel_id, 'demo-m9-order-1', 'DEMO-M9-ORDER-1', now() - interval '12 hours'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM merchant_orders
+        WHERE merchant_id = v_approved_merchant_id
+          AND idempotency_key = 'demo-m9-order-1'
+    );
+
+    SELECT id INTO v_merchant_parcel_id
+    FROM parcels
+    WHERE tracking_number = 'SDM9DEMO0002';
+
+    INSERT INTO merchant_orders (merchant_id, parcel_id, idempotency_key, external_order_id, created_at)
+    SELECT v_approved_merchant_id, v_merchant_parcel_id, 'demo-m9-order-2', 'DEMO-M9-ORDER-2', now() - interval '3 days'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM merchant_orders
+        WHERE merchant_id = v_approved_merchant_id
+          AND idempotency_key = 'demo-m9-order-2'
+    );
+
+    RAISE NOTICE 'Demo data created or already present. Log in with any demo account, password Demo@1234.';
 END $$;

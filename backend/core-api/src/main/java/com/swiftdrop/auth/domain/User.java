@@ -41,7 +41,7 @@ public class User implements UserDetails {
 
     @Column(nullable = false, length = 40)
     @Builder.Default
-    private String role = "ROLE_CUSTOMER";
+    private String role = "CUSTOMER";
 
     @Column(nullable = false)
     @Builder.Default

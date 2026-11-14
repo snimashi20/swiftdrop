@@ -3,14 +3,17 @@ package com.swiftdrop.service;
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.dto.auth.AuthResponse;
+import com.swiftdrop.dto.auth.LoginRequest;
 import com.swiftdrop.dto.auth.RegisterRequest;
 import com.swiftdrop.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,12 +51,12 @@ class AuthServiceTest {
             user.setId(7L);
             return user;
         });
-        when(tokenProvider.generateToken(7L, "merchant@example.com", java.util.Set.of("ROLE_MERCHANT"), "PENDING_APPROVAL"))
+        when(tokenProvider.generateToken(7L, "merchant@example.com", java.util.Set.of("MERCHANT"), "PENDING_APPROVAL"))
                 .thenReturn("token");
 
         AuthResponse response = authService.register(request);
 
-        assertThat(response.roles()).containsExactly("ROLE_MERCHANT");
+        assertThat(response.roles()).containsExactly("MERCHANT");
         assertThat(response.token()).isEqualTo("token");
         assertThat(response.status()).isEqualTo("PENDING_APPROVAL");
     }
@@ -68,13 +71,61 @@ class AuthServiceTest {
             user.setId(8L);
             return user;
         });
-        when(tokenProvider.generateToken(8L, "cust@example.com", java.util.Set.of("ROLE_CUSTOMER"), "ACTIVE"))
+        when(tokenProvider.generateToken(8L, "cust@example.com", java.util.Set.of("CUSTOMER"), "ACTIVE"))
                 .thenReturn("token");
 
         AuthResponse response = authService.register(request);
 
-        assertThat(response.roles()).containsExactly("ROLE_CUSTOMER");
+        assertThat(response.roles()).containsExactly("CUSTOMER");
         assertThat(response.token()).isEqualTo("token");
+        assertThat(response.status()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void createLocalUser_encodesPasswordAndSetsLocalUserFields() {
+        when(passwordEncoder.encode("password")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = authService.createLocalUser(
+                " Shop@Example.COM ", "password", "Shop Owner", "0712345678", "MERCHANT");
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertThat(result).isSameAs(saved);
+        assertThat(saved.getEmail()).isEqualTo("shop@example.com");
+        assertThat(saved.getPasswordHash()).isEqualTo("encoded-password");
+        assertThat(saved.getFullName()).isEqualTo("Shop Owner");
+        assertThat(saved.getPhoneNumber()).isEqualTo("0712345678");
+        assertThat(saved.getRole()).isEqualTo("MERCHANT");
+        assertThat(saved.getStatus()).isEqualTo("PENDING_APPROVAL");
+        assertThat(saved.getProvider()).isEqualTo("LOCAL");
+        assertThat(saved.isEnabled()).isFalse();
+    }
+
+    @Test
+    void logsInMerchantAfterApprovalEnablesUser() {
+        User merchant = User.builder()
+                .id(9L)
+                .email("merchant@example.com")
+                .fullName("Shop Owner")
+                .role("MERCHANT")
+                .status("ACTIVE")
+                .enabled(true)
+                .passwordHash("encoded-password")
+                .build();
+        LoginRequest request = new LoginRequest("merchant@example.com", "password");
+        when(userRepository.findByEmailIgnoreCase(request.email())).thenReturn(java.util.Optional.of(merchant));
+        when(passwordEncoder.matches(request.password(), merchant.getPasswordHash())).thenReturn(true);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(new UsernamePasswordAuthenticationToken(merchant, null, merchant.getAuthorities()));
+        when(tokenProvider.generateToken(9L, "merchant@example.com", java.util.Set.of("MERCHANT"), "ACTIVE"))
+                .thenReturn("merchant-token");
+
+        AuthResponse response = authService.login(request);
+
+        assertThat(response.token()).isEqualTo("merchant-token");
+        assertThat(response.roles()).containsExactly("MERCHANT");
         assertThat(response.status()).isEqualTo("ACTIVE");
     }
 
