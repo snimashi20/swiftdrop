@@ -37,7 +37,7 @@ export function ReportsPage() {
         if (!ignore) setReport(data);
       })
       .catch((err) => {
-        if (!ignore) setError(getApiErrorMessage(err, "Could not load the report."));
+        if (!ignore) setError(getApiErrorMessage(err, "We couldn't load the report. Please try again."));
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -55,7 +55,7 @@ export function ReportsPage() {
       <PageHeader
         eyebrow="Operations desk"
         title="Reports"
-        text="Parcels that reached a final status, by day and by pickup zone."
+        text="Parcels that were delivered, failed or cancelled, by day and by pickup area."
       />
 
       <div className="mb-6 inline-flex rounded-xl border border-ink/10 bg-white p-1">

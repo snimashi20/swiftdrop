@@ -48,7 +48,7 @@ export function UnassignedParcelsPage() {
       }
       setData(result);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not load the parcels."));
+      setError(getApiErrorMessage(err, "We couldn't load the parcels. Please refresh the page."));
     } finally {
       setLoading(false);
     }
@@ -128,13 +128,13 @@ export function UnassignedParcelsPage() {
 
       <form onSubmit={applyFilters} className="mb-6 grid gap-3 rounded-2xl border border-ink/10 bg-white p-4 sm:grid-cols-4">
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Pickup zone</span>
+          <span className="text-xs font-semibold text-ink/60">Pickup area</span>
           <select
             className={inputClass}
             value={form.zoneId}
             onChange={(e) => setForm({ ...form, zoneId: e.target.value })}
           >
-            <option value="">All zones</option>
+            <option value="">All areas</option>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
                 {zone.name} ({zone.district})
@@ -170,7 +170,7 @@ export function UnassignedParcelsPage() {
           />
         </label>
         <div className="flex items-end gap-2">
-          <button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white">Apply</button>
+          <button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-coral">Apply</button>
           <button
             type="button"
             onClick={clearFilters}
@@ -188,7 +188,7 @@ export function UnassignedParcelsPage() {
         ) : parcels.length === 0 ? (
           error ? null : (
             <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
-              No unassigned parcels match these filters.
+              No parcels are waiting for a courier right now.
             </p>
           )
         ) : (
@@ -224,7 +224,7 @@ export function UnassignedParcelsPage() {
                       <td className="py-3 text-right">
                         <button
                           onClick={() => setAssigning(parcel)}
-                          className="rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
+                          className="rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ink"
                         >
                           Assign
                         </button>

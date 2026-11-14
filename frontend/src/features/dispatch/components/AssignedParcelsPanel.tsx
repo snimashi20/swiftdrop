@@ -22,7 +22,7 @@ export function AssignedParcelsPanel() {
     try {
       setData(await assignedParcelsApi.list({ activeOnly, page, size: PAGE_SIZE }));
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not load the assigned parcels."));
+      setError(getApiErrorMessage(err, "We couldn't load the assigned parcels. Please refresh the page."));
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export function AssignedParcelsPanel() {
             setActiveOnly(e.target.checked);
           }}
         />
-        Only parcels still being delivered
+        Show only parcels that are still on their way
       </label>
 
       <section className="rounded-2xl border border-ink/10 bg-white p-5">
@@ -57,7 +57,7 @@ export function AssignedParcelsPanel() {
         ) : parcels.length === 0 ? (
           error ? null : (
             <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
-              No assigned parcels to show.
+              No parcels with a courier to show.
             </p>
           )
         ) : (
@@ -94,7 +94,7 @@ export function AssignedParcelsPanel() {
                         {["CREATED", "PICKED_UP"].includes(parcel.status) && (
                           <button
                             onClick={() => setReassigning(parcel)}
-                            className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink/5"
+                            className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink hover:text-white transition"
                           >
                             Reassign
                           </button>
