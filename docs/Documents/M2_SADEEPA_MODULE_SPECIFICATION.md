@@ -435,6 +435,13 @@ All **32 automated test cases** pass with zero failures and zero regressions:
 | **TC-M2-ADM-08** | `createStaffAccount_withDuplicateEmail_throwsConflictException` | Prevents email collisions during staff creation. | Request with email already registered in system. | HTTP 409 CONFLICT with descriptive message. |
 | **TC-M2-ADM-09** | `toggleUserStatus_updatesStatusSuccessfully` | Verifies account enable/disable toggle functionality. | Target active user; toggle request sent. | HTTP 200 OK; `isActive` flipped to `false`; user is effectively suspended. |
 | **TC-M2-ADM-10** | `toggleUserStatus_whenNotFound_throwsNotFoundException` | Handles non-existent target during account status toggle. | Non-existent User ID `9999`. | HTTP 404 NOT FOUND with `ResourceNotFoundException`. |
+| **TC-M2-ADM-11** | `approveUser_activatesAccount` | Verifies approving a pending merchant/courier account. | Pending User ID `15`. | HTTP 200 OK; status set to `ACTIVE`, enabled set to `true`. |
+| **TC-M2-ADM-12** | `rejectUser_deactivatesAccount` | Verifies basic rejection without reason. | Pending User ID `16`. | HTTP 200 OK; status set to `REJECTED`, enabled set to `false`. |
+| **TC-M2-ADM-13** | `rejectUser_withReason_setsRejectionReasonOnMerchant` | Tests rejection with descriptive audit reason written to merchant entity. | User ID `23` with merchant profile; rejection reason payload. | HTTP 200 OK; `merchant.status == REJECTED`, `rejectionReason` persisted. |
+| **TC-M2-ADM-14** | `getUserDetails_standardUser_returnsDetails` | Verifies full profile query for standard customers. | Customer User ID `20`. | HTTP 200 OK; returns user fields; merchant/courier profiles null. |
+| **TC-M2-ADM-15** | `getUserDetails_merchantUser_returnsDetailsWithMerchantProfile` | Fetches comprehensive KYC details linking merchant business information. | Merchant User ID `21`. | HTTP 200 OK; includes business name, registration no, contact info. |
+| **TC-M2-ADM-16** | `getUserDetails_courierUser_returnsDetailsWithCourierProfile` | Fetches comprehensive KYC details linking courier fleet specifications. | Courier User ID `22`. | HTTP 200 OK; includes vehicle type, assigned zone ID, active flag. |
+| **TC-M2-ADM-17** | `getUserDetails_notFound_throwsNotFoundException` | Handles non-existent user identifier when requesting full details. | Non-existent User ID `999L`. | HTTP 404 NOT FOUND with `ResourceNotFoundException`. |
 
 ---
 

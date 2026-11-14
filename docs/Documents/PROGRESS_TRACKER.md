@@ -25,20 +25,21 @@
 | Tag | Task Item | Target Date | Status | Notes / Deliverables |
 | :---: | :--- | :---: | :---: | :--- |
 | **[BE]** | **Profile API**: view/update name & phone (`07XXXXXXXX` / `+947XXXXXXXX`), saved addresses | Nov 4 | ✅ **DONE** | `AuthController.java` & `AddressController.java` |
-| **[BE]** | **Admin user API**: list/search users with role filter, enable/disable, change role, create staff | Nov 6 | ✅ **DONE** | `AdminUserController.java` (`GET`, `PATCH /status`, `PUT /role`, `POST /staff`, `PATCH /{id}/approve`, `PATCH /{id}/reject`) |
+| **[BE]** | **Admin user API**: list/search users with role filter, enable/disable, change role, create staff, KYC details & rejection reason | Nov 15 | ✅ **DONE** | `AdminUserController.java` (`GET`, `GET /{id}`, `PATCH /status`, `PUT /role`, `POST /staff`, `PATCH /{id}/approve`, `PATCH /{id}/reject` with reason) |
 | **[BE]** | **Delivery receipt PDF (OpenPDF)**: tracking #, addresses, weight, fee, status dates | Nov 8 | ✅ **DONE** | `ReceiptDataDto.java`, `ReceiptService.java` & `ReceiptController.java` (`GET /api/v1/parcels/{id}/receipt` with IDOR defense) |
 | **[FE]** | **Profile page with address book** | Nov 9 | ✅ **DONE** | `UserProfilePage.tsx` & `AddressBookPage.tsx` under `src/features/profile/` |
 | **[FE]** | **Admin Users page**: filter by role, toggle enable/disable, create staff modal, role pill filters | Nov 10 | ✅ **DONE** | `AdminUsersPage.tsx`, `CreateStaffModal.tsx`, `RoleUpdateModal.tsx`, `StatusConfirmModal.tsx` |
+| **[FE]** | **Dedicated Full-Page Admin Workflows (Zero Modals Alternative)** | Nov 15 | ✅ **DONE** | `ApprovalReviewPage.tsx` (`/admin/approvals/:id`), `CreateStaffPage.tsx` (`/admin/staff/new`), `AdminProfilePage.tsx` (`/admin/profile`) |
 | **[FE]** | **Google OAuth Role Selection & Approval Flow** | Nov 12 | ✅ **DONE** | `RoleSelectionPage.tsx`, `WaitingApprovalPage.tsx`, query resolver & cookie tracking for Courier/Merchant approval |
 | **[FE]** | **Admin Navigation & Route Alignment** | Nov 14 | ✅ **DONE** | Renamed navigation button to "Manage users" (`/admin/users`), redirected legacy `/people`, updated Admin dashboard quick action |
 | **[FE/Sec]**| **Cross-Tab Session Synchronization & Role Guards** | Nov 15 | ✅ **DONE** | Implemented `StorageEvent` tracking in `AuthContext.tsx` and role-whitelisting on customer routes to eliminate tab session desync and route lingering |
 | **[FE/UX]** | **Scroll-Free Responsive Modal Design** | Nov 15 | ✅ **DONE** | Redesigned `CreateStaffModal`, `RoleUpdateModal`, and `StatusConfirmModal` with 2-column compact inputs, Esc key listener, backdrop dismissal, zero scrollbar |
 | **[FE]** | **"Download receipt" button** in delivery history table | Nov 10 | 🔄 Backend Ready | Endpoints `GET /api/v1/parcels/{id}/receipt` and `/api/v1/receipts/{trackingNumber}` verified live |
 | **[Test]** | **Google success handler test** (new user vs existing user linking, disabled check, role selection) | Nov 12 | ✅ **DONE** | `OAuth2AuthenticationSuccessHandlerTest.java` (9 unit tests passing) |
-| **[Test]** | **Admin-only endpoints authorization tests** (user list, toggle, roles, approval/rejection) | Nov 12 | ✅ **DONE** | `AdminUserControllerTest.java` (12 unit tests passing) |
+| **[Test]** | **Admin-only endpoints authorization tests** (user list, toggle, roles, approval/rejection, user details) | Nov 15 | ✅ **DONE** | `AdminUserControllerTest.java` (17 unit tests passing) |
 | **[Test]** | **Receipt ownership authorization & PDF tests** (owner-only download, IDOR defense & %PDF- header) | Nov 13 | ✅ **DONE** | `ReceiptControllerTest.java` (6 tests) & `ReceiptServiceTest.java` (3 tests) passing |
 | **[Test]** | **Address ownership & JWT validation tests** | Nov 13 | ✅ **DONE** | `AddressControllerTest.java` (5 tests) & `JwtServiceTest.java` (3 tests) passing |
-| **[Test]** | **M2 Consolidated Test Suite Execution** | Nov 14 | ✅ **COMPLETED** | **38+ automated unit/integration tests PASS (0 failures, 100% success rate)** |
+| **[Test]** | **M2 Consolidated Test Suite Execution** | Nov 15 | ✅ **COMPLETED** | **43+ automated unit/integration tests PASS (0 failures, 100% success rate)** |
 
 ---
 
@@ -61,6 +62,7 @@
 
 ## 3. Changelog & Project Milestones
 
+* **2026-11-15**: Completed dedicated full-page admin views (`ApprovalReviewPage.tsx`, `CreateStaffPage.tsx`, `AdminProfilePage.tsx`) offering a comprehensive zero-modal experience alongside the scroll-free responsive modal designs. Added `GET /api/v1/admin/users/{id}` (deep KYC payload linking merchant & courier profiles) and `PATCH /api/v1/admin/users/{id}/reject` with rejection reason. Expanded `AdminUserControllerTest` to 17 automated tests (100% passing).
 * **2026-11-15**: Implemented Cross-Tab Session Synchronization via browser `StorageEvent` API in `AuthContext.tsx` and route-level whitelisting to eliminate tab state drift and session fixation. Redesigned all M2 admin modals (`CreateStaffModal`, `RoleUpdateModal`, `StatusConfirmModal`) with 2-column compact inputs, Esc key listener, backdrop dismissal, and a 100% scroll-free layout.
 * **2026-11-14**: Aligned Admin navigation ("Manage users" pointing to `/admin/users`), redirected `/people`, connected Admin quick actions, verified live end-to-end browser workflows, and integrated Google OAuth Role Selection & Pending Admin Approval pipeline.
 * **2026-11-04**: Added official Section 6 (Comprehensive Testing & Quality Assurance Specification) in `M2_SADEEPA_MODULE_SPECIFICATION.md` detailing all unit/integration/IDOR test cases and Java 25 execution guidance.
