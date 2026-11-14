@@ -1,12 +1,19 @@
 import { useState } from 'react';
+import { useAuth } from '../auth/AuthContext'; // <-- Import useAuth
 
 interface Message { role: 'user' | 'assistant'; content: string; }
 
 export const ChatWidget = () => {
+  const { user } = useAuth(); // <-- Get the logged-in user
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Hide the widget entirely if the user is not logged in
+  if (!user) {
+    return null;
+  }
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -16,7 +23,6 @@ export const ChatWidget = () => {
     setLoading(true);
 
     try {
-      // Use the relative path so Nginx proxies it and avoids CORS
       const res = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
