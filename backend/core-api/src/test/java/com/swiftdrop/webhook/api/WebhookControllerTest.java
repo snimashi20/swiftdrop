@@ -16,7 +16,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -49,7 +51,9 @@ class WebhookControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        mockMvc = MockMvcBuilders.standaloneSetup(webhookController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(webhookController)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+                .build();
     }
 
     @Test
@@ -140,5 +144,37 @@ class WebhookControllerTest {
                 .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.attempts").value(2));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/webhooks/endpoint/secret should regenerate secret")
+    void shouldRegenerateSecret() throws Exception {
+        when(webhookService.resolveCurrentMerchantId()).thenReturn(101L);
+        when(webhookService.regenerateSecret(101L)).thenReturn("whsec_regenerated_secret_999");
+
+        mockMvc.perform(post("/api/v1/webhooks/endpoint/secret"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.secret").value("whsec_regenerated_secret_999"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/webhooks/deliveries should return paginated delivery records")
+    void shouldGetDeliveries() throws Exception {
+        WebhookDeliveryDto deliveryDto = WebhookDeliveryDto.builder()
+                .id(1L)
+                .trackingNumber("SD7K2M9QX4LP")
+                .status(DeliveryStatus.SUCCESS)
+                .attempts(1)
+                .build();
+
+        when(webhookService.resolveCurrentMerchantId()).thenReturn(101L);
+        when(webhookService.getDeliveries(eq(101L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(deliveryDto), PageRequest.of(0, 10), 1));
+
+        mockMvc.perform(get("/api/v1/webhooks/deliveries"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].trackingNumber").value("SD7K2M9QX4LP"))
+                .andExpect(jsonPath("$.content[0].status").value("SUCCESS"));
     }
 }

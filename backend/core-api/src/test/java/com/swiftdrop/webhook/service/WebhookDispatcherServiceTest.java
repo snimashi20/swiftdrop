@@ -3,11 +3,13 @@ package com.swiftdrop.webhook.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.swiftdrop.common.event.ParcelStatusChangedEvent;
+import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.webhook.domain.DeliveryStatus;
 import com.swiftdrop.webhook.domain.WebhookDelivery;
 import com.swiftdrop.webhook.domain.WebhookEndpoint;
 import com.swiftdrop.webhook.dto.TestPingResponse;
 import com.swiftdrop.webhook.dto.WebhookDeliveryDto;
+import com.swiftdrop.webhook.dto.WebhookEndpointDto;
 import com.swiftdrop.webhook.repository.WebhookDeliveryRepository;
 import com.swiftdrop.webhook.repository.WebhookEndpointRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
@@ -27,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -215,5 +220,234 @@ class WebhookDispatcherServiceTest {
         assertThat(masked).endsWith("cdef");
         assertThat(masked).contains("****");
         assertThat(masked).isNotEqualTo(original);
+    }
+
+    @Test
+    @DisplayName("maskSecret should handle null, blank, short, and non-prefixed secrets")
+    void shouldMaskSecretVariations() {
+        assertThat(WebhookDispatcherService.maskSecret(null)).isNull();
+        assertThat(WebhookDispatcherService.maskSecret("")).isEmpty();
+        assertThat(WebhookDispatcherService.maskSecret("   ")).isEqualTo("   ");
+        assertThat(WebhookDispatcherService.maskSecret("short")).isEqualTo("********");
+        assertThat(WebhookDispatcherService.maskSecret("12345678")).isEqualTo("********");
+
+        String withoutPrefix = "customsecret1234567890xyz";
+        String maskedWithout = WebhookDispatcherService.maskSecret(withoutPrefix);
+        assertThat(maskedWithout).endsWith("0xyz");
+        assertThat(maskedWithout).contains("****");
+    }
+
+    @Test
+    @DisplayName("Should skip dispatch when event is null or merchantId is null")
+    void shouldSkipDispatchWhenEventOrMerchantIdIsNull() {
+        dispatcherService.dispatch(null);
+
+        ParcelStatusChangedEvent eventNoMerchant = new ParcelStatusChangedEvent(
+                UUID.randomUUID(), 42L, "SD7K2M9QX4LP", "CREATED", "PICKED_UP",
+                Instant.now(), "DISPATCHER", 1L, null, "Note"
+        );
+        dispatcherService.dispatch(eventNoMerchant);
+
+        verify(endpointRepository, never()).findByMerchantIdAndActiveTrue(any());
+        verify(deliveryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should skip dispatch when no active endpoint is configured for merchant")
+    void shouldSkipDispatchWhenNoActiveEndpoint() {
+        ParcelStatusChangedEvent event = new ParcelStatusChangedEvent(
+                UUID.randomUUID(), 42L, "SD7K2M9QX4LP", "CREATED", "PICKED_UP",
+                Instant.now(), "DISPATCHER", 1L, 999L, "Note"
+        );
+        when(endpointRepository.findByMerchantIdAndActiveTrue(999L)).thenReturn(Optional.empty());
+
+        dispatcherService.dispatch(event);
+
+        verify(deliveryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("retryDelivery should abandon retry if endpoint is inactive or missing")
+    void shouldAbandonRetryWhenEndpointInactiveOrMissing() {
+        WebhookDelivery d1 = WebhookDelivery.builder().id(10L).endpoint(null).attempts(1).build();
+        dispatcherService.retryDelivery(d1);
+        assertThat(d1.getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(d1.getLastError()).isEqualTo("Endpoint is inactive or deleted");
+
+        WebhookEndpoint inactiveEndpoint = WebhookEndpoint.builder().id(2L).active(false).build();
+        WebhookDelivery d2 = WebhookDelivery.builder().id(11L).endpoint(inactiveEndpoint).attempts(1).build();
+        dispatcherService.retryDelivery(d2);
+        assertThat(d2.getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(d2.getLastError()).isEqualTo("Endpoint is inactive or deleted");
+    }
+
+    @Test
+    @DisplayName("resendDelivery should throw IllegalStateException if endpoint is inactive or missing")
+    void shouldThrowIllegalStateExceptionOnResendWhenEndpointInactiveOrMissing() {
+        WebhookDelivery d1 = WebhookDelivery.builder().id(10L).endpoint(null).build();
+        assertThatThrownBy(() -> dispatcherService.resendDelivery(d1))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot resend webhook: endpoint is inactive or missing");
+
+        WebhookEndpoint inactiveEndpoint = WebhookEndpoint.builder().id(2L).active(false).build();
+        WebhookDelivery d2 = WebhookDelivery.builder().id(11L).endpoint(inactiveEndpoint).build();
+        assertThatThrownBy(() -> dispatcherService.resendDelivery(d2))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot resend webhook: endpoint is inactive or missing");
+    }
+
+    @Test
+    @DisplayName("resendDelivery(Long deliveryId) should look up delivery and execute resend")
+    void shouldResendDeliveryByDeliveryId() {
+        WebhookDelivery delivery = WebhookDelivery.builder()
+                .id(50L)
+                .endpoint(testEndpoint)
+                .eventId("evt_50")
+                .trackingNumber("SD7K2M9QX4LP")
+                .payload("{\"test\":true}")
+                .status(DeliveryStatus.FAILED)
+                .attempts(5)
+                .build();
+
+        when(deliveryRepository.findById(50L)).thenReturn(Optional.of(delivery));
+        when(webhookSigner.sign(anyString(), anyString())).thenReturn("sig");
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("OK", HttpStatus.OK));
+        when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        WebhookDeliveryDto result = dispatcherService.resendDelivery(50L);
+
+        assertThat(result).isNotNull();
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.SUCCESS);
+        assertThat(delivery.getAttempts()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("resendDelivery(Long deliveryId) should throw NotFoundException when delivery does not exist")
+    void shouldThrowNotFoundExceptionOnResendNonExistentDelivery() {
+        when(deliveryRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dispatcherService.resendDelivery(999L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Webhook delivery not found with ID: 999");
+    }
+
+    @Test
+    @DisplayName("Should calculate correct backoff delays for attempts 2, 3, and 4")
+    void shouldCalculateCorrectBackoffDelays() {
+        when(webhookSigner.sign(anyString(), anyString())).thenReturn("sig");
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR));
+        when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Attempt 1 fails -> attempt become 2 -> delay is 30s
+        WebhookDelivery d1 = WebhookDelivery.builder().id(1L).endpoint(testEndpoint).payload("{}").attempts(1).build();
+        dispatcherService.retryDelivery(d1);
+        assertThat(d1.getAttempts()).isEqualTo(2);
+        assertThat(d1.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
+        assertThat(d1.getNextRetryAt()).isAfter(Instant.now().plusSeconds(25));
+
+        // Attempt 2 fails -> attempt become 3 -> delay is 120s
+        WebhookDelivery d2 = WebhookDelivery.builder().id(2L).endpoint(testEndpoint).payload("{}").attempts(2).build();
+        dispatcherService.retryDelivery(d2);
+        assertThat(d2.getAttempts()).isEqualTo(3);
+        assertThat(d2.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
+        assertThat(d2.getNextRetryAt()).isAfter(Instant.now().plusSeconds(110));
+
+        // Attempt 3 fails -> attempt become 4 -> delay is 120s
+        WebhookDelivery d3 = WebhookDelivery.builder().id(3L).endpoint(testEndpoint).payload("{}").attempts(3).build();
+        dispatcherService.retryDelivery(d3);
+        assertThat(d3.getAttempts()).isEqualTo(4);
+        assertThat(d3.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
+        assertThat(d3.getNextRetryAt()).isAfter(Instant.now().plusSeconds(110));
+    }
+
+    @Test
+    @DisplayName("Should handle ResourceAccessException and general Exception during delivery")
+    void shouldHandleNetworkExceptionsDuringDelivery() {
+        when(webhookSigner.sign(anyString(), anyString())).thenReturn("sig");
+        when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // ResourceAccessException
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenThrow(new ResourceAccessException("Connection timed out"));
+
+        WebhookDelivery d1 = WebhookDelivery.builder().id(1L).endpoint(testEndpoint).payload("{}").attempts(0).build();
+        dispatcherService.retryDelivery(d1);
+        assertThat(d1.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
+        assertThat(d1.getLastError()).contains("Connection/Timeout error");
+
+        // Generic Exception
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenThrow(new RuntimeException("SSL handshake failed"));
+
+        WebhookDelivery d2 = WebhookDelivery.builder().id(2L).endpoint(testEndpoint).payload("{}").attempts(0).build();
+        dispatcherService.retryDelivery(d2);
+        assertThat(d2.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
+        assertThat(d2.getLastError()).contains("Unexpected error");
+    }
+
+    @Test
+    @DisplayName("sendTestPing should throw NotFoundException when merchant has no configured endpoint")
+    void shouldThrowNotFoundOnTestPingWhenEndpointMissing() {
+        when(endpointRepository.findByMerchantId(888L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dispatcherService.sendTestPing(888L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("No webhook endpoint configured for merchantId: 888");
+    }
+
+    @Test
+    @DisplayName("sendTestPing should return failed diagnosis on HTTP error or exception")
+    void shouldHandleFailuresInTestPing() {
+        when(endpointRepository.findByMerchantId(101L)).thenReturn(Optional.of(testEndpoint));
+        when(webhookSigner.sign(anyString(), anyString())).thenReturn("sig");
+
+        // HTTP error response (404)
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND, "Not Found"));
+
+        TestPingResponse resp1 = dispatcherService.sendTestPing(101L);
+        assertThat(resp1.isSuccess()).isFalse();
+        assertThat(resp1.getHttpStatus()).isEqualTo(404);
+        assertThat(resp1.getMessage()).contains("Server error: 404");
+
+        // General Exception (500)
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenThrow(new RuntimeException("Connection refused"));
+
+        TestPingResponse resp2 = dispatcherService.sendTestPing(101L);
+        assertThat(resp2.isSuccess()).isFalse();
+        assertThat(resp2.getHttpStatus()).isEqualTo(500);
+        assertThat(resp2.getMessage()).contains("Failed to reach endpoint");
+    }
+
+    @Test
+    @DisplayName("toDto and toEndpointDto should accurately convert entities")
+    void shouldConvertEntitiesToDtos() {
+        WebhookDelivery delivery = WebhookDelivery.builder()
+                .id(15L)
+                .endpoint(testEndpoint)
+                .eventId("evt_15")
+                .trackingNumber("SD1234567890")
+                .payload("{\"status\":\"OK\"}")
+                .status(DeliveryStatus.SUCCESS)
+                .attempts(1)
+                .lastError(null)
+                .lastAttemptAt(Instant.now())
+                .nextRetryAt(null)
+                .createdAt(Instant.now())
+                .build();
+
+        WebhookDeliveryDto dto = dispatcherService.toDto(delivery);
+        assertThat(dto.getId()).isEqualTo(15L);
+        assertThat(dto.getEndpointId()).isEqualTo(testEndpoint.getId());
+        assertThat(dto.getTrackingNumber()).isEqualTo("SD1234567890");
+
+        WebhookEndpointDto maskedDto = dispatcherService.toEndpointDto(testEndpoint, false);
+        assertThat(maskedDto.getSecret()).contains("****");
+
+        WebhookEndpointDto unmaskedDto = dispatcherService.toEndpointDto(testEndpoint, true);
+        assertThat(unmaskedDto.getSecret()).isEqualTo(testEndpoint.getSecret());
     }
 }
