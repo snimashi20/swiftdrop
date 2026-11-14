@@ -14,6 +14,7 @@ const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: R
   { label: "People", to: "/people", icon: Users, roles: ["ADMIN"] },
   { label: "Zones & Pricing", to: "/admin/pricing", icon: DollarSign, roles: ["ADMIN"] },
   { label: "Merchant approvals", to: "/admin/merchants", icon: ShieldCheck, roles: ["ADMIN"] },
+  { label: "Courier approvals", to: "/admin/couriers", icon: ShieldCheck, roles: ["ADMIN"] },
   { label: "Merchant orders", to: "/merchant/orders", icon: Package, roles: ["MERCHANT"] },
   { label: "API keys", to: "/merchant/api-keys", icon: KeyRound, roles: ["MERCHANT"] },
 ];
