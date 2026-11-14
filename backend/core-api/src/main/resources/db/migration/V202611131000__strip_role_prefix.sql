@@ -1,0 +1,6 @@
+ALTER TABLE users
+    ALTER COLUMN role SET DEFAULT 'CUSTOMER';
+
+UPDATE users
+SET role = REPLACE(role, 'ROLE_', '')
+WHERE role LIKE 'ROLE_%';
