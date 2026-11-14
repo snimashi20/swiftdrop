@@ -65,9 +65,13 @@ export function LoginPage() {
         navigate("/waiting-approval", { replace: true });
         return;
       }
-      navigate((location.state as { from?: string })?.from || "/dashboard", {
-        replace: true,
-      });
+      navigate(
+        (location.state as { from?: string })?.from ||
+          (user.role === "ADMIN" ? "/admin/overview" : "/dashboard"),
+        {
+          replace: true,
+        }
+      );
     } catch (error) {
       setServerError(getApiErrorMessage(error, "We could not sign you in."));
     }

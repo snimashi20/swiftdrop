@@ -44,9 +44,12 @@ From the official project brief (`SwiftDrop-Project-Apex10.pdf`):
 | **[BE]** | **Admin User Management API** | List/search users with pagination and role filters, enable/disable account toggling, change user role, create courier and dispatcher staff accounts. | Nov 4 – Nov 8 | ✅ **DONE** |
 | **[BE]** | **Delivery Receipt PDF** | PDF generator using **OpenPDF** library. Includes tracking number, pickup/drop-off addresses, weight, fee, and status transition timestamps. Strictly restricted: only the parcel owner can download. | Nov 8 – Nov 11 | ✅ **DONE** |
 | **[FE]** | **Profile & Address Book Page** | User profile page with address book management (add, edit, delete, set default). | Nov 8 – Nov 11 | ✅ **DONE** |
-| **[FE]** | **Admin Users Page** | Filter by role (`CUSTOMER`, `COURIER`, `DISPATCHER`, `MERCHANT`, `ADMIN`), toggle enable/disable, modal to create staff accounts. | Nov 8 – Nov 11 | ✅ **DONE** |
+| **[FE]** | **Admin Users Page** | Filter by role (`CUSTOMER`, `COURIER`, `DISPATCHER`, `MERCHANT`, `ADMIN`), toggle enable/disable, modal to create staff accounts, pending approval review/actions, aligned sidebar navigation "Manage users" (`/admin/users`). | Nov 8 – Nov 14 | ✅ **DONE** |
+| **[FE]** | **OAuth Role Selection & Approval Hold** | Dynamic Google OAuth role selection (`RoleSelectionPage.tsx`) and pending approval hold screen (`WaitingApprovalPage.tsx`) for Courier/Merchant registrations. | Nov 12 – Nov 14 | ✅ **DONE** |
+| **[FE/Sec]** | **Cross-Tab Session Synchronization** | Browser `storage` event listener in `AuthContext.tsx` preventing session desynchronization & role drift across multiple browser tabs; automatic re-routing and synchronized logout. | Nov 14 – Nov 15 | ✅ **DONE** |
+| **[FE/UX]** | **Scroll-Free Responsive Modals** | Redesigned M2 admin modals (`CreateStaffModal`, `RoleUpdateModal`, `StatusConfirmModal`) with 2-column compact inputs, Esc key listener, backdrop dismissal, and 100% scroll-free card presentation. | Nov 14 – Nov 15 | ✅ **DONE** |
 | **[FE]** | **"Download Receipt" Button** | Add download receipt button in customer delivery history table. | Nov 8 – Nov 11 | ✅ **DONE** |
-| **[Test]** | **M2 Test Suite** | 1. Google success handler tests (new user auto-provisioning vs existing user linking).<br>2. Admin-only authorization tests (`@PreAuthorize("hasRole('ADMIN')")`).<br>3. Receipt ownership authorization test (ensuring Customer A cannot download Customer B's receipt). | Nov 11 – Nov 13 | ✅ **COMPLETED (32/32 PASS)** |
+| **[Test]** | **M2 Test Suite** | 1. Google success handler tests (new user auto-provisioning, role selection, pending approval holds).<br>2. Admin-only authorization tests (`@PreAuthorize("hasRole('ADMIN')")`, approve/reject actions).<br>3. Receipt ownership authorization test (ensuring Customer A cannot download Customer B's receipt). | Nov 11 – Nov 14 | ✅ **COMPLETED (38+ PASS)** |
 
 ---
 

@@ -204,37 +204,41 @@ export const AdminUsersPage: React.FC = () => {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">
+            Admin Directory
+          </p>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
               User Management
             </h1>
-            <span className="rounded-md bg-coral/10 px-2 py-0.5 text-xs font-bold text-coral">
-              Admin RBAC
+            <span className="rounded-full bg-coral/10 px-2.5 py-1 text-xs font-bold tracking-wide text-coral">
+              RBAC
             </span>
           </div>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-3 max-w-xl text-ink/55">
             Monitor accounts, assign access privileges, and manage security state across the SwiftDrop network.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          <button
-            onClick={() => setIsCreateStaffOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-ink/90 transition shadow-xs"
-          >
-            <UserPlus size={14} />
-            <span>+ Create Staff Account</span>
-          </button>
-
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => loadUsers(true)}
             disabled={loading || refreshing}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-ink/10 text-xs font-semibold text-ink shadow-xs hover:bg-ink/5 transition disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-xl border border-ink/10 bg-white px-4 py-3 text-sm font-semibold text-ink/70 transition hover:border-coral/40 hover:text-ink disabled:opacity-50"
+            title="Refresh user list"
           >
-            <RefreshCw size={14} className={refreshing ? "animate-spin text-coral" : ""} />
+            <RefreshCw size={16} className={refreshing ? "animate-spin text-coral" : ""} />
             <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+          </button>
+
+          <button
+            onClick={() => setIsCreateStaffOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-coral px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-coral/20 transition hover:bg-coral/90"
+          >
+            <UserPlus size={17} />
+            <span>Create Staff Account</span>
           </button>
         </div>
       </div>

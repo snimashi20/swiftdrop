@@ -10,7 +10,7 @@ const getRolePortalRoute = (rawRole?: string): string => {
   const role = rawRole?.replace(/^ROLE_/, "").toUpperCase();
   switch (role) {
     case "ADMIN":
-      return "/admin/users";
+      return "/admin/overview";
     case "DISPATCHER":
       return "/fleet";
     case "COURIER":

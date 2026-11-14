@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { fetchUserProfile, updateUserProfile, UserProfile } from "./profile.api";
 
 export const UserProfilePage: React.FC = () => {
+  const { user } = useAuth();
+
+  // Strict Rule: Customers have their own dedicated CustomerProfilePage
+  if (user?.role === "CUSTOMER") {
+    return <Navigate to="/customer/profile" replace />;
+  }
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");

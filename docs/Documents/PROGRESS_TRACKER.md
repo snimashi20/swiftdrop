@@ -1,6 +1,6 @@
 # SwiftDrop — Implementation Progress & Live Tracker
 
-> **Last Updated:** 2026-11-04  
+> **Last Updated:** 2026-11-15  
 > **Active Branch:** `feature/sadeepa-google-login`  
 > **Module Owner:** M2 (Sadeepa)  
 > **Review Partner:** M8 (Dinira)  
@@ -25,16 +25,20 @@
 | Tag | Task Item | Target Date | Status | Notes / Deliverables |
 | :---: | :--- | :---: | :---: | :--- |
 | **[BE]** | **Profile API**: view/update name & phone (`07XXXXXXXX` / `+947XXXXXXXX`), saved addresses | Nov 4 | ✅ **DONE** | `AuthController.java` & `AddressController.java` |
-| **[BE]** | **Admin user API**: list/search users with role filter, enable/disable, change role, create staff | Nov 6 | ✅ **DONE** | `AdminUserController.java` (`GET`, `PATCH /status`, `PUT /role`, `POST /staff`) |
+| **[BE]** | **Admin user API**: list/search users with role filter, enable/disable, change role, create staff | Nov 6 | ✅ **DONE** | `AdminUserController.java` (`GET`, `PATCH /status`, `PUT /role`, `POST /staff`, `PATCH /{id}/approve`, `PATCH /{id}/reject`) |
 | **[BE]** | **Delivery receipt PDF (OpenPDF)**: tracking #, addresses, weight, fee, status dates | Nov 8 | ✅ **DONE** | `ReceiptDataDto.java`, `ReceiptService.java` & `ReceiptController.java` (`GET /api/v1/parcels/{id}/receipt` with IDOR defense) |
 | **[FE]** | **Profile page with address book** | Nov 9 | ✅ **DONE** | `UserProfilePage.tsx` & `AddressBookPage.tsx` under `src/features/profile/` |
-| **[FE]** | **Admin Users page**: filter by role, toggle enable/disable, create staff modal | Nov 10 | ✅ **DONE** | `AdminUsersPage.tsx`, `CreateStaffModal.tsx`, `RoleUpdateModal.tsx`, `StatusConfirmModal.tsx` |
+| **[FE]** | **Admin Users page**: filter by role, toggle enable/disable, create staff modal, role pill filters | Nov 10 | ✅ **DONE** | `AdminUsersPage.tsx`, `CreateStaffModal.tsx`, `RoleUpdateModal.tsx`, `StatusConfirmModal.tsx` |
+| **[FE]** | **Google OAuth Role Selection & Approval Flow** | Nov 12 | ✅ **DONE** | `RoleSelectionPage.tsx`, `WaitingApprovalPage.tsx`, query resolver & cookie tracking for Courier/Merchant approval |
+| **[FE]** | **Admin Navigation & Route Alignment** | Nov 14 | ✅ **DONE** | Renamed navigation button to "Manage users" (`/admin/users`), redirected legacy `/people`, updated Admin dashboard quick action |
+| **[FE/Sec]**| **Cross-Tab Session Synchronization & Role Guards** | Nov 15 | ✅ **DONE** | Implemented `StorageEvent` tracking in `AuthContext.tsx` and role-whitelisting on customer routes to eliminate tab session desync and route lingering |
+| **[FE/UX]** | **Scroll-Free Responsive Modal Design** | Nov 15 | ✅ **DONE** | Redesigned `CreateStaffModal`, `RoleUpdateModal`, and `StatusConfirmModal` with 2-column compact inputs, Esc key listener, backdrop dismissal, zero scrollbar |
 | **[FE]** | **"Download receipt" button** in delivery history table | Nov 10 | 🔄 Backend Ready | Endpoints `GET /api/v1/parcels/{id}/receipt` and `/api/v1/receipts/{trackingNumber}` verified live |
-| **[Test]** | **Google success handler test** (new user vs existing user linking, disabled check) | Nov 12 | ✅ **DONE** | `OAuth2AuthenticationSuccessHandlerTest.java` (5 unit tests passing) |
-| **[Test]** | **Admin-only endpoints authorization tests** | Nov 12 | ✅ **DONE** | `AdminUserControllerTest.java` (10 unit tests passing) |
+| **[Test]** | **Google success handler test** (new user vs existing user linking, disabled check, role selection) | Nov 12 | ✅ **DONE** | `OAuth2AuthenticationSuccessHandlerTest.java` (9 unit tests passing) |
+| **[Test]** | **Admin-only endpoints authorization tests** (user list, toggle, roles, approval/rejection) | Nov 12 | ✅ **DONE** | `AdminUserControllerTest.java` (12 unit tests passing) |
 | **[Test]** | **Receipt ownership authorization & PDF tests** (owner-only download, IDOR defense & %PDF- header) | Nov 13 | ✅ **DONE** | `ReceiptControllerTest.java` (6 tests) & `ReceiptServiceTest.java` (3 tests) passing |
 | **[Test]** | **Address ownership & JWT validation tests** | Nov 13 | ✅ **DONE** | `AddressControllerTest.java` (5 tests) & `JwtServiceTest.java` (3 tests) passing |
-| **[Test]** | **M2 Consolidated Test Suite Execution** | Nov 13 | ✅ **COMPLETED** | **32 / 32 tests PASS (0 failures, 100% success rate, ~10.3s runtime)** |
+| **[Test]** | **M2 Consolidated Test Suite Execution** | Nov 14 | ✅ **COMPLETED** | **38+ automated unit/integration tests PASS (0 failures, 100% success rate)** |
 
 ---
 
@@ -43,7 +47,7 @@
 | Member | Module | Status | Latest Milestone from Git |
 | :--- | :--- | :---: | :--- |
 | **M1 (Sithmi)** | Leadership, Events, Notifications | 🔄 Active | Event model definition & notification service |
-| **M2 (Sadeepa)** | Google Login, Profiles, Admin, Receipts | ✅ Complete (32 Tests Pass) | Google OAuth, Admin User API, OpenPDF receipts, address book, full test suite |
+| **M2 (Sadeepa)** | Google Login, Profiles, Admin, Receipts | ✅ Complete (38+ Tests Pass) | Google OAuth & Role Selection, Admin User API & Approvals, OpenPDF receipts, address book, full test suite |
 | **M3 (Isuri)** | Booking, History, Docker, CI | ✅ Merged | Core API Dockerfile, Compose, Parcels migration |
 | **M4 (Naviru)** | Zones, Pricing, AI Assistant | ⏳ In Progress | Seed zones and pricing Strategy pattern |
 | **M5 (Nethmini)** | Status Lifecycle, Tracking, WebSocket | 🔄 In Progress | Status transition state machine & test suite |
@@ -57,7 +61,9 @@
 
 ## 3. Changelog & Project Milestones
 
-* **2026-11-04**: Added official Section 6 (Comprehensive Testing & Quality Assurance Specification) in `M2_SADEEPA_MODULE_SPECIFICATION.md` detailing all 32 unit/integration/IDOR test cases and Java 25 execution guidance.
+* **2026-11-15**: Implemented Cross-Tab Session Synchronization via browser `StorageEvent` API in `AuthContext.tsx` and route-level whitelisting to eliminate tab state drift and session fixation. Redesigned all M2 admin modals (`CreateStaffModal`, `RoleUpdateModal`, `StatusConfirmModal`) with 2-column compact inputs, Esc key listener, backdrop dismissal, and a 100% scroll-free layout.
+* **2026-11-14**: Aligned Admin navigation ("Manage users" pointing to `/admin/users`), redirected `/people`, connected Admin quick actions, verified live end-to-end browser workflows, and integrated Google OAuth Role Selection & Pending Admin Approval pipeline.
+* **2026-11-04**: Added official Section 6 (Comprehensive Testing & Quality Assurance Specification) in `M2_SADEEPA_MODULE_SPECIFICATION.md` detailing all unit/integration/IDOR test cases and Java 25 execution guidance.
 * **2026-11-04**: Drafted official Report Section 13 (OAuth 2.0 Sequence Diagram in Mermaid.js & flow walkthrough) and Section 17 (Security & Personal Data Handling) in `M2_SADEEPA_MODULE_SPECIFICATION.md`.
 * **2026-11-04**: Completed OpenPDF delivery receipt generation feature (`ReceiptDataDto`, `ReceiptService`, `ReceiptController`) with IDOR defenses (`isOwner || isAdmin`), milestone tracking timeline, and itemized LKR breakdown table.
 * **2026-11-04**: Implemented and passed all 9 receipt tests (`ReceiptControllerTest` 6 tests + `ReceiptServiceTest` 3 tests). Consolidated M2 test suite at 32/32 passing tests.

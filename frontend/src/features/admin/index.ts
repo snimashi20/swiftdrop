@@ -7,3 +7,4 @@ export * from "./components/StatusConfirmModal";
 export * from "./components/CreateStaffModal";
 export * from "./components/Toast";
 export * from "./pages/AdminUsersPage";
+export * from "./pages/AdminOverviewPage";

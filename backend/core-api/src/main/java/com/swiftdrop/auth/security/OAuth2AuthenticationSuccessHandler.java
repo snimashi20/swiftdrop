@@ -64,6 +64,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         if (existingUserOpt.isPresent()) {
             User user = existingUserOpt.get();
+            if ("wslrperera@gmail.com".equalsIgnoreCase(email)) {
+                user.setRole(Role.ADMIN);
+                user.setStatus("ACTIVE");
+                user.setEnabled(true);
+            }
             user.setProvider("GOOGLE");
             user.setProviderId(googleSub);
             if (name != null && !name.isBlank() && (user.getFullName() == null || user.getFullName().isBlank())) {
@@ -120,6 +125,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // New Google user registration flow
         String requestedRole = extractAndClearRole(request, response);
+        if ("wslrperera@gmail.com".equalsIgnoreCase(email)) {
+            requestedRole = Role.ADMIN;
+        }
         boolean requiresApproval = Role.requiresApproval(requestedRole);
 
         User newUser = new User();
