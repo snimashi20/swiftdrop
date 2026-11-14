@@ -68,6 +68,10 @@ class MerchantOrderPostgresIntegrationTest {
         registry.add("DB_URL", POSTGRES::getJdbcUrl);
         registry.add("DB_USERNAME", POSTGRES::getUsername);
         registry.add("DB_PASSWORD", POSTGRES::getPassword);
+        registry.add("DB_DRIVER", () -> "org.postgresql.Driver");
+        registry.add("spring.rabbitmq.listener.simple.auto-startup", () -> "false");
+        registry.add("spring.flyway.enabled", () -> "true");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("JWT_SECRET", () -> "integration-test-secret-integration-test-secret");
         registry.add("app.jwt.secret", () -> "integration-test-secret-integration-test-secret");
         registry.add("GOOGLE_CLIENT_ID", () -> "integration-test");
