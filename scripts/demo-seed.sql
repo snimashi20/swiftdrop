@@ -17,6 +17,10 @@ DECLARE
     v_approved_merchant_id BIGINT;
     v_pending_merchant_user_id BIGINT;
     v_merchant_parcel_id BIGINT;
+    v_approved_courier_user_id BIGINT;
+    v_pending_courier_user_id BIGINT;
+    v_courier3_user_id BIGINT;
+    v_courier4_user_id BIGINT;
 BEGIN
     IF EXISTS (SELECT 1 FROM users WHERE email = 'customer@demo.swiftdrop.lk') THEN
         RAISE NOTICE 'Base demo data already exists; checking M9 demo data.';
@@ -143,6 +147,56 @@ BEGIN
 
     END IF;
 
+    -- Notifications for the demo parcels.
+    --
+    -- The seeded parcels are inserted straight into the database, so they never travel through
+    -- ParcelStatusService and no ParcelStatusChangedEvent is ever published. Without this block
+    -- the customer's notification feed stays empty even though the parcels and their tracking
+    -- history are there. One row per channel per status change, exactly as NotificationService
+    -- writes them, with recipients masked the way Masking does it.
+    --
+    -- The event id is derived from the status change, so rerunning the seed is a no-op.
+    -- The latest change of each parcel is left unread, so the bell and the unread filter
+    -- have something to show.
+    INSERT INTO notification_log (event_id, parcel_id, tracking_number, old_status, new_status,
+                                  customer_id, type, recipient, status, created_at, sent_at, read_at)
+    SELECT e.event_id,
+           e.parcel_id,
+           e.tracking_number,
+           e.old_status,
+           e.new_status,
+           e.customer_id,
+           c.type,
+           CASE c.type
+               WHEN 'EMAIL' THEN left(u.email, 1) || '***' || substring(u.email from position('@' in u.email))
+               ELSE repeat('*', length(u.phone_number) - 3) || right(u.phone_number, 3)
+           END,
+           'SENT',
+           e.changed_at,
+           e.changed_at,
+           CASE WHEN e.is_latest THEN NULL ELSE e.changed_at + interval '5 minutes' END
+    FROM (
+        SELECT md5(h.parcel_id::text || '|' || coalesce(h.old_status, '') || '|' || h.new_status)::uuid AS event_id,
+               p.id              AS parcel_id,
+               p.tracking_number AS tracking_number,
+               h.old_status      AS old_status,
+               h.new_status      AS new_status,
+               p.customer_id     AS customer_id,
+               h.changed_at      AS changed_at,
+               row_number() OVER (PARTITION BY h.parcel_id ORDER BY h.changed_at DESC, h.id DESC) = 1 AS is_latest
+        FROM status_history h
+        JOIN parcels p ON p.id = h.parcel_id
+        WHERE p.tracking_number LIKE 'SDDEMO%'
+          AND p.customer_id IS NOT NULL
+    ) e
+    JOIN users u ON u.id = e.customer_id
+    CROSS JOIN (VALUES ('EMAIL'), ('SMS')) AS c(type)
+    WHERE ((c.type = 'EMAIL' AND coalesce(u.email, '') <> '')
+            OR (c.type = 'SMS' AND coalesce(u.phone_number, '') <> ''))
+      AND NOT EXISTS (
+          SELECT 1 FROM notification_log n WHERE n.event_id = e.event_id AND n.type = c.type
+      );
+
     -- M9 merchant fixtures. These statements are idempotent so the seed can be rerun.
     SELECT id INTO v_colombo_zone
     FROM zones
@@ -222,6 +276,100 @@ BEGIN
         SELECT 1 FROM merchant_orders
         WHERE merchant_id = v_approved_merchant_id
           AND idempotency_key = 'demo-m9-order-2'
+    );
+
+    -- Courier approval fixtures. Idempotent, so the seed can be rerun.
+    SELECT id INTO v_approved_courier_user_id
+    FROM users
+    WHERE email = 'courier@demo.swiftdrop.lk';
+
+    INSERT INTO courier_applications (user_id, full_name, contact_email, contact_phone,
+                                      license_number, vehicle_type, status, reviewed_at)
+    SELECT v_approved_courier_user_id, 'Demo Courier', 'courier@demo.swiftdrop.lk', '0711000003',
+           'B-1100003', 'MOTORBIKE', 'APPROVED', now() - interval '10 days'
+    WHERE v_approved_courier_user_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM courier_applications WHERE user_id = v_approved_courier_user_id
+    );
+
+    INSERT INTO users (email, password_hash, full_name, phone_number, role, status, enabled)
+    SELECT 'pending-courier@demo.swiftdrop.lk', pw, 'Pending Demo Courier', '0711000011',
+           'COURIER', 'PENDING_APPROVAL', FALSE
+    WHERE NOT EXISTS (
+        SELECT 1 FROM users WHERE email = 'pending-courier@demo.swiftdrop.lk'
+    );
+
+    SELECT id INTO v_pending_courier_user_id
+    FROM users
+    WHERE email = 'pending-courier@demo.swiftdrop.lk';
+
+    INSERT INTO courier_applications (user_id, full_name, contact_email, contact_phone,
+                                      license_number, vehicle_type, preferred_zone, status)
+    SELECT v_pending_courier_user_id, 'Pending Demo Courier', 'pending-courier@demo.swiftdrop.lk',
+           '0711000011', 'B-1100011', 'THREE_WHEELER', 'Colombo', 'PENDING'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM courier_applications WHERE user_id = v_pending_courier_user_id
+    );
+
+    -- Extra courier accounts (idempotent).
+    -- These were created by hand on one machine, so they only existed in that
+    -- developer's database. Seeding them here gives every teammate the same riders.
+    -- Each one gets an APPROVED application (so it is not stuck in the review queue)
+    -- and a courier_profile (so the dispatcher can actually assign parcels to it).
+    INSERT INTO users (email, password_hash, full_name, phone_number, role, status, enabled)
+    SELECT 'courier3@demo.swiftdrop.lk', pw, 'Demo Courier 3', '0711000012', 'COURIER', 'ACTIVE', TRUE
+    WHERE NOT EXISTS (
+        SELECT 1 FROM users WHERE email = 'courier3@demo.swiftdrop.lk'
+    );
+
+    SELECT id INTO v_courier3_user_id
+    FROM users
+    WHERE email = 'courier3@demo.swiftdrop.lk';
+
+    INSERT INTO courier_applications (user_id, full_name, contact_email, contact_phone,
+                                      license_number, vehicle_type, preferred_zone, status, reviewed_at)
+    SELECT v_courier3_user_id, 'Demo Courier 3', 'courier3@demo.swiftdrop.lk', '0711000012',
+           'B-1100012', 'MOTORBIKE', 'Gampaha', 'APPROVED', now() - interval '6 days'
+    WHERE v_courier3_user_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM courier_applications WHERE user_id = v_courier3_user_id
+    );
+
+    INSERT INTO courier_profiles (user_id, vehicle_type, zone_id)
+    SELECT v_courier3_user_id, 'MOTORBIKE', z.id
+    FROM zones z
+    WHERE z.district = 'Gampaha'
+      AND v_courier3_user_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM courier_profiles WHERE user_id = v_courier3_user_id
+    );
+
+    INSERT INTO users (email, password_hash, full_name, phone_number, role, status, enabled)
+    SELECT 'courier4@demo.swiftdrop.lk', pw, 'Demo Courier 4', '0711000013', 'COURIER', 'ACTIVE', TRUE
+    WHERE NOT EXISTS (
+        SELECT 1 FROM users WHERE email = 'courier4@demo.swiftdrop.lk'
+    );
+
+    SELECT id INTO v_courier4_user_id
+    FROM users
+    WHERE email = 'courier4@demo.swiftdrop.lk';
+
+    INSERT INTO courier_applications (user_id, full_name, contact_email, contact_phone,
+                                      license_number, vehicle_type, preferred_zone, status, reviewed_at)
+    SELECT v_courier4_user_id, 'Demo Courier 4', 'courier4@demo.swiftdrop.lk', '0711000013',
+           'B-1100013', 'THREE_WHEELER', 'Kandy', 'APPROVED', now() - interval '5 days'
+    WHERE v_courier4_user_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM courier_applications WHERE user_id = v_courier4_user_id
+    );
+
+    INSERT INTO courier_profiles (user_id, vehicle_type, zone_id)
+    SELECT v_courier4_user_id, 'THREE_WHEELER', z.id
+    FROM zones z
+    WHERE z.district = 'Kandy'
+      AND v_courier4_user_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM courier_profiles WHERE user_id = v_courier4_user_id
     );
 
     RAISE NOTICE 'Demo data created or already present. Log in with any demo account, password Demo@1234.';

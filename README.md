@@ -91,7 +91,7 @@ It is safe to run twice. Every demo account uses the password `Demo@1234`:
 | --- | --- |
 | `ADMIN` | `admin@demo.swiftdrop.lk` |
 | `DISPATCHER` | `dispatcher@demo.swiftdrop.lk` |
-| `COURIER` | `courier@demo.swiftdrop.lk` |
+| `COURIER` | `courier@demo.swiftdrop.lk` (Colombo), `courier3@demo.swiftdrop.lk` (Gampaha), `courier4@demo.swiftdrop.lk` (Kandy), `pending-courier@demo.swiftdrop.lk` (awaiting admin approval) |
 | `MERCHANT` | `merchant@demo.swiftdrop.lk` (APPROVED), `pending-merchant@demo.swiftdrop.lk` (PENDING) |
 | `CUSTOMER` | `customer@demo.swiftdrop.lk` and `customer2@demo.swiftdrop.lk` |
 

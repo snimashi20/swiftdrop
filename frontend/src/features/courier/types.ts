@@ -40,3 +40,31 @@ export interface FailParcelRequest {
   reason: FailureReason;
   note?: string;
 }
+export type CourierApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type VehicleType = 'BICYCLE' | 'MOTORBIKE' | 'THREE_WHEELER' | 'CAR' | 'VAN';
+
+export interface CourierApplication {
+  id: number;
+  userId?: number | null;
+  fullName: string;
+  contactEmail: string;
+  contactPhone?: string | null;
+  licenseNumber?: string | null;
+  vehicleType?: VehicleType | null;
+  preferredZone?: string | null;
+  status: CourierApplicationStatus;
+  rejectionReason?: string | null;
+  createdAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: number | null;
+}
+
+export interface Page<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
