@@ -27,7 +27,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 className="font-display text-2xl font-bold">{title}</h2>
-          <button onClick={onClose} className="rounded-lg px-2 py-1 text-ink/50 hover:bg-ink/5" aria-label="Close">
+          <button onClick={onClose} className="rounded-lg px-2 py-1 text-ink/50 hover:bg-ink hover:text-white transition" aria-label="Close">
             ✕
           </button>
         </div>

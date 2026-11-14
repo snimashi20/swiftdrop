@@ -16,25 +16,25 @@ const sections: Section[] = [
   {
     to: "/fleet/unassigned",
     title: "Unassigned parcels",
-    text: "See parcels waiting for a courier and assign them.",
+    text: "See parcels that are waiting for a courier and choose who delivers them.",
     icon: Package,
   },
   {
     to: "/fleet/couriers",
     title: "Couriers",
-    text: "Manage zones, vehicles and who is active, and see each courier's workload.",
+    text: "Add couriers, change their vehicle or area, and see how many deliveries each one has.",
     icon: Truck,
   },
   {
     to: "/fleet/reports",
     title: "Reports",
-    text: "Deliveries per day, success and failure rate, and deliveries per zone.",
+    text: "Deliveries per day, how many succeeded or failed, and results for each area.",
     icon: CircleCheck,
   },
   {
     to: "/fleet/notifications",
     title: "Notification log",
-    text: "E-mails and mock SMS messages sent to customers.",
+    text: "E-mails and text messages sent to customers about their parcels.",
     icon: Bell,
     adminOnly: true,
   },
@@ -49,7 +49,7 @@ export function DispatcherDashboardPage() {
       <PageHeader
         eyebrow="Operations desk"
         title="Fleet & dispatch"
-        text="Assign parcels to couriers, keep an eye on workloads and follow the delivery numbers."
+        text="Choose who delivers each parcel, see how busy your couriers are, and follow the delivery numbers."
         showBack={false}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
