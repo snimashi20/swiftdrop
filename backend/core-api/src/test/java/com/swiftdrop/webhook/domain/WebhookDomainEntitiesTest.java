@@ -13,6 +13,10 @@ class WebhookDomainEntitiesTest {
     @DisplayName("WebhookDelivery prePersist should assign defaults when fields are null")
     void testWebhookDeliveryPrePersist() {
         WebhookDelivery delivery = new WebhookDelivery();
+        // Null the fields to ensure prePersist assigns defaults rather than relying on @Builder.Default
+        delivery.setCreatedAt(null);
+        delivery.setStatus(null);
+        delivery.setAttempts(null);
         delivery.prePersist();
 
         assertThat(delivery.getCreatedAt()).isNotNull();
@@ -35,6 +39,9 @@ class WebhookDomainEntitiesTest {
     @DisplayName("WebhookEndpoint prePersist should assign defaults when fields are null")
     void testWebhookEndpointPrePersist() {
         WebhookEndpoint endpoint = new WebhookEndpoint();
+        // Null the fields to ensure prePersist assigns defaults rather than relying on @Builder.Default
+        endpoint.setCreatedAt(null);
+        endpoint.setActive(null);
         endpoint.prePersist();
 
         assertThat(endpoint.getCreatedAt()).isNotNull();
@@ -49,4 +56,3 @@ class WebhookDomainEntitiesTest {
         assertThat(endpoint.getActive()).isFalse();
     }
 }
-

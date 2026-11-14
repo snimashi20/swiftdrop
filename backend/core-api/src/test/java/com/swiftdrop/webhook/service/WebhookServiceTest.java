@@ -28,7 +28,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
@@ -110,6 +112,24 @@ class WebhookServiceTest {
     @Test
     @DisplayName("resolveCurrentMerchantId should throw ForbiddenException when unauthenticated or anonymous")
     void shouldThrowForbiddenWhenUnauthenticated() {
+        // 1. null authentication
+        SecurityContextHolder.clearContext();
+        assertThatThrownBy(() -> webhookService.resolveCurrentMerchantId())
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("Authentication required");
+
+        // 2. unauthenticated token (isAuthenticated() == false)
+        UsernamePasswordAuthenticationToken unauthenticated =
+                new UsernamePasswordAuthenticationToken("user", "pass");
+        SecurityContextHolder.getContext().setAuthentication(unauthenticated);
+        assertThatThrownBy(() -> webhookService.resolveCurrentMerchantId())
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("Authentication required");
+
+        // 3. anonymousUser principal
+        AnonymousAuthenticationToken anonymous =
+                new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+        SecurityContextHolder.getContext().setAuthentication(anonymous);
         assertThatThrownBy(() -> webhookService.resolveCurrentMerchantId())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("Authentication required");

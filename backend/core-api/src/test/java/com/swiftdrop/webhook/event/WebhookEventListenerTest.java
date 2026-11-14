@@ -1,7 +1,7 @@
 package com.swiftdrop.webhook.event;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.swiftdrop.common.event.ParcelStatusChangedEvent;
 import com.swiftdrop.webhook.service.WebhookDispatcherService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,20 +25,18 @@ class WebhookEventListenerTest {
     @Mock
     private WebhookDispatcherService webhookDispatcherService;
 
-    @Mock
     private ObjectMapper objectMapper;
-
     private WebhookEventListener eventListener;
 
     @BeforeEach
     void setUp() {
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         eventListener = new WebhookEventListener(webhookDispatcherService, objectMapper);
     }
 
     @Test
     @DisplayName("Should successfully consume event and dispatch to webhook engine")
     void shouldDispatchValidParcelStatusEvent() throws Exception {
-        String json = "{\"trackingNumber\":\"SD7K2M9QX4LP\"}";
         ParcelStatusChangedEvent event = new ParcelStatusChangedEvent(
                 UUID.randomUUID(),
                 1L,
@@ -51,20 +49,17 @@ class WebhookEventListenerTest {
                 20L,
                 "Moving"
         );
-
-        when(objectMapper.readValue(json, ParcelStatusChangedEvent.class)).thenReturn(event);
+        String json = objectMapper.writeValueAsString(event);
 
         eventListener.onParcelStatusChanged(json);
 
-        verify(webhookDispatcherService).dispatch(event);
+        verify(webhookDispatcherService).dispatch(any(ParcelStatusChangedEvent.class));
     }
 
     @Test
     @DisplayName("Should reject unparseable poison message to Dead-Letter Queue (DLQ)")
-    void shouldRejectUnparseableMessageToDlq() throws Exception {
-        String poisonJson = "{invalid-json-payload}";
-        when(objectMapper.readValue(poisonJson, ParcelStatusChangedEvent.class))
-                .thenThrow(new JsonProcessingException("Syntax error") {});
+    void shouldRejectUnparseableMessageToDlq() {
+        String poisonJson = "{invalid-json-payload-without-quotes";
 
         assertThatThrownBy(() -> eventListener.onParcelStatusChanged(poisonJson))
                 .isInstanceOf(AmqpRejectAndDontRequeueException.class)
@@ -76,7 +71,6 @@ class WebhookEventListenerTest {
     @Test
     @DisplayName("Should reject event missing trackingNumber to Dead-Letter Queue (DLQ)")
     void shouldRejectMalformedEventMissingTrackingNumber() throws Exception {
-        String json = "{\"merchantId\":20}";
         ParcelStatusChangedEvent malformedEvent = new ParcelStatusChangedEvent(
                 UUID.randomUUID(),
                 1L,
@@ -89,8 +83,7 @@ class WebhookEventListenerTest {
                 20L,
                 null
         );
-
-        when(objectMapper.readValue(json, ParcelStatusChangedEvent.class)).thenReturn(malformedEvent);
+        String json = objectMapper.writeValueAsString(malformedEvent);
 
         assertThatThrownBy(() -> eventListener.onParcelStatusChanged(json))
                 .isInstanceOf(AmqpRejectAndDontRequeueException.class)
@@ -101,9 +94,8 @@ class WebhookEventListenerTest {
 
     @Test
     @DisplayName("Should reject null event to Dead-Letter Queue (DLQ)")
-    void shouldRejectNullEventToDlq() throws Exception {
+    void shouldRejectNullEventToDlq() {
         String json = "null";
-        when(objectMapper.readValue(json, ParcelStatusChangedEvent.class)).thenReturn(null);
 
         assertThatThrownBy(() -> eventListener.onParcelStatusChanged(json))
                 .isInstanceOf(AmqpRejectAndDontRequeueException.class)
@@ -112,4 +104,3 @@ class WebhookEventListenerTest {
         verify(webhookDispatcherService, never()).dispatch(any());
     }
 }
-

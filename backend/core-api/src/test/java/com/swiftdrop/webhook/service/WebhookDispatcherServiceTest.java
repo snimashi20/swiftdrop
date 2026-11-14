@@ -133,6 +133,7 @@ class WebhookDispatcherServiceTest {
 
         when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        Instant before = Instant.now();
         dispatcherService.dispatch(event);
 
         ArgumentCaptor<WebhookDelivery> captor = ArgumentCaptor.forClass(WebhookDelivery.class);
@@ -141,7 +142,7 @@ class WebhookDispatcherServiceTest {
         WebhookDelivery finalDelivery = captor.getValue();
         assertThat(finalDelivery.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
         assertThat(finalDelivery.getAttempts()).isEqualTo(1);
-        assertThat(finalDelivery.getNextRetryAt()).isAfter(Instant.now());
+        assertThat(finalDelivery.getNextRetryAt()).isBetween(before.plusSeconds(8), Instant.now().plusSeconds(12));
     }
 
     @Test
@@ -333,33 +334,44 @@ class WebhookDispatcherServiceTest {
     }
 
     @Test
-    @DisplayName("Should calculate correct backoff delays for attempts 2, 3, and 4")
+    @DisplayName("Should calculate correct backoff delays for attempts 1, 2, 3, and 4")
     void shouldCalculateCorrectBackoffDelays() {
         when(webhookSigner.sign(anyString(), anyString())).thenReturn("sig");
         when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR));
         when(deliveryRepository.save(any(WebhookDelivery.class))).thenAnswer(inv -> inv.getArgument(0));
 
+        // Attempt 0 fails -> attempt become 1 -> delay is 10s
+        Instant before0 = Instant.now();
+        WebhookDelivery d0 = WebhookDelivery.builder().id(0L).endpoint(testEndpoint).payload("{}").attempts(0).build();
+        dispatcherService.retryDelivery(d0);
+        assertThat(d0.getAttempts()).isEqualTo(1);
+        assertThat(d0.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
+        assertThat(d0.getNextRetryAt()).isBetween(before0.plusSeconds(8), Instant.now().plusSeconds(12));
+
         // Attempt 1 fails -> attempt become 2 -> delay is 30s
+        Instant before1 = Instant.now();
         WebhookDelivery d1 = WebhookDelivery.builder().id(1L).endpoint(testEndpoint).payload("{}").attempts(1).build();
         dispatcherService.retryDelivery(d1);
         assertThat(d1.getAttempts()).isEqualTo(2);
         assertThat(d1.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
-        assertThat(d1.getNextRetryAt()).isAfter(Instant.now().plusSeconds(25));
+        assertThat(d1.getNextRetryAt()).isBetween(before1.plusSeconds(28), Instant.now().plusSeconds(32));
 
         // Attempt 2 fails -> attempt become 3 -> delay is 120s
+        Instant before2 = Instant.now();
         WebhookDelivery d2 = WebhookDelivery.builder().id(2L).endpoint(testEndpoint).payload("{}").attempts(2).build();
         dispatcherService.retryDelivery(d2);
         assertThat(d2.getAttempts()).isEqualTo(3);
         assertThat(d2.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
-        assertThat(d2.getNextRetryAt()).isAfter(Instant.now().plusSeconds(110));
+        assertThat(d2.getNextRetryAt()).isBetween(before2.plusSeconds(115), Instant.now().plusSeconds(125));
 
         // Attempt 3 fails -> attempt become 4 -> delay is 120s
+        Instant before3 = Instant.now();
         WebhookDelivery d3 = WebhookDelivery.builder().id(3L).endpoint(testEndpoint).payload("{}").attempts(3).build();
         dispatcherService.retryDelivery(d3);
         assertThat(d3.getAttempts()).isEqualTo(4);
         assertThat(d3.getStatus()).isEqualTo(DeliveryStatus.RETRYING);
-        assertThat(d3.getNextRetryAt()).isAfter(Instant.now().plusSeconds(110));
+        assertThat(d3.getNextRetryAt()).isBetween(before3.plusSeconds(115), Instant.now().plusSeconds(125));
     }
 
     @Test
@@ -403,6 +415,15 @@ class WebhookDispatcherServiceTest {
         when(endpointRepository.findByMerchantId(101L)).thenReturn(Optional.of(testEndpoint));
         when(webhookSigner.sign(anyString(), anyString())).thenReturn("sig");
 
+        // Non-2xx without exception (returns non-2xx status entity)
+        when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("Bad Request", HttpStatus.BAD_REQUEST));
+
+        TestPingResponse respNon2xx = dispatcherService.sendTestPing(101L);
+        assertThat(respNon2xx.isSuccess()).isFalse();
+        assertThat(respNon2xx.getHttpStatus()).isEqualTo(400);
+        assertThat(respNon2xx.getMessage()).contains("Server returned non-2xx: 400");
+
         // HTTP error response (404)
         when(webhookRestTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND, "Not Found"));
@@ -443,6 +464,9 @@ class WebhookDispatcherServiceTest {
         assertThat(dto.getId()).isEqualTo(15L);
         assertThat(dto.getEndpointId()).isEqualTo(testEndpoint.getId());
         assertThat(dto.getTrackingNumber()).isEqualTo("SD1234567890");
+
+        WebhookEndpointDto singleArgDto = dispatcherService.toEndpointDto(testEndpoint);
+        assertThat(singleArgDto.getSecret()).contains("****");
 
         WebhookEndpointDto maskedDto = dispatcherService.toEndpointDto(testEndpoint, false);
         assertThat(maskedDto.getSecret()).contains("****");
