@@ -6,9 +6,12 @@ import { fetchUserProfile, updateUserProfile, UserProfile } from "./profile.api"
 export const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
 
-  // Strict Rule: Customers have their own dedicated CustomerProfilePage
+  // Strict Rule: Customers and Admins have their own dedicated profile pages
   if (user?.role === "CUSTOMER") {
     return <Navigate to="/customer/profile" replace />;
+  }
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin/profile" replace />;
   }
 
   const [profile, setProfile] = useState<UserProfile | null>(null);

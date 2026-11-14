@@ -9,6 +9,32 @@ export interface AdminUser {
   provider: "LOCAL" | "GOOGLE" | string;
   enabled: boolean;
   status?: string;
+  createdAt?: string;
+}
+
+export interface AdminUserDetails extends AdminUser {
+  merchantProfile?: {
+    id: number;
+    businessName: string;
+    registrationNumber: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    status: string;
+    rejectionReason?: string | null;
+    createdAt?: string | null;
+  } | null;
+  courierProfile?: {
+    id: number;
+    vehicleType: string;
+    zoneId: number;
+    active: boolean;
+    createdAt?: string | null;
+  } | null;
+}
+
+export interface RejectUserRequestDto {
+  reason?: string;
 }
 
 export interface UpdateRoleDto {

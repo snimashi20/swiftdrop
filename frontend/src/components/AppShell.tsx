@@ -42,6 +42,12 @@ export function AppShell() {
   }, [user?.email]);
 
   const overviewTarget = user?.role === "ADMIN" ? "/admin/overview" : "/dashboard";
+  const profileTarget =
+    user?.role === "ADMIN"
+      ? "/admin/profile"
+      : user?.role === "CUSTOMER"
+      ? "/customer/profile"
+      : "/profile";
   const visibleLinks = links
     .filter((link) => user && link.roles.includes(user.role))
     .map((link) => (link.label === "Overview" ? { ...link, to: overviewTarget } : link));
@@ -54,7 +60,7 @@ export function AppShell() {
         <div className="flex items-center gap-3">
           <NotificationBell />
           <NavLink
-            to={user?.role === "CUSTOMER" ? "/customer/profile" : "/profile"}
+            to={profileTarget}
             className="hidden items-center gap-2 border-l border-ink/10 pl-3 sm:flex transition hover:opacity-80"
             title="View Profile"
           >
@@ -85,7 +91,7 @@ export function AppShell() {
         </nav>
         <div className="absolute bottom-5 inset-x-4 space-y-1 border-t border-ink/10 pt-4">
           <NavLink
-            to={user?.role === "CUSTOMER" ? "/customer/profile" : "/profile"}
+            to={profileTarget}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${

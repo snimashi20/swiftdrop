@@ -13,6 +13,7 @@ import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPag
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
 import { CustomerProfilePage } from "./features/profile/CustomerProfilePage";
+import { AdminProfilePage } from "./features/profile/AdminProfilePage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
 import { ChatWidget } from './features/ai/ChatWidget';
 import { PriceCalculator } from './features/pricing/components/PriceCalculator';
@@ -23,7 +24,12 @@ import {
   ReportsPage,
   UnassignedParcelsPage,
 } from "./features/dispatch";
-import { AdminOverviewPage, AdminUsersPage } from "./features/admin";
+import {
+  AdminOverviewPage,
+  AdminUsersPage,
+  ApprovalReviewPage,
+  CreateStaffPage,
+} from "./features/admin";
 import { TodayDeliveriesPage } from "./features/courier";
 import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprovalsPage";
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
@@ -69,6 +75,9 @@ export function App() {
             <Route path="/customer/profile" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<CustomerProfilePage />} />
             </Route>
+            <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<AdminProfilePage />} />
+            </Route>
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
             <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
               <Route index element={<TodayDeliveriesPage />} />
@@ -105,6 +114,12 @@ export function App() {
             <Route path="/people" element={<Navigate to="/admin/users" replace />} />
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
+            </Route>
+            <Route path="/admin/users/new" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<CreateStaffPage />} />
+            </Route>
+            <Route path="/admin/users/:id/review" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<ApprovalReviewPage />} />
             </Route>
             <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminPricingPage />} />

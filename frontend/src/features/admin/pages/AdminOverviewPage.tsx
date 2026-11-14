@@ -10,6 +10,7 @@ import {
   XCircle,
   AlertTriangle,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { fetchAdminUsers, approveUser, rejectUser } from "../admin.api";
 import type { AdminUser } from "../admin.types";
@@ -268,9 +269,13 @@ export const AdminOverviewPage: React.FC = () => {
                   return (
                     <tr key={pUser.id} className="transition hover:bg-mist/50">
                       <td className="py-3.5 px-2">
-                        <div className="font-semibold text-ink">
+                        <Link
+                          to={`/admin/users/${pUser.id}/review`}
+                          className="font-semibold text-ink hover:text-coral transition"
+                          title="Click to view full application details"
+                        >
                           {pUser.fullName || "Unspecified Name"}
-                        </div>
+                        </Link>
                         <div className="font-mono text-xs text-ink/50">{pUser.email}</div>
                       </td>
 
@@ -290,6 +295,15 @@ export const AdminOverviewPage: React.FC = () => {
 
                       <td className="py-3.5 px-2 text-right">
                         <div className="inline-flex items-center gap-2">
+                          <Link
+                            to={`/admin/users/${pUser.id}/review`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-ink/10 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-coral hover:text-coral shadow-xs"
+                            title="Inspect full registration documents & fleet details"
+                          >
+                            <ExternalLink size={13} />
+                            <span>Review</span>
+                          </Link>
+
                           <button
                             onClick={() => handleInlineApprove(pUser)}
                             disabled={isBusy}
