@@ -53,7 +53,7 @@ class WebhookEventListenerTest {
 
         eventListener.onParcelStatusChanged(json);
 
-        verify(webhookDispatcherService).dispatch(any(ParcelStatusChangedEvent.class));
+        verify(webhookDispatcherService).dispatch(event);
     }
 
     @Test
