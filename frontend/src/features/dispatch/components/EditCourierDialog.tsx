@@ -32,7 +32,7 @@ export function EditCourierDialog({ courier, zones, onClose, onSaved }: EditCour
       await dispatchApi.updateCourier(courier.courierProfileId, { vehicleType, zoneId: Number(zoneId) });
       onSaved(`${name} updated.`);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not update the courier."));
+      setError(getApiErrorMessage(err, "We couldn't update this courier. Please try again."));
       setSaving(false);
     }
   };
@@ -52,7 +52,7 @@ export function EditCourierDialog({ courier, zones, onClose, onSaved }: EditCour
           </select>
         </label>
         <label className="block space-y-1.5">
-          <span className="text-sm font-semibold text-ink/80">Zone</span>
+          <span className="text-sm font-semibold text-ink/80">Delivery area</span>
           <select className={inputClass} value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
@@ -66,7 +66,7 @@ export function EditCourierDialog({ courier, zones, onClose, onSaved }: EditCour
           <button type="button" onClick={onClose} className="rounded-xl border border-ink/15 px-4 py-2.5 text-sm font-semibold">
             Cancel
           </button>
-          <button disabled={saving} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+          <button disabled={saving} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition hover:bg-coral">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
