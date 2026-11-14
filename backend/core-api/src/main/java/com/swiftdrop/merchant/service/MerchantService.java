@@ -10,12 +10,12 @@ import com.swiftdrop.merchant.dto.MerchantResponseDto;
 import com.swiftdrop.merchant.dto.RegisterMerchantRequest;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import com.swiftdrop.merchant.security.CurrentMerchantProvider;
+import com.swiftdrop.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +28,7 @@ public class MerchantService {
 
     private final UserRepository userRepository;
     private final MerchantRepository merchantRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
     private final MerchantMapper merchantMapper;
     private final CurrentMerchantProvider currentMerchantProvider;
 
@@ -46,17 +46,12 @@ public class MerchantService {
             throw new ConflictException("Business registration number already registered");
         }
 
-        User user = new User();
-        user.setEmail(normalizedEmail);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setFullName(request.getContactName().trim());
-        user.setPhoneNumber(request.getContactPhone().trim());
-        user.setRole("ROLE_MERCHANT");
-        user.setProvider("LOCAL");
-        user.setEnabled(false);
-        user.setStatus("PENDING_APPROVAL");
-
-        User savedUser = userRepository.save(user);
+        User savedUser = authService.createLocalUser(
+                normalizedEmail,
+                request.getPassword(),
+                request.getContactName().trim(),
+                request.getContactPhone().trim(),
+                "MERCHANT");
 
         Merchant merchant = Merchant.builder()
                 .userId(savedUser.getId())

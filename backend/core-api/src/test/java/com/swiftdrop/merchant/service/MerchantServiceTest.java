@@ -11,6 +11,7 @@ import com.swiftdrop.merchant.dto.MerchantResponseDto;
 import com.swiftdrop.merchant.dto.RegisterMerchantRequest;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import com.swiftdrop.merchant.security.CurrentMerchantProvider;
+import com.swiftdrop.service.AuthService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -38,7 +38,7 @@ class MerchantServiceTest {
     private MerchantRepository merchantRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private AuthService authService;
 
     @Mock
     private MerchantMapper merchantMapper;
@@ -67,15 +67,15 @@ class MerchantServiceTest {
         when(userRepository.findByEmail("shop@example.com")).thenReturn(Optional.empty());
         when(merchantRepository.existsByContactEmail("shop@example.com")).thenReturn(false);
         when(merchantRepository.existsByRegistrationNumber("PV12345")).thenReturn(false);
-        when(passwordEncoder.encode("secret123")).thenReturn("hashed_secret123");
-
         User savedUser = new User();
         savedUser.setId(10L);
         savedUser.setEmail("shop@example.com");
         savedUser.setRole("MERCHANT");
         savedUser.setEnabled(true);
         savedUser.setProvider("LOCAL");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(authService.createLocalUser(
+                "shop@example.com", "secret123", "John Doe", "0712345678", "MERCHANT"))
+                .thenReturn(savedUser);
 
         Merchant savedMerchant = Merchant.builder()
                 .id(20L)
@@ -110,15 +110,8 @@ class MerchantServiceTest {
         assertEquals("shop@example.com", result.getContactEmail());
         assertEquals(MerchantStatus.PENDING, result.getStatus());
 
-        // Verify User properties
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        User capturedUser = userCaptor.getValue();
-        assertEquals("shop@example.com", capturedUser.getEmail());
-        assertEquals("hashed_secret123", capturedUser.getPasswordHash());
-        assertEquals("MERCHANT", capturedUser.getRole());
-        assertEquals("LOCAL", capturedUser.getProvider());
-        assertTrue(capturedUser.isEnabled());
+        verify(authService).createLocalUser(
+                "shop@example.com", "secret123", "John Doe", "0712345678", "MERCHANT");
 
         // Verify Merchant properties
         ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);
@@ -150,6 +143,7 @@ class MerchantServiceTest {
         assertEquals("Email already in use", ex.getMessage());
 
         verify(userRepository, never()).save(any());
+        verifyNoInteractions(authService);
         verify(merchantRepository, never()).save(any());
     }
 
@@ -172,6 +166,7 @@ class MerchantServiceTest {
         assertEquals("Email already in use", ex.getMessage());
 
         verify(userRepository, never()).save(any());
+        verifyNoInteractions(authService);
         verify(merchantRepository, never()).save(any());
     }
 
@@ -195,6 +190,7 @@ class MerchantServiceTest {
         assertEquals("Business registration number already registered", ex.getMessage());
 
         verify(userRepository, never()).save(any());
+        verifyNoInteractions(authService);
         verify(merchantRepository, never()).save(any());
     }
 
@@ -230,9 +226,16 @@ class MerchantServiceTest {
         Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.PENDING).build();
         User admin = new User();
         admin.setId(7L);
+        User merchantUser = new User();
+        merchantUser.setId(9L);
+        merchantUser.setRole("MERCHANT");
+        merchantUser.setStatus("PENDING_APPROVAL");
+        merchantUser.setEnabled(false);
         when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
+        merchant.setUserId(9L);
         when(authentication.getName()).thenReturn("admin@example.com");
         when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(9L)).thenReturn(Optional.of(merchantUser));
         when(merchantRepository.save(merchant)).thenReturn(merchant);
         when(merchantMapper.toDto(merchant)).thenReturn(MerchantResponseDto.builder()
                 .id(55L).status(MerchantStatus.APPROVED).reviewedBy(7L).build());
@@ -240,6 +243,9 @@ class MerchantServiceTest {
         MerchantResponseDto result = merchantService.approve(55L, authentication);
 
         assertEquals(MerchantStatus.APPROVED, merchant.getStatus());
+        assertEquals("ACTIVE", merchantUser.getStatus());
+        assertTrue(merchantUser.isEnabled());
+        verify(userRepository).save(merchantUser);
         assertEquals(7L, merchant.getReviewedBy());
         assertNotNull(merchant.getReviewedAt());
         assertEquals(MerchantStatus.APPROVED, result.getStatus());
