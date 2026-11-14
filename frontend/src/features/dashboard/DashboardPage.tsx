@@ -2,6 +2,7 @@ import { ArrowUpRight, CircleCheck, Clock3, Package, Route, Users } from "lucide
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import type { Role } from "../auth/auth.types";
+import { DispatcherOverview } from "../dispatch/pages/DispatcherOverview";
 
 const copy: Record<Role, { eyebrow: string; title: string; text: string; action: string }> = {
   CUSTOMER: { eyebrow: "Your deliveries", title: "Everything is on its way.", text: "Track your parcels, book a pickup, and stay close to every handoff.", action: "Book a delivery" },
@@ -14,7 +15,7 @@ const copy: Record<Role, { eyebrow: string; title: string; text: string; action:
 export function DashboardPage() {
   const { user } = useAuth();
   const content = copy[user?.role || "CUSTOMER"];
-
+if (user?.role === "DISPATCHER") return <DispatcherOverview />;
   if (user?.role === "MERCHANT") return <div className="font-sans text-ink">
     <div className="mb-8"><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Merchant workspace</p><h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">Your orders, moving well.</h1><p className="mt-3 max-w-xl text-ink/55">Manage delivery orders and integration keys for your business.</p></div>
     <div className="grid gap-4 sm:grid-cols-2">
