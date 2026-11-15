@@ -1,7 +1,9 @@
 package com.swiftdrop.auth.api;
 
 import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.dto.AdminUserDetailsResponseDto;
 import com.swiftdrop.auth.dto.CreateStaffRequestDto;
+import com.swiftdrop.auth.dto.RejectUserRequestDto;
 import com.swiftdrop.auth.dto.StatusToggleDto;
 import com.swiftdrop.auth.dto.UpdateRoleDto;
 import com.swiftdrop.auth.dto.UserResponseDto;
@@ -9,6 +11,11 @@ import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.dispatch.domain.CourierProfile;
+import com.swiftdrop.dispatch.domain.VehicleType;
+import com.swiftdrop.dispatch.repository.CourierProfileRepository;
+import com.swiftdrop.merchant.domain.Merchant;
+import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,11 +46,14 @@ class AdminUserControllerTest {
     @Mock
     private MerchantRepository merchantRepository;
 
+    @Mock
+    private CourierProfileRepository courierProfileRepository;
+
     private AdminUserController adminUserController;
 
     @BeforeEach
     void setUp() {
-        adminUserController = new AdminUserController(userRepository, passwordEncoder, merchantRepository);
+        adminUserController = new AdminUserController(userRepository, passwordEncoder, merchantRepository, courierProfileRepository);
     }
 
     @Test
@@ -281,5 +291,131 @@ class AdminUserControllerTest {
         assertNotNull(response.getBody());
         assertFalse(response.getBody().isEnabled());
         assertEquals("REJECTED", response.getBody().getStatus());
+    }
+
+    @Test
+    @DisplayName("Admin gets user details for a standard user")
+    void getUserDetails_standardUser_returnsDetails() {
+        User user = new User();
+        user.setId(20L);
+        user.setEmail("user20@example.com");
+        user.setFullName("User Twenty");
+        user.setPhoneNumber("0771234567");
+        user.setRole("CUSTOMER");
+        user.setProvider("LOCAL");
+        user.setEnabled(true);
+        user.setStatus("ACTIVE");
+
+        when(userRepository.findById(20L)).thenReturn(Optional.of(user));
+
+        ResponseEntity<AdminUserDetailsResponseDto> response = adminUserController.getUserDetails(20L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(20L, response.getBody().getId());
+        assertEquals("user20@example.com", response.getBody().getEmail());
+        assertNull(response.getBody().getMerchantProfile());
+        assertNull(response.getBody().getCourierProfile());
+    }
+
+    @Test
+    @DisplayName("Admin gets user details for a merchant with linked profile")
+    void getUserDetails_merchantUser_returnsDetailsWithMerchantProfile() {
+        User user = new User();
+        user.setId(21L);
+        user.setEmail("merchant@example.com");
+        user.setFullName("Merchant User");
+        user.setRole("MERCHANT");
+        user.setStatus("PENDING_APPROVAL");
+
+        Merchant merchant = Merchant.builder()
+                .id(101L)
+                .userId(21L)
+                .businessName("Fresh Mart Ltd")
+                .registrationNumber("PV123456")
+                .contactName("Merchant User")
+                .contactEmail("merchant@example.com")
+                .contactPhone("0779876543")
+                .status(MerchantStatus.PENDING)
+                .build();
+
+        when(userRepository.findById(21L)).thenReturn(Optional.of(user));
+        when(merchantRepository.findByUserId(21L)).thenReturn(Optional.of(merchant));
+
+        ResponseEntity<AdminUserDetailsResponseDto> response = adminUserController.getUserDetails(21L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getMerchantProfile());
+        assertEquals("Fresh Mart Ltd", response.getBody().getMerchantProfile().getBusinessName());
+        assertEquals("PV123456", response.getBody().getMerchantProfile().getRegistrationNumber());
+    }
+
+    @Test
+    @DisplayName("Admin gets user details for a courier with linked profile")
+    void getUserDetails_courierUser_returnsDetailsWithCourierProfile() {
+        User user = new User();
+        user.setId(22L);
+        user.setEmail("courier@example.com");
+        user.setFullName("Speedy Courier");
+        user.setRole("COURIER");
+        user.setStatus("PENDING_APPROVAL");
+
+        CourierProfile courier = CourierProfile.builder()
+                .id(202L)
+                .userId(22L)
+                .vehicleType(VehicleType.MOTORBIKE)
+                .zoneId(5L)
+                .active(true)
+                .build();
+
+        when(userRepository.findById(22L)).thenReturn(Optional.of(user));
+        when(courierProfileRepository.findByUserId(22L)).thenReturn(Optional.of(courier));
+
+        ResponseEntity<AdminUserDetailsResponseDto> response = adminUserController.getUserDetails(22L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getCourierProfile());
+        assertEquals("MOTORBIKE", response.getBody().getCourierProfile().getVehicleType());
+        assertEquals(5L, response.getBody().getCourierProfile().getZoneId());
+    }
+
+    @Test
+    @DisplayName("Admin gets user details throws 404 when user not found")
+    void getUserDetails_notFound_throwsNotFoundException() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> adminUserController.getUserDetails(999L));
+    }
+
+    @Test
+    @DisplayName("Admin rejects user with custom rejection reason")
+    void rejectUser_withReason_setsRejectionReasonOnMerchant() {
+        User user = new User();
+        user.setId(23L);
+        user.setEmail("pending-merchant@example.com");
+        user.setRole("MERCHANT");
+        user.setStatus("PENDING_APPROVAL");
+
+        Merchant merchant = Merchant.builder()
+                .id(102L)
+                .userId(23L)
+                .businessName("Bad Doc Store")
+                .status(MerchantStatus.PENDING)
+                .build();
+
+        when(userRepository.findById(23L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(merchantRepository.findByUserId(23L)).thenReturn(Optional.of(merchant));
+
+        RejectUserRequestDto rejectDto = new RejectUserRequestDto("BR document is blurry and unverified");
+        ResponseEntity<UserResponseDto> response = adminUserController.rejectUser(23L, rejectDto);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("REJECTED", response.getBody().getStatus());
+        assertEquals(MerchantStatus.REJECTED, merchant.getStatus());
+        assertEquals("BR document is blurry and unverified", merchant.getRejectionReason());
+        verify(merchantRepository, times(1)).save(merchant);
     }
 }

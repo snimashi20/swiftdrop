@@ -67,9 +67,59 @@ export function SignupPage() {
           </p>
         </div>
 
-        {/* Sign in with Google Button */}
-        <div className="space-y-4">
-          <GoogleLoginButton text="Sign up with Google" />
+        {/* Signup form & options */}
+        <div className="space-y-6">
+          {/* Step 1: Role Selection */}
+          <div className="space-y-2">
+            <label htmlFor="role" className="block text-sm font-semibold text-ink/80">
+              I am joining as
+            </label>
+            <select
+              id="role"
+              className="w-full rounded-xl border border-ink/15 bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
+              {...register("role")}
+            >
+              <option value="CUSTOMER">Customer (Send & Receive Parcels)</option>
+              <option value="MERCHANT">Merchant (Store & Business Fulfillment)</option>
+              <option value="COURIER">Courier (Delivery Driver / Rider)</option>
+            </select>
+            {errors.role && (
+              <span className="text-xs text-coral">{errors.role.message}</span>
+            )}
+
+            {/* Dynamic helper badge */}
+            <div className="pt-1">
+              {selectedRole === "CUSTOMER" ? (
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800">
+                  <Sparkles size={16} className="text-emerald-600 shrink-0" />
+                  <span>
+                    <strong>Instant Access:</strong> Customers can book, track deliveries, and enter the dashboard immediately without admin review.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-900">
+                  <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                  <span>
+                    <strong>Admin Review Required:</strong> {selectedRole === "MERCHANT" ? "Merchant" : "Courier"} accounts require manual Admin approval before accessing their dashboard.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sign up with Google Button passing chosen role */}
+          <div>
+            <GoogleLoginButton
+              role={selectedRole}
+              text={`Sign up with Google as ${
+                selectedRole === "CUSTOMER"
+                  ? "Customer"
+                  : selectedRole === "MERCHANT"
+                  ? "Merchant"
+                  : "Courier"
+              }`}
+            />
+          </div>
 
           <div className="relative my-6 flex items-center justify-center">
             <div className="w-full border-t border-ink/10" />
@@ -102,43 +152,6 @@ export function SignupPage() {
                 error={errors.password?.message}
                 {...register("password")}
               />
-            </div>
-
-            {/* Role Selection Dropdown - Strictly restricted to Customer, Merchant, and Courier */}
-            <div className="sm:col-span-2 space-y-1.5">
-              <label className="block text-sm font-semibold text-ink/80">
-                I am joining as
-              </label>
-              <select
-                className="w-full rounded-xl border border-ink/15 bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
-                {...register("role")}
-              >
-                <option value="CUSTOMER">Customer (Send & Receive Parcels)</option>
-                <option value="MERCHANT">Merchant (Store & Business Fulfillment)</option>
-                <option value="COURIER">Courier (Delivery Driver / Rider)</option>
-              </select>
-              {errors.role && (
-                <span className="text-xs text-coral">{errors.role.message}</span>
-              )}
-
-              {/* Dynamic helper badge */}
-              <div className="mt-2">
-                {selectedRole === "CUSTOMER" ? (
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800">
-                    <Sparkles size={16} className="text-emerald-600 shrink-0" />
-                    <span>
-                      <strong>Instant Access:</strong> Customers can book, track deliveries, and enter the dashboard immediately without admin review.
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-900">
-                    <ShieldAlert size={16} className="text-amber-600 shrink-0" />
-                    <span>
-                      <strong>Admin Review Required:</strong> {selectedRole === "MERCHANT" ? "Merchant" : "Courier"} accounts require manual Admin approval before accessing their dashboard.
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
 
             {serverError && (
