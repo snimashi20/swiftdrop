@@ -2,7 +2,9 @@ import { api } from "../../lib/api";
 import type { Role } from "../auth/auth.types";
 import type {
   AdminUser,
+  AdminUserDetails,
   CreateStaffRequestDto,
+  RejectUserRequestDto,
   StatusToggleDto,
   UpdateRoleDto,
 } from "./admin.types";
@@ -13,6 +15,14 @@ import type {
 export const fetchAdminUsers = async (role?: string): Promise<AdminUser[]> => {
   const params = role && role !== "ALL" ? { role } : {};
   const response = await api.get<AdminUser[]>("/admin/users", { params });
+  return response.data;
+};
+
+/**
+ * Fetch full details of an individual user including linked Merchant/Courier profiles (GET /api/v1/admin/users/{id}).
+ */
+export const fetchAdminUserDetails = async (userId: number): Promise<AdminUserDetails> => {
+  const response = await api.get<AdminUserDetails>(`/admin/users/${userId}`);
   return response.data;
 };
 
@@ -43,10 +53,11 @@ export const approveUser = async (userId: number): Promise<AdminUser> => {
 };
 
 /**
- * Reject a user account (PATCH /api/v1/admin/users/{id}/reject).
+ * Reject a user account with optional reason (PATCH /api/v1/admin/users/{id}/reject).
  */
-export const rejectUser = async (userId: number): Promise<AdminUser> => {
-  const response = await api.patch<AdminUser>(`/admin/users/${userId}/reject`);
+export const rejectUser = async (userId: number, reason?: string): Promise<AdminUser> => {
+  const payload: RejectUserRequestDto | undefined = reason ? { reason } : undefined;
+  const response = await api.patch<AdminUser>(`/admin/users/${userId}/reject`, payload);
   return response.data;
 };
 

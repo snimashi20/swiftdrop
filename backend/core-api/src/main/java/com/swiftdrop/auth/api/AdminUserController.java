@@ -1,7 +1,9 @@
 package com.swiftdrop.auth.api;
 
 import com.swiftdrop.auth.domain.User;
+import com.swiftdrop.auth.dto.AdminUserDetailsResponseDto;
 import com.swiftdrop.auth.dto.CreateStaffRequestDto;
+import com.swiftdrop.auth.dto.RejectUserRequestDto;
 import com.swiftdrop.auth.dto.StatusToggleDto;
 import com.swiftdrop.auth.dto.UpdateRoleDto;
 import com.swiftdrop.auth.dto.UserResponseDto;
@@ -9,6 +11,7 @@ import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import jakarta.validation.Valid;
@@ -29,17 +32,76 @@ public class AdminUserController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final MerchantRepository merchantRepository;
+    private final CourierProfileRepository courierProfileRepository;
 
     public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this(userRepository, passwordEncoder, null);
+        this(userRepository, passwordEncoder, null, null);
+    }
+
+    public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                               MerchantRepository merchantRepository) {
+        this(userRepository, passwordEncoder, merchantRepository, null);
     }
 
     @Autowired
     public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                               @Autowired(required = false) MerchantRepository merchantRepository) {
+                               @Autowired(required = false) MerchantRepository merchantRepository,
+                               @Autowired(required = false) CourierProfileRepository courierProfileRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.merchantRepository = merchantRepository;
+        this.courierProfileRepository = courierProfileRepository;
+    }
+
+    /**
+     * GET /api/v1/admin/users/{id}
+     * Retrieve full details of a single user, including any linked merchant or courier profiles.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<AdminUserDetailsResponseDto> getUserDetails(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+
+        AdminUserDetailsResponseDto.AdminUserDetailsResponseDtoBuilder builder = AdminUserDetailsResponseDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole())
+                .provider(user.getProvider())
+                .enabled(user.isEnabled())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt());
+
+        if (merchantRepository != null) {
+            merchantRepository.findByUserId(user.getId()).ifPresent(m -> {
+                builder.merchantProfile(AdminUserDetailsResponseDto.MerchantDetailsDto.builder()
+                        .id(m.getId())
+                        .businessName(m.getBusinessName())
+                        .registrationNumber(m.getRegistrationNumber())
+                        .contactName(m.getContactName())
+                        .contactEmail(m.getContactEmail())
+                        .contactPhone(m.getContactPhone())
+                        .status(m.getStatus() != null ? m.getStatus().name() : null)
+                        .rejectionReason(m.getRejectionReason())
+                        .createdAt(m.getCreatedAt() != null ? m.getCreatedAt().toString() : null)
+                        .build());
+            });
+        }
+
+        if (courierProfileRepository != null) {
+            courierProfileRepository.findByUserId(user.getId()).ifPresent(c -> {
+                builder.courierProfile(AdminUserDetailsResponseDto.CourierDetailsDto.builder()
+                        .id(c.getId())
+                        .vehicleType(c.getVehicleType() != null ? c.getVehicleType().name() : null)
+                        .zoneId(c.getZoneId())
+                        .active(c.isActive())
+                        .createdAt(c.getCreatedAt() != null ? c.getCreatedAt().toString() : null)
+                        .build());
+            });
+        }
+
+        return ResponseEntity.ok(builder.build());
     }
 
     /**
@@ -97,10 +159,12 @@ public class AdminUserController {
 
     /**
      * PATCH /api/v1/admin/users/{id}/reject
-     * Reject a pending user account
+     * Reject a pending user account with optional reason
      */
     @PatchMapping("/{id}/reject")
-    public ResponseEntity<UserResponseDto> rejectUser(@PathVariable Long id) {
+    public ResponseEntity<UserResponseDto> rejectUser(
+            @PathVariable Long id,
+            @RequestBody(required = false) RejectUserRequestDto rejectDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
 
@@ -111,11 +175,18 @@ public class AdminUserController {
         if (merchantRepository != null) {
             merchantRepository.findByUserId(user.getId()).ifPresent(m -> {
                 m.setStatus(MerchantStatus.REJECTED);
+                if (rejectDto != null && rejectDto.getReason() != null && !rejectDto.getReason().isBlank()) {
+                    m.setRejectionReason(rejectDto.getReason().trim());
+                }
                 merchantRepository.save(m);
             });
         }
 
         return ResponseEntity.ok(mapToDto(updated));
+    }
+
+    public ResponseEntity<UserResponseDto> rejectUser(Long id) {
+        return rejectUser(id, (RejectUserRequestDto) null);
     }
 
     /**

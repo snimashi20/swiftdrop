@@ -1,5 +1,5 @@
 import { ArrowUpRight, CircleCheck, Clock3, Package, Route, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import type { Role } from "../auth/auth.types";
 import { DispatcherOverview } from "../dispatch/pages/DispatcherOverview";
@@ -14,6 +14,12 @@ const copy: Record<Role, { eyebrow: string; title: string; text: string; action:
 
 export function DashboardPage() {
   const { user } = useAuth();
+
+  // Strict Rule: Admins have their own dedicated AdminOverviewPage and must never see the shared DashboardPage
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin/overview" replace />;
+  }
+
   const content = copy[user?.role || "CUSTOMER"];
 if (user?.role === "DISPATCHER") return <DispatcherOverview />;
   if (user?.role === "MERCHANT") return <div className="font-sans text-ink">

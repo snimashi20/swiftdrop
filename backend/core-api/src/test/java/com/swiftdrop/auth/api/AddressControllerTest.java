@@ -163,4 +163,50 @@ class AddressControllerTest {
         assertEquals("Work", response.getBody().getAddressLabel());
         assertTrue(response.getBody().isDefault());
     }
+
+    @Test
+    @DisplayName("User A can successfully update their own address")
+    void updateAddress_whenOwner_updatesSuccessfully() {
+        when(userRepository.findByEmail(userA.getEmail())).thenReturn(Optional.of(userA));
+        when(addressRepository.findById(addressOfUserA.getId())).thenReturn(Optional.of(addressOfUserA));
+        when(addressRepository.save(any(UserAddress.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AddressDto updateDto = AddressDto.builder()
+                .addressLabel("Updated Home")
+                .streetAddress("999 New Street")
+                .city("Dehiwala")
+                .district("Colombo")
+                .postalCode("10350")
+                .isDefault(true)
+                .build();
+
+        ResponseEntity<AddressDto> response = addressController.updateAddress(addressOfUserA.getId(), updateDto);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Updated Home", response.getBody().getAddressLabel());
+        assertEquals("999 New Street", response.getBody().getStreetAddress());
+        assertEquals("Dehiwala", response.getBody().getCity());
+        assertTrue(response.getBody().isDefault());
+    }
+
+    @Test
+    @DisplayName("IDOR Defense: User A cannot update User B's address (throws ForbiddenException)")
+    void updateAddress_whenNotOwner_throwsForbiddenException() {
+        when(userRepository.findByEmail(userA.getEmail())).thenReturn(Optional.of(userA));
+        when(addressRepository.findById(addressOfUserB.getId())).thenReturn(Optional.of(addressOfUserB));
+
+        AddressDto updateDto = AddressDto.builder()
+                .addressLabel("Hacked")
+                .streetAddress("Hacked St")
+                .city("Colombo")
+                .district("Colombo")
+                .build();
+
+        assertThrows(ForbiddenException.class, () ->
+                addressController.updateAddress(addressOfUserB.getId(), updateDto)
+        );
+
+        verify(addressRepository, never()).save(any());
+    }
 }

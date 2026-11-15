@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import {
   fetchUserAddresses,
   createUserAddress,
@@ -7,6 +9,13 @@ import {
 } from "./profile.api";
 
 export const AddressBookPage: React.FC = () => {
+  const { user } = useAuth();
+
+  // Strict Rule: Customers have their own dedicated CustomerProfilePage with integrated address book
+  if (user?.role === "CUSTOMER") {
+    return <Navigate to="/customer/profile" replace />;
+  }
+
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

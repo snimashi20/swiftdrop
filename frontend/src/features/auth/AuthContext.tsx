@@ -6,8 +6,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
-import { clearAuth, decodeJwt, persistAuth, readStoredAuth } from "./auth.storage";
+import { clearAuth, decodeJwt, persistAuth, readStoredAuth, TOKEN_KEY, USER_KEY } from "./auth.storage";
 import type {
   AuthResponse,
   LoginInput,
@@ -55,6 +56,7 @@ const toUser = (response: AuthResponse, fallback: Partial<User>): User => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const stored = readStoredAuth();
   const [user, setUser] = useState<User | null>(stored.user);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,8 +67,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     };
     window.addEventListener("swiftdrop:unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("swiftdrop:unauthorized", handleUnauthorized);
-  }, []);
+
+    const handleStorageChange = (event: StorageEvent) => {
+      // StorageEvent only triggers in other tabs when localStorage is updated or cleared
+      if (event.key === TOKEN_KEY || event.key === USER_KEY || event.key === null) {
+        const latest = readStoredAuth();
+
+        if (!latest.token || !latest.user) {
+          // Another tab logged out
+          setUser(null);
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        // Another tab logged in with a different user or changed roles
+        if (latest.user.email !== user?.email || latest.user.role !== user?.role) {
+          setUser(latest.user);
+
+          // Auto-redirect to the appropriate landing portal for the active role to prevent state desync
+          if (latest.user.status === "PENDING_ROLE") {
+            navigate("/select-role", { replace: true });
+          } else if (latest.user.status === "PENDING_APPROVAL") {
+            navigate("/waiting-approval", { replace: true });
+          } else if (latest.user.role === "ADMIN") {
+            navigate("/admin/overview", { replace: true });
+          } else if (latest.user.role === "COURIER") {
+            navigate("/courier/today", { replace: true });
+          } else if (latest.user.role === "MERCHANT") {
+            navigate("/merchant/orders", { replace: true });
+          } else if (latest.user.role === "DISPATCHER") {
+            navigate("/fleet", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("swiftdrop:unauthorized", handleUnauthorized);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [user, navigate]);
 
   const authenticate = async (
     path: "login" | "signup",
