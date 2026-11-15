@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -492,7 +493,11 @@ class WebhookDispatcherServiceTest {
         when(endpointRepository.findByMerchantIdAndActiveTrue(101L)).thenReturn(Optional.of(testEndpoint));
         when(deliveryRepository.save(any(WebhookDelivery.class))).thenThrow(new RuntimeException("DB down"));
 
-        // Should log and not throw
-        dispatcherService.dispatch(event);
+        // The event listener must not see the failure, so dispatch swallows it and logs.
+        assertThatNoException().isThrownBy(() -> dispatcherService.dispatch(event));
+
+        // And it gives up before calling the merchant: the delivery row was never persisted,
+        // so there is nothing to POST and nothing to retry against.
+        verify(webhookRestTemplate, never()).postForEntity(anyString(), any(HttpEntity.class), eq(String.class));
     }
 }
