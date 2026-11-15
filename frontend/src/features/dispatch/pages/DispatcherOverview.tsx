@@ -4,8 +4,7 @@ import { ArrowUpRight, CircleCheck, Package, Truck, Users } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { dispatchApi } from "../api";
 import { assignedParcelsApi } from "../assigned";
-import type { AssignedParcel } from "../assigned";
-import type { CourierWorkload, Page, ReportSummary } from "../types";
+import type { CourierWorkload, ReportSummary } from "../types";
 import { vehicleLabel } from "../vehicles";
 
 const REFRESH_MS = 60_000;
@@ -22,7 +21,7 @@ const STAGES = [
 
 type Numbers = {
   waiting: number | null;
-  onTheirWay: Page<AssignedParcel> | null;
+  onTheirWay: Record<string, number> | null;
   couriers: CourierWorkload[] | null;
   report: ReportSummary | null;
 };
@@ -39,7 +38,7 @@ export function DispatcherOverview() {
   const load = useCallback(async () => {
     const results = await Promise.allSettled([
       dispatchApi.unassignedParcels({ size: 1 }),
-      assignedParcelsApi.list({ activeOnly: true, size: 100 }),
+      assignedParcelsApi.summary(),
       dispatchApi.workload(),
       dispatchApi.reportSummary(7),
     ]);
@@ -60,11 +59,8 @@ export function DispatcherOverview() {
     return () => window.clearInterval(timer);
   }, [load]);
 
-  const activeParcels = numbers.onTheirWay?.content ?? [];
-  const stages = STAGES.map((stage) => ({
-    ...stage,
-    count: activeParcels.filter((parcel) => parcel.status === stage.status).length,
-  }));
+  const stages = STAGES.map((stage) => ({ ...stage, count: numbers.onTheirWay?.[stage.status] ?? 0 }));
+  const onTheirWayTotal = numbers.onTheirWay ? stages.reduce((sum, stage) => sum + stage.count, 0) : null;
   const biggest = Math.max(1, ...stages.map((stage) => stage.count));
 
   const couriers = numbers.couriers ?? [];
@@ -86,7 +82,7 @@ export function DispatcherOverview() {
     },
     {
       label: "On their way",
-      value: show(numbers.onTheirWay?.totalElements),
+      value: show(onTheirWayTotal),
       note: "Parcels with a courier that are not delivered yet",
       to: "/fleet/unassigned",
       icon: Truck,
@@ -156,7 +152,7 @@ export function DispatcherOverview() {
         <section className="rounded-2xl border border-ink/10 bg-white p-6">
           <h2 className="font-display text-xl font-bold">Where the parcels are</h2>
           <p className="mt-1 text-sm text-ink/50">Parcels that have a courier and are not delivered yet.</p>
-          {!loading && activeParcels.length === 0 ? (
+          {!loading && onTheirWayTotal === 0 ? (
             <p className="mt-6 rounded-xl border border-dashed border-ink/20 p-5 text-sm text-ink/55">
               Nothing is on its way right now.
             </p>

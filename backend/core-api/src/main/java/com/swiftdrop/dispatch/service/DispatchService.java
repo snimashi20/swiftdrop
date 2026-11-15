@@ -15,6 +15,7 @@ import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import com.swiftdrop.dispatch.repository.DispatchParcelRepository;
 import com.swiftdrop.parcel.domain.Address;
 import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.domain.ParcelStatus;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +154,33 @@ public class DispatchService {
         Page<Parcel> page = parcelRepository.findAll(spec, pageable);
         Map<Long, String> courierNames = courierNamesFor(page.getContent());
         return page.map(parcel -> toAssignedResponse(parcel, courierNames.get(parcel.getAssignedCourierId())));
+    }
+
+    /** The stages a parcel with a courier goes through before it is finished. */
+    private static final List<String> ACTIVE_STAGES = List.of("CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY");
+
+    /**
+     * How many parcels with a courier are at each stage of delivery. Counted in the database for
+     * every stage, so the numbers stay correct however many parcels there are.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Long> assignedSummary() {
+        Map<String, Long> summary = new LinkedHashMap<>();
+        for (String stage : ACTIVE_STAGES) {
+            ParcelStatus status = Arrays.stream(ParcelStatus.values())
+                    .filter(candidate -> candidate.name().equals(stage))
+                    .findFirst()
+                    .orElse(null);
+            if (status == null) {
+                summary.put(stage, 0L);
+                continue;
+            }
+            Specification<Parcel> spec = (root, query, cb) -> cb.and(
+                    cb.isNotNull(root.get("assignedCourierId")),
+                    cb.equal(root.get("status"), status));
+            summary.put(stage, parcelRepository.count(spec));
+        }
+        return summary;
     }
 
     /** courier profile id -> the courier's full name, looked up in two queries for the whole page. */
