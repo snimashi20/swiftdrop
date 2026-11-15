@@ -66,8 +66,8 @@ export function AssignDialog({ parcel, currentCourierId, onClose, onAssigned }: 
       Number(b.zoneId === zoneId) - Number(a.zoneId === zoneId) || a.activeDeliveries - b.activeDeliveries,
   );
 
-  const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? `Zone #${id}`;
-  const courierName = (courier: CourierWorkload) => courier.courierName ?? `User #${courier.userId}`;
+  const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? "Unknown area";
+  const courierName = (courier: CourierWorkload) => courier.courierName ?? "Courier";
 
   const assign = async () => {
     if (selected === null) return;
@@ -100,19 +100,17 @@ export function AssignDialog({ parcel, currentCourierId, onClose, onAssigned }: 
         <>
           {suggested ? (
             <p className="mb-3 rounded-lg bg-mint/40 px-3 py-2 text-sm">
-              Suggested: {courierName(suggested)}, the least busy courier in {zoneName(suggested.zoneId)} with{" "}
-              {suggested.activeDeliveries} active deliveries.
+              Recommended: {courierName(suggested)}, who has the fewest deliveries in {zoneName(suggested.zoneId)} ({suggested.activeDeliveries} right now).
             </p>
           ) : (
             <p className="mb-3 rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/60">
-              No suggestion available (no zone covers the pickup area, or no active courier there). Pick a courier
-              yourself.
+              We could not pick a courier for you because nobody available covers this pickup area. Please choose one from the list.
             </p>
           )}
 
           {ordered.length === 0 ? (
             <p className="rounded-xl border border-dashed border-ink/20 p-4 text-sm text-ink/55">
-              There are no active couriers. Create or activate one on the Couriers page.
+              No couriers are available right now. Add a courier, or mark one as available, on the Couriers page.
             </p>
           ) : (
             <ul className="max-h-72 space-y-2 overflow-y-auto">
@@ -124,7 +122,7 @@ export function AssignDialog({ parcel, currentCourierId, onClose, onAssigned }: 
                       className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${
                         selected === courier.courierProfileId
                           ? "border-coral bg-coral/5"
-                          : "border-ink/10 hover:bg-ink/5"
+                          : "border-ink/10 hover:border-coral hover:bg-coral/5"
                       }`}
                     >
                       <input
@@ -145,7 +143,7 @@ export function AssignDialog({ parcel, currentCourierId, onClose, onAssigned }: 
                       </span>
                       {isSuggested && (
                         <span className="rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                          Suggested
+                          Recommended
                         </span>
                       )}
                       {courier.courierProfileId === currentCourierId && (
@@ -169,7 +167,7 @@ export function AssignDialog({ parcel, currentCourierId, onClose, onAssigned }: 
         <button
           onClick={assign}
           disabled={selected === null || saving}
-          className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition hover:bg-coral"
         >
           {saving ? "Saving…" : currentCourierId ? "Reassign parcel" : "Assign parcel"}
         </button>

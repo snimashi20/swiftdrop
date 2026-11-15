@@ -22,7 +22,13 @@ export const STATUSES: ParcelStatus[] = [
 ];
 
 // Districts that have a pricing zone (a district without a zone gives a 404 from the API).
-export const DISTRICTS = ["Colombo", "Gampaha", "Kandy", "Galle", "Jaffna"];
+export const DISTRICTS = [
+  "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", 
+  "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara", 
+  "Kandy", "Kegalle", "Kilinochchi", "Kurunegala", "Mannar", 
+  "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya", 
+  "Polonnaruwa", "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya"
+];
 
 export interface ParcelAddress {
   line1: string;

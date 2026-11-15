@@ -22,39 +22,58 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up Java 25
+      # Must match <java.version> in both poms and the Temurin 21 base images
+      # used by backend/*/Dockerfile. Do not bump without bumping those too.
+      - name: Set up Java 21
         if: steps.check-pom.outputs.exists == 'true'
         uses: actions/setup-java@v4
         with:
-          java-version: '25'
+          java-version: '21'
           distribution: 'temurin'
           cache: maven
 
-      - name: Build & test
-        if: steps.check-pom.outputs.exists == 'true'
-        run: |
-          cd backend/core-api
-          mvn -B clean package -Dmaven.test.skip=true --no-transfer-progress
-
-      - name: Upload coverage report
-        if: always() && steps.check-pom.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          path: backend/core-api/target/site/jacoco
-          if-no-files-found: warn
-
-      - name: Build & test notification-service
+      # `verify`, not `package`: both poms bind jacoco:report to the verify
+      # phase, so `package` would run tests but produce no coverage report.
+      - name: Build & test core-api
         if: steps.check-pom.outputs.exists == 'true'
         env:
           DOCKER_API_VERSION: "1.44"
         run: |
+          cd backend/core-api
+          mvn -B clean verify --no-transfer-progress
+
+      - name: Upload core-api coverage report
+        if: always() && steps.check-pom.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-core-api
+          path: backend/core-api/target/site/jacoco
+          if-no-files-found: warn
+
+      - name: Check for notification-service pom.xml
+        id: check-ns-pom
+        run: |
           if [ -f backend/notification-service/pom.xml ]; then
-            cd backend/notification-service
-            mvn -B clean package -Dmaven.test.skip=true --no-transfer-progress
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No notification-service pom.xml yet – skipping"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build & test notification-service
+        if: steps.check-ns-pom.outputs.exists == 'true'
+        env:
+          DOCKER_API_VERSION: "1.44"
+        run: |
+          cd backend/notification-service
+          mvn -B clean verify --no-transfer-progress
+
+      - name: Upload notification-service coverage report
+        if: always() && steps.check-ns-pom.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-notification-service
+          path: backend/notification-service/target/site/jacoco
+          if-no-files-found: warn
 
       - name: Skip notice
         if: steps.check-pom.outputs.exists == 'false'
@@ -89,7 +108,7 @@ jobs:
           cd frontend
           npm ci
           npm run build
-          npm test -- --run 2>/dev/null || true
+          npm test
 
       - name: Skip notice
         if: steps.check-pkg.outputs.exists == 'false'
