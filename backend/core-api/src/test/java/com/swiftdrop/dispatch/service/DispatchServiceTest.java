@@ -30,6 +30,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -332,6 +333,20 @@ class DispatchServiceTest {
         service.listAssigned(null, true, pageable);
 
         verifyNoInteractions(courierRepository, userRepository);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void assignedSummary_countsEveryActiveStageInTheDatabase() {
+        when(parcelRepository.count(any(Specification.class))).thenReturn(3L, 2L, 1L, 0L);
+
+        Map<String, Long> result = service.assignedSummary();
+
+        assertEquals(4, result.size());
+        assertEquals(3L, result.get("CREATED"));
+        assertEquals(2L, result.get("PICKED_UP"));
+        assertEquals(1L, result.get("IN_TRANSIT"));
+        assertEquals(0L, result.get("OUT_FOR_DELIVERY"));
     }
 
     // ---------- terminal statuses ----------
