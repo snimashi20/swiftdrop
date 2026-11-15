@@ -32,7 +32,6 @@ class PricingControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Standalone setup bypasses Spring Context and Security entirely
         PricingController pricingController = new PricingController(pricingService);
         mockMvc = MockMvcBuilders.standaloneSetup(pricingController).build();
     }
@@ -70,6 +69,12 @@ class PricingControllerTest {
         request.setPickupDistrict("Colombo");
         request.setDropoffDistrict("Kandy");
         request.setSize(ParcelSize.M);
-        request.setWeightKg(new BigDecimal("-1"));
+        request.setWeightKg(new BigDecimal("-1")); // Invalid weight
+
+        // No mocking needed here. Spring's @Valid annotation automatically catches the negative weight and returns 400.
+        mockMvc.perform(post("/api/v1/pricing/quote")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }

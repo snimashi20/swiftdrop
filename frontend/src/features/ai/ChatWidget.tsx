@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { useAuth } from '../auth/AuthContext'; // <-- Import useAuth
+import { useAuth } from '../auth/AuthContext';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
 
 export const ChatWidget = () => {
-  const { user } = useAuth(); // <-- Get the logged-in user
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Hide the widget entirely if the user is not logged in
   if (!user) {
     return null;
   }

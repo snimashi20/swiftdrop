@@ -37,7 +37,6 @@ class AdminPricingControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Standalone setup bypasses Spring Context and Security entirely
         AdminPricingController controller = new AdminPricingController(adminPricingService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
@@ -72,7 +71,7 @@ class AdminPricingControllerTest {
     @Test
     void updateRule_returns200() throws Exception {
         PricingRuleRequest request = new PricingRuleRequest();
-        request.setZoneId(1L); // <--- THIS WAS MISSING
+        request.setZoneId(1L);
         request.setBaseFee(new BigDecimal("350.00"));
         request.setPerKgFee(new BigDecimal("120.00"));
         request.setInterZoneSurcharge(new BigDecimal("300.00"));
