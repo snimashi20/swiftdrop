@@ -55,6 +55,32 @@ public class AddressController {
         return ResponseEntity.ok(mapToDto(saved));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<AddressDto> updateAddress(
+            @PathVariable Long id,
+            @Valid @RequestBody AddressDto dto) {
+        User user = getAuthenticatedUser();
+        UserAddress address = addressRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Address not found with id: " + id));
+
+        // Security Check: Unauthorized address update throws ForbiddenException (403)
+        if (!address.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException("Unauthorized to update this address");
+        }
+
+        address.setAddressLabel(dto.getAddressLabel());
+        address.setStreetAddress(dto.getStreetAddress());
+        address.setCity(dto.getCity());
+        address.setDistrict(dto.getDistrict());
+        address.setPostalCode(dto.getPostalCode());
+        if (dto.getIsDefault() != null) {
+            address.setDefault(dto.isDefault());
+        }
+
+        UserAddress saved = addressRepository.save(address);
+        return ResponseEntity.ok(mapToDto(saved));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
         User user = getAuthenticatedUser();

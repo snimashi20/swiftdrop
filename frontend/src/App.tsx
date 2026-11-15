@@ -12,6 +12,8 @@ import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
 import { WebhookSettingsPage } from "./features/webhook/pages/WebhookSettingsPage";
 import { UserProfilePage } from "./features/profile/UserProfilePage";
 import { AddressBookPage } from "./features/profile/AddressBookPage";
+import { CustomerProfilePage } from "./features/profile/CustomerProfilePage";
+import { AdminProfilePage } from "./features/profile/AdminProfilePage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
 import { ChatWidget } from './features/ai/ChatWidget';
 import { PriceCalculator } from './features/pricing/components/PriceCalculator';
@@ -22,7 +24,12 @@ import {
   ReportsPage,
   UnassignedParcelsPage,
 } from "./features/dispatch";
-import { AdminUsersPage } from "./features/admin";
+import {
+  AdminOverviewPage,
+  AdminUsersPage,
+  ApprovalReviewPage,
+  CreateStaffPage,
+} from "./features/admin";
 import { CourierApprovalsPage, TodayDeliveriesPage } from "./features/courier";
 import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprovalsPage";
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
@@ -37,6 +44,7 @@ function PublicRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.status === "PENDING_ROLE") return <Navigate to="/select-role" replace />;
   if (user.status === "PENDING_APPROVAL") return <Navigate to="/waiting-approval" replace />;
+  if (user.role === "ADMIN") return <Navigate to="/admin/overview" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -61,14 +69,26 @@ export function App() {
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<UserProfilePage />} />
-            <Route path="/profile/addresses" element={<AddressBookPage />} />
+            <Route path="/profile/addresses" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<AddressBookPage />} />
+            </Route>
+            <Route path="/customer/profile" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<CustomerProfilePage />} />
+            </Route>
+            <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<AdminProfilePage />} />
+            </Route>
             <Route path="/webhooks" element={<WebhookSettingsPage />} />
             <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
               <Route index element={<TodayDeliveriesPage />} />
             </Route>
             <Route path="/notifications" element={<MyNotificationsPage />} />
-            <Route path="/parcels" element={<ParcelHistoryPage />} />
-            <Route path="/parcels/new" element={<BookParcelPage />} />
+            <Route path="/parcels" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<ParcelHistoryPage />} />
+            </Route>
+            <Route path="/parcels/new" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<BookParcelPage />} />
+            </Route>
                         <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
               <Route index element={<DispatcherDashboardPage />} />
@@ -91,11 +111,18 @@ export function App() {
             <Route path="/merchant/orders" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
               <Route index element={<MerchantOrdersPage />} />
             </Route>
-            <Route path="/people" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
-              <Route index element={<AdminUsersPage />} />
+            <Route path="/admin/overview" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<AdminOverviewPage />} />
             </Route>
+            <Route path="/people" element={<Navigate to="/admin/users" replace />} />
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminUsersPage />} />
+            </Route>
+            <Route path="/admin/users/new" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<CreateStaffPage />} />
+            </Route>
+            <Route path="/admin/users/:id/review" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<ApprovalReviewPage />} />
             </Route>
             <Route path="/admin/pricing" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminPricingPage />} />

@@ -69,23 +69,18 @@ Default roles: `CUSTOMER`, `MERCHANT`, `COURIER`, `DISPATCHER`, `ADMIN`.
 - **Admin Endpoints:** Accessible under `/api/v1/admin/**` (requires `ROLE_ADMIN`).
 - **Swagger Documentation:** Explore all REST routes at `http://localhost:8080/swagger-ui.html`.
 
-### Load the demo data
+### Demo data (seeded automatically)
 
-When `docker compose up` is running and core-api shows `healthy` in `docker compose ps`, load the demo users and parcels. Run this from the repository root.
+There is nothing to run by hand any more. The demo users and parcels live in
+`backend/core-api/src/main/resources/db/migration/R__demo_seed_data.sql`, a Flyway
+*repeatable* migration, so core-api applies it on startup after the versioned migrations.
 
-Windows PowerShell:
+That file is the single source of truth for demo data — if you need another demo account or
+parcel, add it there and keep the statement safe to rerun (Flyway reapplies the file
+whenever its checksum changes). Do not start a second seed file; the copy that runs
+automatically would quietly fall behind the one you edited.
 
-```powershell
-Get-Content scripts\demo-seed.sql -Raw | docker compose exec -T postgres psql -U swiftdrop -d swiftdrop -v ON_ERROR_STOP=1
-```
-
-macOS / Linux:
-
-```bash
-docker compose exec -T postgres psql -U swiftdrop -d swiftdrop -v ON_ERROR_STOP=1 < scripts/demo-seed.sql
-```
-
-It is safe to run twice. Every demo account uses the password `Demo@1234`:
+Every demo account uses the password `Demo@1234`:
 
 | Role | Email |
 | --- | --- |
@@ -95,7 +90,33 @@ It is safe to run twice. Every demo account uses the password `Demo@1234`:
 | `MERCHANT` | `merchant@demo.swiftdrop.lk` (APPROVED), `pending-merchant@demo.swiftdrop.lk` (PENDING) |
 | `CUSTOMER` | `customer@demo.swiftdrop.lk` and `customer2@demo.swiftdrop.lk` |
 
-The script also creates 8 customer parcels, `SDDEMO000001` to `SDDEMO000008`, one in each status (`CREATED` to `CANCELLED`), plus two approved-merchant sample orders, `SDM9DEMO0001` and `SDM9DEMO0002`. It is safe to rerun after the base demo data already exists.
+The seed also creates 8 customer parcels, `SDDEMO000001` to `SDDEMO000008`, one in each status (`CREATED` to `CANCELLED`), plus two approved-merchant sample orders, `SDM9DEMO0001` and `SDM9DEMO0002`. It is safe to rerun after the base demo data already exists.
+
+### Shared team database (Supabase)
+
+By default `docker compose up` uses the local `postgres` container and your data stays on
+your own laptop. To work against the shared cloud database instead — so parcels, merchants
+and couriers are visible to the whole team — ask Sithmi for the credentials and put them in
+your `.env` under the "Option A" block in `.env.example`. Set **both** `DB_URL` (transaction
+pooler, port 6543) and `DB_MIGRATION_URL` (session pooler, port 5432), or neither.
+
+Three rules once you are on the shared database:
+
+1. **Only run migrations you intend everyone to get.** We all share one Flyway history, so a
+   migration you apply from a feature branch is applied for everybody. Teammates on older
+   branches will not crash — `spring.flyway.ignore-migration-patterns: "*:missing"` downgrades
+   the unknown migration to a warning — but a half-finished `ALTER TABLE` will still break
+   their `ddl-auto: validate` check. If a migration is not ready to merge, switch back to the
+   local container while you work on it.
+2. **No destructive SQL.** `TRUNCATE`, `DROP`, or a stray `DELETE` without a `WHERE` wipes
+   everyone's demo state, not just yours.
+3. **Use Docker.** Running core-api outside Docker activates the `dev` profile, which uses an
+   in-memory H2 database with `ddl-auto: update` and Flyway switched off. Pointing that at the
+   shared database would let Hibernate alter the shared schema, so don't — `docker compose up`
+   activates the `docker` profile, which is the configuration the shared database expects.
+
+Before the demo, take a backup: `pg_dump` the shared database the day before, so a bad
+afternoon cannot cost us the presentation.
 
 ---
 

@@ -44,9 +44,12 @@ From the official project brief (`SwiftDrop-Project-Apex10.pdf`):
 | **[BE]** | **Admin User Management API** | List/search users with pagination and role filters, enable/disable account toggling, change user role, create courier and dispatcher staff accounts. | Nov 4 – Nov 8 | ✅ **DONE** |
 | **[BE]** | **Delivery Receipt PDF** | PDF generator using **OpenPDF** library. Includes tracking number, pickup/drop-off addresses, weight, fee, and status transition timestamps. Strictly restricted: only the parcel owner can download. | Nov 8 – Nov 11 | ✅ **DONE** |
 | **[FE]** | **Profile & Address Book Page** | User profile page with address book management (add, edit, delete, set default). | Nov 8 – Nov 11 | ✅ **DONE** |
-| **[FE]** | **Admin Users Page** | Filter by role (`CUSTOMER`, `COURIER`, `DISPATCHER`, `MERCHANT`, `ADMIN`), toggle enable/disable, modal to create staff accounts. | Nov 8 – Nov 11 | ✅ **DONE** |
+| **[FE]** | **Admin Users Page** | Filter by role (`CUSTOMER`, `COURIER`, `DISPATCHER`, `MERCHANT`, `ADMIN`), toggle enable/disable, modal to create staff accounts, pending approval review/actions, aligned sidebar navigation "Manage users" (`/admin/users`). | Nov 8 – Nov 14 | ✅ **DONE** |
+| **[FE]** | **OAuth Role Selection & Approval Hold** | Dynamic Google OAuth role selection (`RoleSelectionPage.tsx`) and pending approval hold screen (`WaitingApprovalPage.tsx`) for Courier/Merchant registrations. | Nov 12 – Nov 14 | ✅ **DONE** |
+| **[FE/Sec]** | **Cross-Tab Session Synchronization** | Browser `storage` event listener in `AuthContext.tsx` preventing session desynchronization & role drift across multiple browser tabs; automatic re-routing and synchronized logout. | Nov 14 – Nov 15 | ✅ **DONE** |
+| **[FE/UX]** | **Scroll-Free Responsive Modals** | Redesigned M2 admin modals (`CreateStaffModal`, `RoleUpdateModal`, `StatusConfirmModal`) with 2-column compact inputs, Esc key listener, backdrop dismissal, and 100% scroll-free card presentation. | Nov 14 – Nov 15 | ✅ **DONE** |
 | **[FE]** | **"Download Receipt" Button** | Add download receipt button in customer delivery history table. | Nov 8 – Nov 11 | ✅ **DONE** |
-| **[Test]** | **M2 Test Suite** | 1. Google success handler tests (new user auto-provisioning vs existing user linking).<br>2. Admin-only authorization tests (`@PreAuthorize("hasRole('ADMIN')")`).<br>3. Receipt ownership authorization test (ensuring Customer A cannot download Customer B's receipt). | Nov 11 – Nov 13 | ✅ **COMPLETED (32/32 PASS)** |
+| **[Test]** | **M2 Test Suite** | 1. Google success handler tests (new user auto-provisioning, role selection, pending approval holds).<br>2. Admin-only authorization tests (`@PreAuthorize("hasRole('ADMIN')")`, approve/reject actions).<br>3. Receipt ownership authorization test (ensuring Customer A cannot download Customer B's receipt). | Nov 11 – Nov 14 | ✅ **COMPLETED (38+ PASS)** |
 
 ---
 
@@ -432,6 +435,13 @@ All **32 automated test cases** pass with zero failures and zero regressions:
 | **TC-M2-ADM-08** | `createStaffAccount_withDuplicateEmail_throwsConflictException` | Prevents email collisions during staff creation. | Request with email already registered in system. | HTTP 409 CONFLICT with descriptive message. |
 | **TC-M2-ADM-09** | `toggleUserStatus_updatesStatusSuccessfully` | Verifies account enable/disable toggle functionality. | Target active user; toggle request sent. | HTTP 200 OK; `isActive` flipped to `false`; user is effectively suspended. |
 | **TC-M2-ADM-10** | `toggleUserStatus_whenNotFound_throwsNotFoundException` | Handles non-existent target during account status toggle. | Non-existent User ID `9999`. | HTTP 404 NOT FOUND with `ResourceNotFoundException`. |
+| **TC-M2-ADM-11** | `approveUser_activatesAccount` | Verifies approving a pending merchant/courier account. | Pending User ID `15`. | HTTP 200 OK; status set to `ACTIVE`, enabled set to `true`. |
+| **TC-M2-ADM-12** | `rejectUser_deactivatesAccount` | Verifies basic rejection without reason. | Pending User ID `16`. | HTTP 200 OK; status set to `REJECTED`, enabled set to `false`. |
+| **TC-M2-ADM-13** | `rejectUser_withReason_setsRejectionReasonOnMerchant` | Tests rejection with descriptive audit reason written to merchant entity. | User ID `23` with merchant profile; rejection reason payload. | HTTP 200 OK; `merchant.status == REJECTED`, `rejectionReason` persisted. |
+| **TC-M2-ADM-14** | `getUserDetails_standardUser_returnsDetails` | Verifies full profile query for standard customers. | Customer User ID `20`. | HTTP 200 OK; returns user fields; merchant/courier profiles null. |
+| **TC-M2-ADM-15** | `getUserDetails_merchantUser_returnsDetailsWithMerchantProfile` | Fetches comprehensive KYC details linking merchant business information. | Merchant User ID `21`. | HTTP 200 OK; includes business name, registration no, contact info. |
+| **TC-M2-ADM-16** | `getUserDetails_courierUser_returnsDetailsWithCourierProfile` | Fetches comprehensive KYC details linking courier fleet specifications. | Courier User ID `22`. | HTTP 200 OK; includes vehicle type, assigned zone ID, active flag. |
+| **TC-M2-ADM-17** | `getUserDetails_notFound_throwsNotFoundException` | Handles non-existent user identifier when requesting full details. | Non-existent User ID `999L`. | HTTP 404 NOT FOUND with `ResourceNotFoundException`. |
 
 ---
 
