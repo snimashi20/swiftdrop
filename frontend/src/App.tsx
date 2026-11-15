@@ -89,7 +89,9 @@ export function App() {
             <Route path="/parcels/new" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<BookParcelPage />} />
             </Route>
-                        <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
+            <Route path="/parcels/:trackingNumber" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<ParcelDetailPage />} />
+            </Route>
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
               <Route index element={<DispatcherDashboardPage />} />
               <Route path="unassigned" element={<UnassignedParcelsPage />} />
