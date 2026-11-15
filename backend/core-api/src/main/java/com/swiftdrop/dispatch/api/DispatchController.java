@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/dispatch")
@@ -36,6 +37,12 @@ public class DispatchController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return service.listUnassigned(zoneId, district, from, to, pageable);
+    }
+
+    /** Number of parcels with a courier at each delivery stage (for the dispatcher overview). */
+    @GetMapping("/parcels/assigned/summary")
+    public Map<String, Long> assignedSummary() {
+        return service.assignedSummary();
     }
 
     /** Parcels that already have a courier (still being delivered by default), newest assignment first. */
