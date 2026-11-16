@@ -1,5 +1,5 @@
 import { api } from "../../lib/api";
-import type { ApiKey, GeneratedApiKey, Merchant, MerchantOrder, MerchantStatus, Page, RegisterMerchantRequest, ParcelStatus } from "./types";
+import type { ApiKey, GeneratedApiKey, Merchant, MerchantOrder, MerchantOrderTrendPoint, MerchantStatus, Page, RegisterMerchantRequest, ParcelStatus } from "./types";
 
 export async function registerMerchant(data: RegisterMerchantRequest): Promise<Merchant> {
   return (await api.post<Merchant>("/merchants/register", data)).data;
@@ -39,4 +39,8 @@ export async function fetchDashboardOrders(status?: ParcelStatus, page = 0): Pro
 
 export async function fetchDashboardOrderSummary(): Promise<Record<string, number>> {
   return (await api.get<Record<string, number>>("/merchants/me/orders/summary")).data;
+}
+
+export async function fetchDashboardOrderTrend(): Promise<MerchantOrderTrendPoint[]> {
+  return (await api.get<MerchantOrderTrendPoint[]>("/merchants/me/orders/trend")).data;
 }

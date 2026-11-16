@@ -10,6 +10,11 @@ import com.swiftdrop.parcel.domain.Parcel;
 import com.swiftdrop.parcel.domain.ParcelStatus;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import java.util.List;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -76,6 +81,21 @@ public class MerchantOrderService {
         return counts;
     }
 
+    @Transactional(readOnly = true)
+    public List<DailyOrderCount> getCreationTrend(Long merchantId) {
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate firstDay = today.minusDays(6);
+        Instant since = firstDay.atStartOfDay().toInstant(ZoneOffset.UTC);
+        Map<LocalDate, Long> countsByDate = new HashMap<>();
+        for (Object[] row : orderRepository.countOrdersByUtcDateSince(merchantId, since)) {
+            LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
+            countsByDate.put(date, ((Number) row[1]).longValue());
+        }
+        return firstDay.datesUntil(today.plusDays(1))
+                .map(date -> new DailyOrderCount(date, countsByDate.getOrDefault(date, 0L)))
+                .toList();
+    }
+
     private MerchantOrderResponse findByKey(Long merchantId, String key) {
         return toResponse(orderRepository.findByMerchantIdAndIdempotencyKey(merchantId, key)
                 .orElseThrow(() -> new NotFoundException("Order not found")));
@@ -99,4 +119,5 @@ public class MerchantOrderService {
 
     public record CreationResult(MerchantOrderResponse response, boolean created) {}
     public record BulkCreationResult(List<MerchantOrderResponse> responses, boolean created) {}
+    public record DailyOrderCount(LocalDate date, long count) {}
 }

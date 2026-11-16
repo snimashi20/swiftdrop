@@ -80,4 +80,12 @@ public class MerchantController {
         Long merchantId = currentMerchantProvider.getCurrentMerchant(authentication).getId();
         return merchantOrderService.countDashboardByStatus(merchantId);
     }
+
+    @GetMapping("/me/orders/trend")
+    @PreAuthorize("hasRole('MERCHANT')")
+    @Operation(summary = "Get the current merchant's order creation trend for the last seven days")
+    public java.util.List<MerchantOrderService.DailyOrderCount> getMyOrderTrend(Authentication authentication) {
+        Long merchantId = currentMerchantProvider.getCurrentMerchant(authentication).getId();
+        return merchantOrderService.getCreationTrend(merchantId);
+    }
 }
