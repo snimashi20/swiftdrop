@@ -48,15 +48,16 @@ function MerchantOverview() {
     let current = true;
     setLoading(true);
     setError("");
-    Promise.all([fetchDashboardOrderSummary(), fetchDashboardOrderTrend(), fetchApiKeys()])
-      .then(([orderSummary, orderTrend, apiKeys]) => {
+    Promise.allSettled([fetchDashboardOrderSummary(), fetchDashboardOrderTrend(), fetchApiKeys()])
+      .then(([summaryResult, trendResult, keysResult]) => {
         if (!current) return;
-        setSummary(orderSummary);
-        setTrend(orderTrend);
-        setKeys(apiKeys);
-      })
-      .catch((requestError: unknown) => {
-        if (current) setError(getApiErrorMessage(requestError, "Could not load your merchant overview."));
+        if (summaryResult.status === "fulfilled") setSummary(summaryResult.value);
+        if (trendResult.status === "fulfilled") setTrend(trendResult.value);
+        if (keysResult.status === "fulfilled") setKeys(keysResult.value);
+        const failed = [summaryResult, trendResult, keysResult].find((result) => result.status === "rejected");
+        if (failed?.status === "rejected") {
+          setError(getApiErrorMessage(failed.reason, "Could not load part of your merchant overview."));
+        }
       })
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
@@ -64,7 +65,7 @@ function MerchantOverview() {
 
   const counts = summary ?? {};
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-  const inProgress = (counts.PICKED_UP ?? 0) + (counts.IN_TRANSIT ?? 0) + (counts.OUT_FOR_DELIVERY ?? 0);
+  const inProgress = (counts.CREATED ?? 0) + (counts.PICKED_UP ?? 0) + (counts.IN_TRANSIT ?? 0) + (counts.OUT_FOR_DELIVERY ?? 0);
   const activeKeys = keys.filter((key) => key.active).length;
   const metrics = [
     { label: "Total orders", value: total, detail: "All-time orders", icon: Package },
@@ -74,7 +75,7 @@ function MerchantOverview() {
   ];
   const chartData = trend.map((point) => ({
     ...point,
-    day: new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(new Date(`${point.date}T00:00:00Z`)),
+    day: new Intl.DateTimeFormat(undefined, { weekday: "short", timeZone: "UTC" }).format(new Date(`${point.date}T00:00:00Z`)),
   }));
 
   return <section className="space-y-6 font-sans text-ink">

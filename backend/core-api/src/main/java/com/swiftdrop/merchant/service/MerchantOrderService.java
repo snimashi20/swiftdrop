@@ -88,7 +88,9 @@ public class MerchantOrderService {
         Instant since = firstDay.atStartOfDay().toInstant(ZoneOffset.UTC);
         Map<LocalDate, Long> countsByDate = new HashMap<>();
         for (Object[] row : orderRepository.countOrdersByUtcDateSince(merchantId, since)) {
-            LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
+            LocalDate date = row[0] instanceof java.sql.Date dateValue
+                    ? dateValue.toLocalDate()
+                    : (LocalDate) row[0];
             countsByDate.put(date, ((Number) row[1]).longValue());
         }
         return firstDay.datesUntil(today.plusDays(1))
