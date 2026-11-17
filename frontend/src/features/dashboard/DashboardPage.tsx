@@ -8,6 +8,7 @@ import { DispatcherOverview } from "../dispatch/pages/DispatcherOverview";
 import { getApiErrorMessage } from "../../lib/api";
 import { fetchApiKeys, fetchDashboardOrderSummary, fetchDashboardOrderTrend } from "../merchants/api";
 import type { ApiKey, MerchantOrderTrendPoint } from "../merchants/types";
+import { CourierOverviewPage } from "../courier";
 
 const copy: Record<Role, { eyebrow: string; title: string; text: string; action: string }> = {
   CUSTOMER: { eyebrow: "Your deliveries", title: "Everything is on its way.", text: "Track your parcels, book a pickup, and stay close to every handoff.", action: "Book a delivery" },
@@ -27,6 +28,7 @@ export function DashboardPage() {
 
   const content = copy[user?.role || "CUSTOMER"];
 if (user?.role === "DISPATCHER") return <DispatcherOverview />;
+if (user?.role === "COURIER") return <CourierOverviewPage />;
   if (user?.role === "MERCHANT") return <MerchantOverview />;
 
   return <div>

@@ -40,3 +40,40 @@ export interface FailParcelRequest {
   reason: FailureReason;
   note?: string;
 }
+
+export type VehicleType = 'BICYCLE' | 'MOTORBIKE' | 'THREE_WHEELER' | 'CAR' | 'VAN';
+
+export interface ZoneOption {
+  id: number;
+  name: string;
+  district: string;
+}
+
+export interface RegisterCourierRequest {
+  fullName: string;
+  email: string;
+  password: string;
+  phoneNumber: string;
+  nicNumber: string;
+  dateOfBirth: string;
+  residentialAddress: string;
+  vehicleType: VehicleType;
+  vehiclePlateNumber: string;
+  drivingLicenseNumber: string;
+  drivingLicenseExpiry: string;
+  zoneId: number;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+}
+
+export interface CourierRegistrationResponse {
+  userId: number;
+  courierProfileId: number;
+  fullName: string;
+  email: string;
+  vehicleType: VehicleType;
+  zoneId: number;
+  status: string;
+  nicFrontPhotoUrl: string;
+  nicBackPhotoUrl: string;
+}

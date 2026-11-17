@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, ShieldAlert, Sparkles, Building2, Truck, User as UserIcon } from "lucide-react";
+import { ArrowRight, ShieldAlert, Sparkles, Truck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -79,8 +79,8 @@ export function SignupPage() {
               className="w-full rounded-xl border border-ink/15 bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
               {...register("role")}
             >
-              <option value="CUSTOMER">Customer (Send & Receive Parcels)</option>
-              <option value="MERCHANT">Merchant (Store & Business Fulfillment)</option>
+              <option value="CUSTOMER">Customer (Send &amp; Receive Parcels)</option>
+              <option value="MERCHANT">Merchant (Store &amp; Business Fulfillment)</option>
               <option value="COURIER">Courier (Delivery Driver / Rider)</option>
             </select>
             {errors.role && (
@@ -107,68 +107,100 @@ export function SignupPage() {
             </div>
           </div>
 
-          {/* Sign up with Google Button passing chosen role */}
-          <div>
-            <GoogleLoginButton
-              role={selectedRole}
-              text={`Sign up with Google as ${
-                selectedRole === "CUSTOMER"
-                  ? "Customer"
-                  : selectedRole === "MERCHANT"
-                  ? "Merchant"
-                  : "Courier"
-              }`}
-            />
-          </div>
+          {/* Courier role requires full KYC verification form */}
+          {selectedRole === "COURIER" ? (
+            <div className="rounded-2xl border border-coral/25 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-coral/10 text-coral shrink-0">
+                  <Truck size={22} />
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-bold text-ink">
+                    Courier Verification Application Required
+                  </h2>
+                  <p className="text-xs text-ink/60">
+                    All courier riders must submit verified documents before joining the fleet.
+                  </p>
+                </div>
+              </div>
 
-          <div className="relative my-6 flex items-center justify-center">
-            <div className="w-full border-t border-ink/10" />
-            <span className="absolute bg-[#fbfcfa] px-3 text-xs font-semibold text-ink/50 uppercase tracking-wider">
-              or register with email
-            </span>
-          </div>
+              <ul className="mb-5 space-y-1.5 text-xs text-ink/70 list-disc pl-5">
+                <li>Full legal name, National Identity Card (NIC) number, and date of birth (18+)</li>
+                <li>Clear photos of <strong>both front and back sides</strong> of your NIC</li>
+                <li>Vehicle type, vehicle plate number, driving license &amp; expiry date</li>
+                <li>Country-wide operating delivery zone and emergency contact details</li>
+              </ul>
 
-          <form onSubmit={handleSubmit(submit)} className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="Full name"
-              placeholder="Alex Morgan"
-              error={errors.name?.message}
-              {...register("name")}
-            />
-
-            <FormField
-              label="Email address"
-              type="email"
-              placeholder="you@example.com"
-              error={errors.email?.message}
-              {...register("email")}
-            />
-
-            <div className="sm:col-span-2">
-              <FormField
-                label="Password"
-                type="password"
-                placeholder="At least 8 characters"
-                error={errors.password?.message}
-                {...register("password")}
-              />
+              <Link
+                to="/courier/register"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-coral px-4 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-coral/90"
+              >
+                Continue to Courier Registration Form
+                <ArrowRight size={18} />
+              </Link>
             </div>
+          ) : (
+            <>
+              {/* Sign up with Google Button passing chosen role */}
+              <div>
+                <GoogleLoginButton
+                  role={selectedRole}
+                  text={`Sign up with Google as ${
+                    selectedRole === "CUSTOMER" ? "Customer" : "Merchant"
+                  }`}
+                />
+              </div>
 
-            {serverError && (
-              <p className="sm:col-span-2 rounded-xl bg-coral/10 border border-coral/20 px-3.5 py-2.5 text-sm text-coral">
-                {serverError}
-              </p>
-            )}
+              <div className="relative my-6 flex items-center justify-center">
+                <div className="w-full border-t border-ink/10" />
+                <span className="absolute bg-[#fbfcfa] px-3 text-xs font-semibold text-ink/50 uppercase tracking-wider">
+                  or register with email
+                </span>
+              </div>
 
-            <button
-              disabled={isLoading}
-              type="submit"
-              className="sm:col-span-2 mt-2 flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3.5 font-semibold text-white transition hover:bg-ink/90 disabled:opacity-60 shadow-md"
-            >
-              {isLoading ? "Creating account..." : "Create account"}
-              <ArrowRight size={18} />
-            </button>
-          </form>
+              <form onSubmit={handleSubmit(submit)} className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  label="Full name"
+                  placeholder="Alex Morgan"
+                  error={errors.name?.message}
+                  {...register("name")}
+                />
+
+                <FormField
+                  label="Email address"
+                  type="email"
+                  placeholder="you@example.com"
+                  error={errors.email?.message}
+                  {...register("email")}
+                />
+
+                <div className="sm:col-span-2">
+                  <FormField
+                    label="Password"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    error={errors.password?.message}
+                    {...register("password")}
+                  />
+                </div>
+
+                {serverError && (
+                  <p className="sm:col-span-2 rounded-xl bg-coral/10 border border-coral/20 px-3.5 py-2.5 text-sm text-coral">
+                    {serverError}
+                  </p>
+                )}
+
+                <button
+                  disabled={isLoading}
+                  type="submit"
+                  className="sm:col-span-2 mt-2 flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3.5 font-semibold text-white transition hover:bg-ink/90 disabled:opacity-60 shadow-md"
+                >
+                  {isLoading ? "Creating account..." : "Create account"}
+                  <ArrowRight size={18} />
+                </button>
+              </form>
+            </>
+          )}
         </div>
 
         <p className="mt-6 text-center text-sm text-ink/60">

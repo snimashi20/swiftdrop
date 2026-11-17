@@ -17,6 +17,7 @@ import { AdminProfilePage } from "./features/profile/AdminProfilePage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
 import { ChatWidget } from './features/ai/ChatWidget';
 import { PriceCalculator } from './features/pricing/components/PriceCalculator';
+import { CourierRegisterPage } from './features/courier';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -55,6 +56,8 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/merchant/register" element={<MerchantRegisterPage />} />
+        <Route path="/merchant/register" element={<MerchantRegisterPage />} />
+        <Route path="/courier/register" element={<CourierRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route path="/calculator" element={<PriceCalculator />} />
         <Route path="/select-role" element={<RoleSelectionPage />} />
