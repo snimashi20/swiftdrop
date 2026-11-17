@@ -24,11 +24,22 @@ export interface AdminUserDetails extends AdminUser {
     rejectionReason?: string | null;
     createdAt?: string | null;
   } | null;
-  courierProfile?: {
+    courierProfile?: {
     id: number;
     vehicleType: string;
     zoneId: number;
+    zoneName?: string | null;
     active: boolean;
+    nicNumber?: string | null;
+    dateOfBirth?: string | null;
+    residentialAddress?: string | null;
+    drivingLicenseNumber?: string | null;
+    drivingLicenseExpiry?: string | null;
+    vehiclePlateNumber?: string | null;
+    emergencyContactName?: string | null;
+    emergencyContactPhone?: string | null;
+    nicFrontPhotoUrl?: string | null;
+    nicBackPhotoUrl?: string | null;
     createdAt?: string | null;
   } | null;
 }

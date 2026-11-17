@@ -12,6 +12,7 @@ import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.dispatch.repository.CourierProfileRepository;
+import com.swiftdrop.dispatch.service.ZoneLookup;
 import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import jakarta.validation.Valid;
@@ -33,24 +34,33 @@ public class AdminUserController {
     private final PasswordEncoder passwordEncoder;
     private final MerchantRepository merchantRepository;
     private final CourierProfileRepository courierProfileRepository;
+    private final ZoneLookup zoneLookup;
 
     public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this(userRepository, passwordEncoder, null, null);
+        this(userRepository, passwordEncoder, null, null, null);
     }
 
     public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
                                MerchantRepository merchantRepository) {
-        this(userRepository, passwordEncoder, merchantRepository, null);
+        this(userRepository, passwordEncoder, merchantRepository, null, null);
+    }
+
+    public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                               MerchantRepository merchantRepository,
+                               CourierProfileRepository courierProfileRepository) {
+        this(userRepository, passwordEncoder, merchantRepository, courierProfileRepository, null);
     }
 
     @Autowired
     public AdminUserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
                                @Autowired(required = false) MerchantRepository merchantRepository,
-                               @Autowired(required = false) CourierProfileRepository courierProfileRepository) {
+                               @Autowired(required = false) CourierProfileRepository courierProfileRepository,
+                               @Autowired(required = false) ZoneLookup zoneLookup) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.merchantRepository = merchantRepository;
         this.courierProfileRepository = courierProfileRepository;
+        this.zoneLookup = zoneLookup;
     }
 
     /**
@@ -91,11 +101,25 @@ public class AdminUserController {
 
         if (courierProfileRepository != null) {
             courierProfileRepository.findByUserId(user.getId()).ifPresent(c -> {
+                String zoneName = (zoneLookup != null)
+                        ? zoneLookup.districtOf(c.getZoneId()).map(d -> d + " Zone").orElse(null)
+                        : null;
                 builder.courierProfile(AdminUserDetailsResponseDto.CourierDetailsDto.builder()
                         .id(c.getId())
                         .vehicleType(c.getVehicleType() != null ? c.getVehicleType().name() : null)
                         .zoneId(c.getZoneId())
+                        .zoneName(zoneName)
                         .active(c.isActive())
+                        .nicNumber(c.getNicNumber())
+                        .dateOfBirth(c.getDateOfBirth() != null ? c.getDateOfBirth().toString() : null)
+                        .residentialAddress(c.getResidentialAddress())
+                        .drivingLicenseNumber(c.getDrivingLicenseNumber())
+                        .drivingLicenseExpiry(c.getDrivingLicenseExpiry() != null ? c.getDrivingLicenseExpiry().toString() : null)
+                        .vehiclePlateNumber(c.getVehiclePlateNumber())
+                        .emergencyContactName(c.getEmergencyContactName())
+                        .emergencyContactPhone(c.getEmergencyContactPhone())
+                        .nicFrontPhotoUrl(c.getNicFrontPhotoUrl())
+                        .nicBackPhotoUrl(c.getNicBackPhotoUrl())
                         .createdAt(c.getCreatedAt() != null ? c.getCreatedAt().toString() : null)
                         .build());
             });
@@ -154,6 +178,13 @@ public class AdminUserController {
             });
         }
 
+        if (courierProfileRepository != null) {
+            courierProfileRepository.findByUserId(user.getId()).ifPresent(c -> {
+                c.setActive(true);
+                courierProfileRepository.save(c);
+            });
+        }
+
         return ResponseEntity.ok(mapToDto(updated));
     }
 
@@ -179,6 +210,13 @@ public class AdminUserController {
                     m.setRejectionReason(rejectDto.getReason().trim());
                 }
                 merchantRepository.save(m);
+            });
+        }
+
+        if (courierProfileRepository != null) {
+            courierProfileRepository.findByUserId(user.getId()).ifPresent(c -> {
+                c.setActive(false);
+                courierProfileRepository.save(c);
             });
         }
 
