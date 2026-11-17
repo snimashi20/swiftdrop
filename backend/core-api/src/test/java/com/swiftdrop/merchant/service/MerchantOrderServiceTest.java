@@ -26,6 +26,8 @@ import com.swiftdrop.parcel.dto.ParcelResponse;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import com.swiftdrop.parcel.service.ParcelService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,6 +128,26 @@ class MerchantOrderServiceTest {
 
         assertThrows(NotFoundException.class, () -> service.create(7L, "key", request()));
         verify(parcelService, never()).createForMerchant(any(), any());
+    }
+
+    @Test
+    void creationTrendReturnsSevenEntriesAndFillsMissingDays() {
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate firstDay = today.minusDays(6);
+        when(orderRepository.countOrdersByUtcDateSince(eq(7L), any()))
+                .thenReturn(List.of(
+                        new Object[]{java.sql.Date.valueOf(firstDay.plusDays(1)), 2L},
+                        new Object[]{firstDay.plusDays(4), 3L}));
+
+        List<MerchantOrderService.DailyOrderCount> result = service.getCreationTrend(7L);
+
+        assertEquals(7, result.size());
+        assertEquals(firstDay, result.get(0).date());
+        assertEquals(0L, result.get(0).count());
+        assertEquals(2L, result.get(1).count());
+        assertEquals(0L, result.get(2).count());
+        assertEquals(3L, result.get(4).count());
+        assertEquals(today, result.get(6).date());
     }
 
     private MerchantOrderRequest request() {
