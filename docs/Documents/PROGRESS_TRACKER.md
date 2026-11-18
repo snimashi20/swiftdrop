@@ -1,6 +1,6 @@
 # SwiftDrop — Implementation Progress & Live Tracker
 
-> **Last Updated:** 2026-11-15  
+> **Last Updated:** 2026-11-18  
 > **Active Branch:** `feature/sadeepa-google-login`  
 > **Module Owner:** M2 (Sadeepa)  
 > **Review Partner:** M8 (Dinira)  
@@ -21,7 +21,7 @@
 
 ---
 
-### Deadline: Milestone 2 — By November 15 (Full System, PDF, Tests)
+### Deadline: Milestone 2 — By November 15 (Full System, PDF, Tests & Integrations)
 | Tag | Task Item | Target Date | Status | Notes / Deliverables |
 | :---: | :--- | :---: | :---: | :--- |
 | **[BE]** | **Profile API**: view/update name & phone (`07XXXXXXXX` / `+947XXXXXXXX`), saved addresses | Nov 4 | ✅ **DONE** | `AuthController.java` & `AddressController.java` |
@@ -34,12 +34,15 @@
 | **[FE]** | **Admin Navigation & Route Alignment** | Nov 14 | ✅ **DONE** | Renamed navigation button to "Manage users" (`/admin/users`), redirected legacy `/people`, updated Admin dashboard quick action |
 | **[FE/Sec]**| **Cross-Tab Session Synchronization & Role Guards** | Nov 15 | ✅ **DONE** | Implemented `StorageEvent` tracking in `AuthContext.tsx` and role-whitelisting on customer routes to eliminate tab session desync and route lingering |
 | **[FE/UX]** | **Scroll-Free Responsive Modal Design** | Nov 15 | ✅ **DONE** | Redesigned `CreateStaffModal`, `RoleUpdateModal`, and `StatusConfirmModal` with 2-column compact inputs, Esc key listener, backdrop dismissal, zero scrollbar |
+| **[BE/Integ]** | **M9 Merchant Registration Gap Resolution** | Nov 18 | ✅ **DONE** | Auto-provisions M9 `merchants` record upon Google merchant signup with `PENDING` status and `GOOG-<userId>` code; verified in `OAuth2AuthenticationSuccessHandler.java` |
+| **[Sec/Val]** | **Dual-Layer Validation & Constraints Hardening** | Nov 18 | ✅ **DONE** | Frontend Zod/Regex feedback + button auto-disabling; backend `@Size(min = 8)` password constraint on `CreateStaffRequestDto.java` + `@Pattern` phone check returning `HTTP 400 VALIDATION_ERROR` |
+| **[Ops]** | **Supabase Shared Cloud PostgreSQL Sync** | Nov 18 | ✅ **DONE** | Synchronized team cloud database on Supabase pooler (6543) & direct migration (5432) with live seeded demo accounts |
 | **[FE]** | **"Download receipt" button** in delivery history table | Nov 10 | 🔄 Backend Ready | Endpoints `GET /api/v1/parcels/{id}/receipt` and `/api/v1/receipts/{trackingNumber}` verified live |
-| **[Test]** | **Google success handler test** (new user vs existing user linking, disabled check, role selection) | Nov 12 | ✅ **DONE** | `OAuth2AuthenticationSuccessHandlerTest.java` (9 unit tests passing) |
+| **[Test]** | **Google success handler test** (new user vs existing user linking, disabled check, role selection, merchant auto-creation) | Nov 18 | ✅ **DONE** | `OAuth2AuthenticationSuccessHandlerTest.java` (mocking MerchantRepository, 100% passing) |
 | **[Test]** | **Admin-only endpoints authorization tests** (user list, toggle, roles, approval/rejection, user details) | Nov 15 | ✅ **DONE** | `AdminUserControllerTest.java` (17 unit tests passing) |
 | **[Test]** | **Receipt ownership authorization & PDF tests** (owner-only download, IDOR defense & %PDF- header) | Nov 13 | ✅ **DONE** | `ReceiptControllerTest.java` (6 tests) & `ReceiptServiceTest.java` (3 tests) passing |
 | **[Test]** | **Address ownership & JWT validation tests** | Nov 13 | ✅ **DONE** | `AddressControllerTest.java` (5 tests) & `JwtServiceTest.java` (3 tests) passing |
-| **[Test]** | **M2 Consolidated Test Suite Execution** | Nov 15 | ✅ **COMPLETED** | **43+ automated unit/integration tests PASS (0 failures, 100% success rate)** |
+| **[Test]** | **M2 Consolidated Test Suite Execution** | Nov 18 | ✅ **COMPLETED** | **43+ automated unit/integration tests PASS (0 failures, 100% success rate)** |
 
 ---
 
@@ -48,20 +51,23 @@
 | Member | Module | Status | Latest Milestone from Git |
 | :--- | :--- | :---: | :--- |
 | **M1 (Sithmi)** | Leadership, Events, Notifications | 🔄 Active | Event model definition & notification service |
-| **M2 (Sadeepa)** | Google Login, Profiles, Admin, Receipts | ✅ Complete (38+ Tests Pass) | Google OAuth & Role Selection, Admin User API & Approvals, OpenPDF receipts, address book, full test suite |
+| **M2 (Sadeepa)** | Google Login, Profiles, Admin, Receipts | ✅ Complete (43+ Tests Pass) | Google OAuth & Role Selection, Admin User API & Approvals, OpenPDF receipts, address book, Supabase sync, full test suite |
 | **M3 (Isuri)** | Booking, History, Docker, CI | ✅ Merged | Core API Dockerfile, Compose, Parcels migration |
 | **M4 (Naviru)** | Zones, Pricing, AI Assistant | ⏳ In Progress | Seed zones and pricing Strategy pattern |
 | **M5 (Nethmini)** | Status Lifecycle, Tracking, WebSocket | 🔄 In Progress | Status transition state machine & test suite |
 | **M6 (Lamya)** | Dispatcher, Workload, Reports | ⏳ In Progress | Dispatcher workload balancing foundation |
-| **M7 (Pamithra)** | Courier Mobile App, Proof Uploads | ⏳ In Progress | Courier mobile flows & proof upload |
+| **M7 (Pamithra)** | Courier Mobile App, Proof Uploads | 🔄 In Review | PR opened for Courier Onboarding (`/courier/register`, NIC photo upload, zone selection, and Admin review integration) |
 | **M8 (Dinira)** | Foundation, JWT Login, Security | ✅ Merged | SecurityConfig, JWT foundation, BCrypt |
-| **M9 (Binuwara)** | Merchant Management, API Keys | 🔄 In Progress | Backend registration, approval, hashed API key and idempotent order APIs present; merchant UI, Postman docs, integration verification and merge status being completed |
+| **M9 (Binuwara)** | Merchant Management, API Keys | ✅ Merged (PR #115) | PR #115 merged into `develop`; M9 merchant registration, hashed API keys, idempotent orders verified. M2 integration gap closed |
 | **M10 (Sandavi)**| Webhooks, Retry, Kubernetes | ⏳ In Progress | Webhook consumer and dead-letter queues |
 
 ---
 
 ## 3. Changelog & Project Milestones
 
+* **2026-11-18**: Enforced dual-layer form and API validation across M2 module. Added `@Size(min = 8)` constraint to `CreateStaffRequestDto.java` for staff passwords, verified Sri Lankan phone regex format (`^(?:0|\+94)7\d{8}$`) across `AdminProfilePage.tsx` and `UpdateUserRequestDto.java` returning `HTTP 400 VALIDATION_ERROR`.
+* **2026-11-18**: Resolved M9 Merchant integration gap where Google merchant registration created a user without the corresponding M9 `merchants` record. Updated `OAuth2AuthenticationSuccessHandler.java` to auto-provision pending `Merchant` entity with registration code `GOOG-<userId>`. Updated unit tests in `OAuth2AuthenticationSuccessHandlerTest.java` to verify repository persistence.
+* **2026-11-18**: Synchronized local environment with team's centralized Supabase Cloud PostgreSQL database (`aws-0-ap-southeast-1.pooler.supabase.com`), verified Flyway migrations, and confirmed all 7 Docker containers running cleanly.
 * **2026-11-15**: Completed dedicated full-page admin views (`ApprovalReviewPage.tsx`, `CreateStaffPage.tsx`, `AdminProfilePage.tsx`) offering a comprehensive zero-modal experience alongside the scroll-free responsive modal designs. Added `GET /api/v1/admin/users/{id}` (deep KYC payload linking merchant & courier profiles) and `PATCH /api/v1/admin/users/{id}/reject` with rejection reason. Expanded `AdminUserControllerTest` to 17 automated tests (100% passing).
 * **2026-11-15**: Implemented Cross-Tab Session Synchronization via browser `StorageEvent` API in `AuthContext.tsx` and route-level whitelisting to eliminate tab state drift and session fixation. Redesigned all M2 admin modals (`CreateStaffModal`, `RoleUpdateModal`, `StatusConfirmModal`) with 2-column compact inputs, Esc key listener, backdrop dismissal, and a 100% scroll-free layout.
 * **2026-11-14**: Aligned Admin navigation ("Manage users" pointing to `/admin/users`), redirected `/people`, connected Admin quick actions, verified live end-to-end browser workflows, and integrated Google OAuth Role Selection & Pending Admin Approval pipeline.

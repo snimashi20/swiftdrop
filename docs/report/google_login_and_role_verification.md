@@ -392,3 +392,4 @@ JWT_REFRESH_EXPIRATION_MS=604800000  # 7 days
 # Frontend Base URL (for OAuth redirection)
 FRONTEND_BASE_URL=http://localhost:5173
 ```
+
