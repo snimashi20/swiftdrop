@@ -1,29 +1,24 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
-  Briefcase,
   Building2,
   Calendar,
-  Check,
   CheckCircle2,
   Clock,
-  ExternalLink,
+  CreditCard,
   FileText,
   Mail,
   MapPin,
   Phone,
   Power,
   RefreshCw,
-  Shield,
   ShieldAlert,
   ShieldCheck,
   Store,
   Truck,
   User,
-  UserCheck,
-  UserCog,
   X,
   XCircle,
 } from "lucide-react";
@@ -37,12 +32,62 @@ import {
 import type { AdminUserDetails } from "../admin.types";
 import { RoleBadge } from "../components/RoleBadge";
 import { StatusBadge } from "../components/StatusBadge";
-import { getApiErrorMessage } from "../../../lib/api";
+import { api, getApiErrorMessage } from "../../../lib/api";
 import { ROLES, type Role } from "../../auth/auth.types";
+
+function ProtectedDocumentImage({ url, alt }: { url: string; alt: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    const relativePath = url.replace(/^\/api\/v1/, "");
+    api
+      .get(relativePath, { responseType: "blob" })
+      .then((res) => {
+        objectUrl = URL.createObjectURL(res.data);
+        setSrc(objectUrl);
+      })
+      .catch(() => setFailed(true));
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url]);
+
+  if (failed) {
+    return (
+      <div className="flex h-44 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-700">
+        Unable to load {alt}
+      </div>
+    );
+  }
+  if (!src) {
+    return (
+      <div className="flex h-44 items-center justify-center rounded-xl bg-mist/40 text-xs text-ink/50">
+        Loading {alt}...
+      </div>
+    );
+  }
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noreferrer"
+      className="block overflow-hidden rounded-xl border border-ink/10"
+      title={`Open full-size ${alt}`}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="h-44 w-full object-cover transition hover:scale-[1.02]"
+      />
+    </a>
+  );
+}
 
 export const ApprovalReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const userId = Number(id);
 
   const [applicant, setApplicant] = useState<AdminUserDetails | null>(null);
@@ -111,7 +156,17 @@ export const ApprovalReviewPage: React.FC = () => {
 
     try {
       const updated = await approveUser(applicant.id);
-      setApplicant((prev) => (prev ? { ...prev, ...updated } : null));
+      setApplicant((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...updated,
+              courierProfile: prev.courierProfile
+                ? { ...prev.courierProfile, active: true }
+                : prev.courierProfile,
+            }
+          : null
+      );
       setShowApproveConfirm(false);
       setBanner({
         type: "success",
@@ -135,7 +190,17 @@ export const ApprovalReviewPage: React.FC = () => {
 
     try {
       const updated = await rejectUser(applicant.id, rejectReason.trim() || undefined);
-      setApplicant((prev) => (prev ? { ...prev, ...updated } : null));
+      setApplicant((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...updated,
+              courierProfile: prev.courierProfile
+                ? { ...prev.courierProfile, active: false }
+                : prev.courierProfile,
+            }
+          : null
+      );
       setShowRejectForm(false);
       setRejectReason("");
       setBanner({
@@ -204,7 +269,7 @@ export const ApprovalReviewPage: React.FC = () => {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
         <RefreshCw className="h-8 w-8 animate-spin text-coral" />
-        <p className="text-sm font-medium text-ink/60">Loading registration & review details...</p>
+        <p className="text-sm font-medium text-ink/60">Loading registration &amp; review details...</p>
       </div>
     );
   }
@@ -439,7 +504,7 @@ export const ApprovalReviewPage: React.FC = () => {
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
                   <Store size={18} className="text-coral" />
-                  <span>2. Merchant Storefront & Business Details</span>
+                  <span>2. Merchant Storefront &amp; Business Details</span>
                 </h3>
                 {applicant.merchantProfile?.status && (
                   <span className="rounded-full bg-coral/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-coral">
@@ -526,39 +591,158 @@ export const ApprovalReviewPage: React.FC = () => {
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
                   <Truck size={18} className="text-coral" />
-                  <span>2. Courier Delivery & Fleet Parameters</span>
+                  <span>2. Courier Verification, Fleet &amp; NIC Documents</span>
                 </h3>
                 {applicant.courierProfile && (
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      applicant.courierProfile.active
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
                     {applicant.courierProfile.active ? "Fleet Active" : "Fleet Standby"}
                   </span>
                 )}
               </div>
               <p className="text-xs text-ink/50 mb-5">
-                Submitted vehicle specification and regional dispatch territory.
+                Submitted identity documents, vehicle specification, driving license, and regional dispatch territory.
               </p>
 
               {applicant.courierProfile ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
-                      <Truck size={13} />
-                      <span>Transit Vehicle Type</span>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                        <Truck size={13} />
+                        <span>Transit Vehicle Type</span>
+                      </div>
+                      <div className="text-sm font-bold text-ink">
+                        {applicant.courierProfile.vehicleType}
+                        {applicant.courierProfile.vehiclePlateNumber && (
+                          <span className="ml-2 font-mono text-xs text-coral">
+                            ({applicant.courierProfile.vehiclePlateNumber})
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm font-bold text-ink">
-                      {applicant.courierProfile.vehicleType}
+
+                    <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                        <MapPin size={13} />
+                        <span>Operating Delivery Zone</span>
+                      </div>
+                      <div className="text-sm font-bold text-coral">
+                        {applicant.courierProfile.zoneName || `Zone #${applicant.courierProfile.zoneId}`}
+                      </div>
                     </div>
+
+                    {applicant.courierProfile.nicNumber && (
+                      <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                          <CreditCard size={13} />
+                          <span>National Identity Card (NIC)</span>
+                        </div>
+                        <div className="text-sm font-mono font-bold text-ink">
+                          {applicant.courierProfile.nicNumber}
+                        </div>
+                      </div>
+                    )}
+
+                    {applicant.courierProfile.dateOfBirth && (
+                      <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                          <Calendar size={13} />
+                          <span>Date of Birth</span>
+                        </div>
+                        <div className="text-sm font-semibold text-ink">
+                          {applicant.courierProfile.dateOfBirth}
+                        </div>
+                      </div>
+                    )}
+
+                    {applicant.courierProfile.drivingLicenseNumber && (
+                      <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                          <FileText size={13} />
+                          <span>Driving License &amp; Expiry</span>
+                        </div>
+                        <div className="text-sm font-mono font-bold text-ink">
+                          {applicant.courierProfile.drivingLicenseNumber}
+                        </div>
+                        {applicant.courierProfile.drivingLicenseExpiry && (
+                          <div className="mt-0.5 text-[11px] text-ink/55">
+                            Valid until: {applicant.courierProfile.drivingLicenseExpiry}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(applicant.courierProfile.emergencyContactName ||
+                      applicant.courierProfile.emergencyContactPhone) && (
+                      <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                          <Phone size={13} />
+                          <span>Emergency Contact</span>
+                        </div>
+                        <div className="text-sm font-semibold text-ink">
+                          {applicant.courierProfile.emergencyContactName || "—"}
+                        </div>
+                        {applicant.courierProfile.emergencyContactPhone && (
+                          <div className="text-xs font-mono text-ink/60">
+                            {applicant.courierProfile.emergencyContactPhone}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {applicant.courierProfile.residentialAddress && (
+                      <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5 sm:col-span-2">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
+                          <MapPin size={13} />
+                          <span>Residential Address</span>
+                        </div>
+                        <div className="text-sm font-medium text-ink">
+                          {applicant.courierProfile.residentialAddress}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="rounded-2xl border border-ink/5 bg-mist/20 p-3.5">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-ink/50 mb-1">
-                      <MapPin size={13} />
-                      <span>Operating Delivery Zone</span>
+                  {/* NIC Front & Back Photo Previews (JWT-authenticated) */}
+                  {(applicant.courierProfile.nicFrontPhotoUrl ||
+                    applicant.courierProfile.nicBackPhotoUrl) && (
+                    <div className="border-t border-ink/10 pt-5">
+                      <h4 className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink/60">
+                        <CreditCard size={14} className="text-coral" />
+                        <span>Uploaded National Identity Card (NIC) Photos (Click to Enlarge)</span>
+                      </h4>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {applicant.courierProfile.nicFrontPhotoUrl && (
+                          <div>
+                            <p className="mb-1.5 text-xs font-semibold text-ink/60">
+                              NIC Front Side
+                            </p>
+                            <ProtectedDocumentImage
+                              url={applicant.courierProfile.nicFrontPhotoUrl}
+                              alt="NIC Front Side"
+                            />
+                          </div>
+                        )}
+                        {applicant.courierProfile.nicBackPhotoUrl && (
+                          <div>
+                            <p className="mb-1.5 text-xs font-semibold text-ink/60">
+                              NIC Back Side
+                            </p>
+                            <ProtectedDocumentImage
+                              url={applicant.courierProfile.nicBackPhotoUrl}
+                              alt="NIC Back Side"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm font-mono font-bold text-coral">
-                      Zone #{applicant.courierProfile.zoneId}
-                    </div>
-                  </div>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-ink/15 bg-mist/10 p-5 text-center">
@@ -577,7 +761,7 @@ export const ApprovalReviewPage: React.FC = () => {
           {applicant.role !== "MERCHANT" && applicant.role !== "COURIER" && (
             <div className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm">
               <h3 className="mb-1 font-display text-base font-bold text-ink">
-                2. Operational Permissions & Access Scope
+                2. Operational Permissions &amp; Access Scope
               </h3>
               <p className="text-xs text-ink/50 mb-4">
                 Assigned system boundaries for this internal profile.
@@ -632,7 +816,7 @@ export const ApprovalReviewPage: React.FC = () => {
                       <span>Confirm approval of {applicant.fullName}?</span>
                     </div>
                     <p className="text-[11px] text-emerald-800 leading-relaxed">
-                      This will immediately activate the account, grant role permissions, and approve any linked storefront registration.
+                      This will immediately activate the account, grant role permissions, and activate any linked storefront or courier fleet profile.
                     </p>
                     <div className="flex items-center gap-2 pt-1">
                       <button
@@ -682,7 +866,7 @@ export const ApprovalReviewPage: React.FC = () => {
                         rows={3}
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="e.g. Business registration document was unverified or invalid."
+                        placeholder="e.g. NIC document blurry or expired driving license."
                         className="w-full rounded-xl border border-rose-200 bg-white p-2.5 text-xs text-ink placeholder:text-ink/30 focus:border-rose-400 focus:outline-hidden focus:ring-2 focus:ring-rose-200"
                       />
                     </div>
@@ -799,4 +983,3 @@ export const ApprovalReviewPage: React.FC = () => {
     </div>
   );
 };
-
