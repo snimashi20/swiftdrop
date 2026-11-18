@@ -39,6 +39,7 @@ import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPag
 import { RoleSelectionPage } from "./features/auth/RoleSelectionPage";
 import { WaitingApprovalPage } from "./features/auth/WaitingApprovalPage";
 import { MyNotificationsPage } from "./features/notifications/MyNotificationsPage";
+import { SettingsPage } from "./features/settings/SettingsPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -71,6 +72,7 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/profile/addresses" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<AddressBookPage />} />

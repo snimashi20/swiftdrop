@@ -284,14 +284,15 @@ class NotificationApiTest {
 
     private void insertRow(UUID eventId, Long customerId, String trackingNumber, String type,
                            String recipient, NotificationStatus status, Instant createdAt) {
+        // The rows these tests set up are the customer's own, so the recipient is the customer.
         jdbc.update("""
                 INSERT INTO notification_log
                     (event_id, parcel_id, tracking_number, old_status, new_status,
-                     customer_id, type, recipient, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     customer_id, recipient_user_id, recipient_role, type, recipient, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 eventId, 42L, trackingNumber, "PICKED_UP", "IN_TRANSIT",
-                customerId, type, recipient, status.name(), Timestamp.from(createdAt));
+                customerId, customerId, "CUSTOMER", type, recipient, status.name(), Timestamp.from(createdAt));
     }
 
     /** The row the feed returns for an event: the lowest id of that event. */

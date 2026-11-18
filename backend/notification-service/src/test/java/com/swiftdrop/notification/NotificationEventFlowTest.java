@@ -75,7 +75,7 @@ class NotificationEventFlowTest {
     @Autowired JdbcTemplate jdbc;
 
     @Test
-    void statusEventSendsEmailToMailpitAndLogsBothChannels() throws Exception {
+    void statusEventSendsEmailToMailpitAndLogsEveryChannel() throws Exception {
         Long customerId = createCustomer("0771234567");
         ParcelStatusChangedEvent event = event(customerId, "SD7K2M9QX4LP");
 
@@ -85,12 +85,20 @@ class NotificationEventFlowTest {
             return message;
         });
 
-        await().atMost(Duration.ofSeconds(15)).until(() -> sentRows(event.eventId()) == 2);
+        // The customer is the only recipient here: the event carries no merchantId, the parcel has no
+        // courier assigned, and IN_TRANSIT is not a transition staff are notified about. So the three
+        // rows are the customer's own in-app, e-mail and SMS copies.
+        await().atMost(Duration.ofSeconds(15)).until(() -> sentRows(event.eventId()) == 3);
 
         Map<NotificationType, NotificationLog> byType = logs.findByEventId(event.eventId()).stream()
                 .collect(Collectors.toMap(NotificationLog::getType, Function.identity()));
         assertThat(byType.get(NotificationType.EMAIL).getRecipient()).matches("[a-z]\\*\\*\\*@example\\.com");
         assertThat(byType.get(NotificationType.SMS).getRecipient()).isEqualTo("*******567");
+        assertThat(byType.get(NotificationType.IN_APP).getRecipient()).isEqualTo("in-app");
+        assertThat(byType.values()).allSatisfy(row -> {
+            assertThat(row.getRecipientUserId()).isEqualTo(customerId);
+            assertThat(row.getRecipientRole()).isEqualTo("CUSTOMER");
+        });
 
         await().atMost(Duration.ofSeconds(10))
                 .until(() -> mailpitMessages().contains("SwiftDrop: parcel SD7K2M9QX4LP is now IN_TRANSIT"));
@@ -104,9 +112,9 @@ class NotificationEventFlowTest {
         rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, RabbitConfig.ROUTING_KEY, event);
         rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, RabbitConfig.ROUTING_KEY, event);
 
-        await().atMost(Duration.ofSeconds(15)).until(() -> sentRows(event.eventId()) == 2);
+        await().atMost(Duration.ofSeconds(15)).until(() -> sentRows(event.eventId()) == 3);
         await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(5))
-                .until(() -> logs.findByEventId(event.eventId()).size() == 2);
+                .until(() -> logs.findByEventId(event.eventId()).size() == 3);
     }
 
     @Test
