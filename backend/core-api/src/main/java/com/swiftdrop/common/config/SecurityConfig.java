@@ -94,7 +94,9 @@ public class SecurityConfig {
                     "/api/v1/auth/**",
                     "/api/v1/merchants/register",
                     "/api/v1/tracking/**",
-                    "/api/v1/pricing/quote"
+                    "/api/v1/pricing/quote",
+                    "/api/v1/courier/register",
+                    "/api/v1/courier/zones"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
