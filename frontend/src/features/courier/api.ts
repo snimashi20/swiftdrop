@@ -1,12 +1,15 @@
 import axios from 'axios';
-import type { 
-  CourierDelivery, 
-  UpdateStatusRequest, 
-  DeliverParcelRequest, 
-  FailParcelRequest 
+import type {
+  CourierDelivery,
+  UpdateStatusRequest,
+  DeliverParcelRequest,
+  FailParcelRequest,
+  ZoneOption,
+  RegisterCourierRequest,
+  CourierRegistrationResponse,
 } from './types';
 
-// Connects to backend API using JWT from localStorage
+// Authenticated client for logged-in courier endpoints
 const client = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
@@ -25,14 +28,19 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+// Public client for onboarding endpoints (avoids sending stale/expired JWTs during signup)
+const publicClient = axios.create({
+  baseURL: '/api/v1',
+});
+
 export const getTodayDeliveries = async (): Promise<CourierDelivery[]> => {
   const { data } = await client.get<CourierDelivery[]>('/courier/deliveries/today');
   return data;
 };
 
 export const updateDeliveryStatus = async (
-  parcelId: number, 
-  status: string, 
+  parcelId: number,
+  status: string,
   note?: string
 ): Promise<CourierDelivery> => {
   const payload: UpdateStatusRequest = { status, note };
@@ -48,19 +56,19 @@ export const deliverParcelWithProof = async (
 ): Promise<CourierDelivery> => {
   const formData = new FormData();
   const requestData: DeliverParcelRequest = { recipientName, note };
-  
+
   formData.append(
-    'data', 
+    'data',
     new Blob([JSON.stringify(requestData)], { type: 'application/json' })
   );
-  
+
   if (photo) {
     formData.append('photo', photo);
   }
 
   const { data } = await client.post<CourierDelivery>(
-    `/courier/deliveries/${parcelId}/deliver`, 
-    formData, 
+    `/courier/deliveries/${parcelId}/deliver`,
+    formData,
     { headers: { 'Content-Type': 'multipart/form-data' } }
   );
   return data;
@@ -73,5 +81,31 @@ export const failParcelDelivery = async (
 ): Promise<CourierDelivery> => {
   const payload: FailParcelRequest = { reason, note };
   const { data } = await client.post<CourierDelivery>(`/courier/deliveries/${parcelId}/fail`, payload);
+  return data;
+};
+
+export const getPublicCourierZones = async (): Promise<ZoneOption[]> => {
+  const { data } = await publicClient.get<ZoneOption[]>('/courier/zones');
+  return data;
+};
+
+export const registerCourier = async (
+  payload: RegisterCourierRequest,
+  nicFront: File,
+  nicBack: File
+): Promise<CourierRegistrationResponse> => {
+  const formData = new FormData();
+  formData.append(
+    'data',
+    new Blob([JSON.stringify(payload)], { type: 'application/json' })
+  );
+  formData.append('nicFront', nicFront);
+  formData.append('nicBack', nicBack);
+
+  const { data } = await publicClient.post<CourierRegistrationResponse>(
+    '/courier/register',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
   return data;
 };

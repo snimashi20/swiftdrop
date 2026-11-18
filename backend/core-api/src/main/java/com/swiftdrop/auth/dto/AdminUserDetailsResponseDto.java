@@ -52,7 +52,18 @@ public class AdminUserDetailsResponseDto {
         private Long id;
         private String vehicleType;
         private Long zoneId;
+        private String zoneName;
         private boolean active;
+        private String nicNumber;
+        private String dateOfBirth;
+        private String residentialAddress;
+        private String drivingLicenseNumber;
+        private String drivingLicenseExpiry;
+        private String vehiclePlateNumber;
+        private String emergencyContactName;
+        private String emergencyContactPhone;
+        private String nicFrontPhotoUrl;
+        private String nicBackPhotoUrl;
         private String createdAt;
     }
 }

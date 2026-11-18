@@ -79,6 +79,7 @@ services:
       # or neither, otherwise migrations land in the local container while the app talks to
       # the cloud.
       DB_MIGRATION_URL: ${DB_MIGRATION_URL:-jdbc:postgresql://postgres:5432/swiftdrop}
+      DB_POOL_SIZE: ${CORE_API_DB_POOL_SIZE:-3}
       SPRING_PROFILES_ACTIVE: docker
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
@@ -118,6 +119,7 @@ services:
       MAIL_PORT: 1025
       MAIL_FROM: ${MAIL_FROM:-noreply@swiftdrop.local}
       JWT_SECRET: ${JWT_SECRET}
+      DB_POOL_SIZE: ${NOTIFICATION_DB_POOL_SIZE:-2}
       SPRING_FLYWAY_ENABLED: "false"
     ports:
       - "8081:8081"

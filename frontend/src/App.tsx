@@ -17,6 +17,7 @@ import { AdminProfilePage } from "./features/profile/AdminProfilePage";
 import { AdminPricingPage } from './features/pricing/pages/AdminPricingPage';
 import { ChatWidget } from './features/ai/ChatWidget';
 import { PriceCalculator } from './features/pricing/components/PriceCalculator';
+import { CourierRegisterPage } from './features/courier';
 import {
   CouriersPage,
   DispatcherDashboardPage,
@@ -55,6 +56,8 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/merchant/register" element={<MerchantRegisterPage />} />
+        <Route path="/merchant/register" element={<MerchantRegisterPage />} />
+        <Route path="/courier/register" element={<CourierRegisterPage />} />
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route path="/calculator" element={<PriceCalculator />} />
         <Route path="/select-role" element={<RoleSelectionPage />} />
@@ -89,7 +92,9 @@ export function App() {
             <Route path="/parcels/new" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<BookParcelPage />} />
             </Route>
-                        <Route path="/parcels/:trackingNumber" element={<ParcelDetailPage />} />
+            <Route path="/parcels/:trackingNumber" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<ParcelDetailPage />} />
+            </Route>
             <Route path="/fleet" element={<ProtectedRoute allowedRoles={["DISPATCHER", "ADMIN"]} />}>
               <Route index element={<DispatcherDashboardPage />} />
               <Route path="unassigned" element={<UnassignedParcelsPage />} />
