@@ -40,6 +40,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         this(userRepository, jwtService, frontendBaseUrl, null);
     }
 
+    @Autowired
     public OAuth2AuthenticationSuccessHandler(
             UserRepository userRepository,
             JwtService jwtService,
