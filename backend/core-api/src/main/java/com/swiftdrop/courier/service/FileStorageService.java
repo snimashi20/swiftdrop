@@ -1,13 +1,17 @@
 package com.swiftdrop.courier.service;
 
 import com.swiftdrop.common.exception.BadRequestException;
+import com.swiftdrop.common.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +49,58 @@ public class FileStorageService {
         if (file == null || file.isEmpty()) {
             return null;
         }
+        String filename = validateAndSave(file, this.rootLocation);
+        return "/uploads/proofs/" + filename;
+    }
 
+    /**
+     * Reuses the same 5MB / JPEG-PNG / UUID rules to store KYC verification documents (e.g., NIC front/back).
+     */
+    public String storeDocument(MultipartFile file, String category) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Document image is required");
+        }
+        if (category == null || !category.matches("^[a-z0-9_-]+$")) {
+            throw new BadRequestException("Invalid document category");
+        }
+        try {
+            Path categoryDir = this.rootLocation.resolve(category).normalize().toAbsolutePath();
+            if (!categoryDir.startsWith(this.rootLocation.toAbsolutePath())) {
+                throw new BadRequestException("Invalid storage path");
+            }
+            Files.createDirectories(categoryDir);
+            String filename = validateAndSave(file, categoryDir);
+            return "/api/v1/courier/documents/" + category + "/" + filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store document: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Loads a stored KYC document safely with path-traversal protection.
+     */
+    public Resource loadDocument(String category, String filename) {
+        if (category == null || !category.matches("^[a-z0-9_-]+$")
+                || filename == null || !filename.matches("^[a-zA-Z0-9._-]+$")) {
+            throw new BadRequestException("Invalid document path");
+        }
+        Path categoryDir = this.rootLocation.resolve(category).normalize().toAbsolutePath();
+        Path filePath = categoryDir.resolve(filename).normalize().toAbsolutePath();
+        if (!filePath.startsWith(categoryDir) || !Files.exists(filePath)) {
+            throw new NotFoundException("Document not found");
+        }
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new NotFoundException("Document not readable");
+            }
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new NotFoundException("Document not found");
+        }
+    }
+
+    private String validateAndSave(MultipartFile file, Path targetDirectory) {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new BadRequestException("File exceeds maximum allowed size of 5MB");
         }
@@ -56,12 +111,14 @@ public class FileStorageService {
         }
 
         try {
-            String extension = contentType.contains("png") ? ".png" : ".jpg";
+            String extension = contentType.toLowerCase().contains("png") ? ".png" : ".jpg";
             String filename = UUID.randomUUID() + extension;
-            Path destinationFile = this.rootLocation.resolve(filename).normalize().toAbsolutePath();
-
+            Path destinationFile = targetDirectory.resolve(filename).normalize().toAbsolutePath();
+            if (!destinationFile.startsWith(targetDirectory.toAbsolutePath())) {
+                throw new BadRequestException("Invalid file destination");
+            }
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
-            return "/uploads/proofs/" + filename;
+            return filename;
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file: " + e.getMessage(), e);
         }

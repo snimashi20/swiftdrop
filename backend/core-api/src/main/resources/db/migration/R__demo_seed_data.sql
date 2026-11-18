@@ -1,7 +1,13 @@
 -- SwiftDrop demo data: one user for every role and one parcel in every status.
--- Run once after the app has started (Flyway has created the tables).
--- Safe to run again: existing base and M9 demo records are preserved.
 -- Password for every demo account: Demo@1234
+--
+-- This is the ONLY copy of the demo seed. It used to live at scripts/demo-seed.sql and be
+-- run by hand; it is now a Flyway repeatable migration, so core-api applies it on startup
+-- after all versioned migrations. Add demo data here, never in a second file - two copies
+-- drift apart and the one that runs automatically silently falls behind.
+--
+-- Being repeatable, Flyway reruns it whenever this file's checksum changes. Every statement
+-- is therefore written to be safe to rerun: existing base and M9 demo records are preserved.
 
 DO $$
 DECLARE

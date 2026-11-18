@@ -220,6 +220,18 @@ SwiftDrop eliminates server-side session affinity to facilitate seamless horizon
   ```
 * **Strict Expiration Windows:** Access tokens carry a lifetime of **24 hours** in development and **60 minutes** in production, paired with a silent token refresh pattern.
 
+#### 3.2.1 Cross-Tab Session Synchronization & State Drift Defense
+In modern browser environments, Web Storage (`localStorage`) is scoped globally across all tabs of the same origin (`scheme://host:port`). When a user switches roles or logs in under a different identity in a secondary browser tab (e.g., logging in as `ADMIN` while an existing tab has an active `CUSTOMER` session), standard Single Page Applications suffer from **Session Desynchronization & State Drift**:
+* **Desynchronization Hazard:** The primary tab's in-memory React state believes it is User A, but outgoing API calls attach User B's freshly overwritten JWT from `localStorage`.
+* **Unauthorized UI Lingering:** A user with an elevated `ADMIN` role could accidentally sit on customer-specific booking views, or a demoted user could remain on sensitive management views until a manual page reload.
+
+**SwiftDrop Countermeasure (Browser `StorageEvent` Synchronization):**  
+In Module 2 (`AuthContext.tsx`), SwiftDrop mounts a global `window.addEventListener("storage", ...)` listener:
+1. **Real-Time Cross-Tab Identity Tracking:** When another tab modifies or clears `swiftdrop_access_token` or `swiftdrop_user`, all sibling tabs instantly intercept the event without requiring a page refresh.
+2. **Instant Role-Based Redirection:** If the active user or role changes, the existing tab immediately updates its React state and re-routes the user to their designated portal (`/admin/overview`, `/courier/today`, `/merchant/orders`, or `/dashboard`), preventing invalid route lingering.
+3. **Synchronized Logout:** Logging out in any single tab instantly terminates sessions across all open browser tabs and redirects them to `/login`.
+4. **Client-Side Route Guards (`allowedRoles`):** Protected routes enforce role whitelisting (`ProtectedRoute.tsx`), ensuring that even upon hard page refresh, unauthorized roles are immediately intercepted and bounced back to their respective dashboards.
+
 ---
 
 ### 3.3 Role-Based Access Control (RBAC) & Object-Level Authorization (IDOR Protection)

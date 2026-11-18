@@ -6,6 +6,9 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
 
   jpa:
     hibernate:
@@ -15,6 +18,19 @@ spring:
   flyway:
     enabled: true
     out-of-order: true
+    # Migrations run over their own connection. On the shared Supabase database this must be
+    # the session pooler (port 5432), not the transaction pooler: Flyway guards against two
+    # people migrating at the same time with a session-level pg_advisory_lock, and a
+    # transaction pooler can route each statement to a different backend, so the lock would
+    # not be held for the duration of the migration. Falls back to DB_URL when unset.
+    url: ${DB_MIGRATION_URL:${DB_URL}}
+    user: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    # We all share one database but work on different feature branches, so the database can
+    # contain a migration that your branch does not have yet. Without this, Flyway fails
+    # startup with "Detected applied migration not resolved locally" and whoever is on an
+    # older branch cannot boot. Schema drift is still caught by hibernate ddl-auto: validate.
+    ignore-migration-patterns: "*:missing"
 
   rabbitmq:
     host: ${RABBITMQ_HOST}
@@ -42,7 +58,7 @@ spring:
   servlet:
     multipart:
       max-file-size: 5MB
-      max-request-size: 10MB
+      max-request-size: 12MB
 
 app:
   jwt:
