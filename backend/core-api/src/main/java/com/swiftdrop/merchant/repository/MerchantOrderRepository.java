@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
+import java.time.Instant;
 
 import java.util.Optional;
 
@@ -41,4 +43,14 @@ public interface MerchantOrderRepository extends JpaRepository<MerchantOrder, Lo
             group by p.status
             """)
     java.util.List<Object[]> countDashboardOrdersByStatus(Long merchantId);
+
+    @org.springframework.data.jpa.repository.Query(value = """
+            select cast(created_at at time zone 'UTC' as date) as order_date, count(*) as order_count
+            from merchant_orders
+            where merchant_id = :merchantId and created_at >= :since
+            group by cast(created_at at time zone 'UTC' as date)
+            order by order_date
+            """, nativeQuery = true)
+    java.util.List<Object[]> countOrdersByUtcDateSince(@Param("merchantId") Long merchantId,
+                                                       @Param("since") Instant since);
 }
