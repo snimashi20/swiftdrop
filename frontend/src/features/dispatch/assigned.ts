@@ -17,4 +17,7 @@ export type AssignedParcel = ParcelSummary & {
 export const assignedParcelsApi = {
   list: async (params: { courierId?: number; activeOnly?: boolean; page?: number; size?: number } = {}) =>
     (await api.get<Page<AssignedParcel>>("/dispatch/parcels/assigned", { params })).data,
+
+  // Number of parcels with a courier at each delivery stage, counted by the server.
+  summary: async () => (await api.get<Record<string, number>>("/dispatch/parcels/assigned/summary")).data,
 };

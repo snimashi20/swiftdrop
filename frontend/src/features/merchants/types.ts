@@ -44,6 +44,11 @@ export interface MerchantOrder {
   externalOrderId?: string | null;
 }
 
+export interface MerchantOrderTrendPoint {
+  date: string;
+  count: number;
+}
+
 export interface Page<T> {
   content: T[];
   page: number;
