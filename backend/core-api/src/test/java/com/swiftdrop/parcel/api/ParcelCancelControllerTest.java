@@ -9,7 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.parcel.domain.CancelReason;
 import com.swiftdrop.parcel.domain.ParcelStatus;
+import com.swiftdrop.parcel.dto.CancelParcelRequest;
 import com.swiftdrop.parcel.dto.ParcelDetailResponse;
 import com.swiftdrop.parcel.service.ParcelCancelService;
 import com.swiftdrop.parcel.service.ParcelService;
@@ -24,10 +26,13 @@ class ParcelCancelControllerTest {
     private ParcelCancelController controller;
     private final AuthenticatedUser customer = new AuthenticatedUser(7L, "customer@example.com", "CUSTOMER");
 
+    private final CancelParcelRequest request = new CancelParcelRequest();
+
     @BeforeEach
     void setUp() {
         parcelCancelService = mock(ParcelCancelService.class);
         parcelService = mock(ParcelService.class);
+        request.setReason(CancelReason.BOOKED_BY_MISTAKE);
         controller = new ParcelCancelController(parcelCancelService, parcelService);
     }
 
@@ -37,18 +42,18 @@ class ParcelCancelControllerTest {
                 .id(1L).status(ParcelStatus.CANCELLED).build();
         when(parcelService.getForCustomer(7L, 1L)).thenReturn(updated);
 
-        ParcelDetailResponse result = controller.cancel(1L, customer);
+        ParcelDetailResponse result = controller.cancel(1L, request, customer);
 
-        verify(parcelCancelService).cancelForCustomer(7L, 1L);
+        verify(parcelCancelService).cancelForCustomer(7L, 1L, request);
         assertEquals(ParcelStatus.CANCELLED, result.getStatus());
     }
 
     @Test
     void cancel_parcelOfAnotherCustomer_isNotFoundAndNothingIsReturned() {
         doThrow(new NotFoundException("Parcel not found"))
-                .when(parcelCancelService).cancelForCustomer(7L, 99L);
+                .when(parcelCancelService).cancelForCustomer(7L, 99L, request);
 
-        assertThrows(NotFoundException.class, () -> controller.cancel(99L, customer));
+        assertThrows(NotFoundException.class, () -> controller.cancel(99L, request, customer));
 
         verify(parcelService, never()).getForCustomer(7L, 99L);
     }

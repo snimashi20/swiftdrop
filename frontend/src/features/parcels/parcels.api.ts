@@ -21,6 +21,17 @@ export const STATUSES: ParcelStatus[] = [
   "CANCELLED",
 ];
 
+// The names a customer sees. CREATED reads "Booked" because that is what the customer did.
+export const STATUS_LABELS: Record<ParcelStatus, string> = {
+  CREATED: "Booked",
+  PICKED_UP: "Picked up",
+  IN_TRANSIT: "In transit",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  DELIVERED: "Delivered",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+};
+
 // Districts that have a pricing zone (a district without a zone gives a 404 from the API).
 export const DISTRICTS = [
   "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", 
@@ -29,6 +40,25 @@ export const DISTRICTS = [
   "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya", 
   "Polonnaruwa", "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya"
 ];
+
+// What is inside the parcel (the drop-down on the booking page) and who pays the delivery fee.
+export const ITEM_TYPES = [
+  { value: "DOCUMENTS", label: "Documents" },
+  { value: "FOOD", label: "Food" },
+  { value: "GROCERIES", label: "Groceries" },
+  { value: "BUSINESS_SUPPLIES", label: "Business Supplies / Samples" },
+  { value: "CLOTHES", label: "Clothes" },
+  { value: "HOUSEHOLD_GOODS", label: "Household Goods" },
+  { value: "ELECTRONICS", label: "Electronics" },
+  { value: "SPORTS_GOODS", label: "Sports Goods" },
+  { value: "OTHER", label: "Other" },
+] as const;
+
+export type ParcelItemType = (typeof ITEM_TYPES)[number]["value"];
+export type DeliveryPayer = "SENDER" | "RECEIVER";
+
+export const itemTypeLabel = (value: string | null | undefined) =>
+  ITEM_TYPES.find((t) => t.value === value)?.label ?? "";
 
 export interface ParcelAddress {
   line1: string;
@@ -44,6 +74,8 @@ export interface CreateParcelRequest {
   size: ParcelSize;
   weightKg: number;
   deliveryInstructions?: string;
+  itemType?: ParcelItemType;
+  deliveryPaidBy?: DeliveryPayer;
 }
 
 export interface ParcelCreated {
@@ -66,6 +98,10 @@ export interface ParcelDetail {
   size: ParcelSize;
   weightKg: number;
   deliveryInstructions: string | null;
+  itemType?: ParcelItemType | null;
+  deliveryPaidBy?: DeliveryPayer | null;
+  cancelReason?: CancelReason | null;
+  cancelComment?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,8 +140,24 @@ export const listParcels = async (page: number, status?: ParcelStatus): Promise<
   return res.data;
 };
 
-export const cancelParcel = async (id: number): Promise<ParcelDetail> => {
-  const res = await api.post<ParcelDetail>(`/parcels/${id}/cancel`);
+export type CancelReason = "BOOKED_BY_MISTAKE" | "WRONG_DETAILS" | "FOUND_ANOTHER_OPTION" | "NO_LONGER_NEEDED" | "OTHER";
+
+export const CANCEL_REASONS: { value: CancelReason; label: string }[] = [
+  { value: "BOOKED_BY_MISTAKE", label: "Booked by mistake" },
+  { value: "WRONG_DETAILS", label: "Wrong address or receiver details" },
+  { value: "FOUND_ANOTHER_OPTION", label: "Found another option" },
+  { value: "NO_LONGER_NEEDED", label: "Delivery no longer needed" },
+  { value: "OTHER", label: "Other" },
+];
+
+export const cancelReasonLabel = (value?: CancelReason | null): string =>
+  CANCEL_REASONS.find((r) => r.value === value)?.label ?? "";
+
+export const cancelParcel = async (id: number, reason: CancelReason, comment?: string): Promise<ParcelDetail> => {
+  const res = await api.post<ParcelDetail>(`/parcels/${id}/cancel`, {
+    reason,
+    comment: comment?.trim() || undefined,
+  });
   return res.data;
 };
 
