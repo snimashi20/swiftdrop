@@ -12,7 +12,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.parcel.domain.DeliveryPayer;
 import com.swiftdrop.parcel.domain.Parcel;
+import com.swiftdrop.parcel.domain.ParcelItemType;
 import com.swiftdrop.parcel.domain.ParcelSize;
 import com.swiftdrop.parcel.domain.ParcelStatus;
 import com.swiftdrop.parcel.dto.CreateParcelRequest;
@@ -108,6 +110,30 @@ class ParcelServiceTest {
         assertNull(captor.getValue().getMerchantId());
 
         verify(parcelStatusService).recordCreated(any(Parcel.class), eq("CUSTOMER"), eq(7L));
+    }
+
+    @Test
+    void createForCustomer_savesItemTypeAndWhoPays() {
+        CreateParcelRequest request = request();
+        request.setItemType(ParcelItemType.ELECTRONICS);
+        request.setDeliveryPaidBy(DeliveryPayer.RECEIVER);
+
+        parcelService.createForCustomer(7L, request);
+
+        ArgumentCaptor<Parcel> captor = ArgumentCaptor.forClass(Parcel.class);
+        verify(parcelRepository).save(captor.capture());
+        assertEquals(ParcelItemType.ELECTRONICS, captor.getValue().getItemType());
+        assertEquals(DeliveryPayer.RECEIVER, captor.getValue().getDeliveryPaidBy());
+    }
+
+    @Test
+    void createForMerchant_withoutItemTypeOrPayer_stillWorks() {
+        parcelService.createForMerchant(5L, request());
+
+        ArgumentCaptor<Parcel> captor = ArgumentCaptor.forClass(Parcel.class);
+        verify(parcelRepository).save(captor.capture());
+        assertNull(captor.getValue().getItemType());
+        assertNull(captor.getValue().getDeliveryPaidBy());
     }
 
     @Test

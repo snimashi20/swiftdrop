@@ -1,10 +1,13 @@
 package com.swiftdrop.parcel.dto;
 
+import com.swiftdrop.parcel.domain.DeliveryPayer;
+import com.swiftdrop.parcel.domain.ParcelItemType;
 import com.swiftdrop.parcel.domain.ParcelSize;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -23,10 +26,12 @@ public class CreateParcelRequest {
 
     @NotBlank(message = "Receiver name is required")
     @Size(max = 100)
+    @Pattern(regexp = "^\\p{L}[\\p{L}\\p{M} .'-]*$", message = "Receiver name can only contain letters, spaces, . ' and -")
     private String receiverName;
 
+    // A Sri Lankan number: 0771234567 or +94771234567.
     @NotBlank(message = "Receiver phone is required")
-    @Size(max = 20)
+    @Pattern(regexp = "^(\\+94|0)[1-9]\\d{8}$", message = "Receiver phone must be a valid Sri Lankan number")
     private String receiverPhone;
 
     @NotNull(message = "Size is required")
@@ -39,4 +44,9 @@ public class CreateParcelRequest {
 
     @Size(max = 500)
     private String deliveryInstructions;
+
+    // Optional, so merchant API calls and older clients that do not send them keep working.
+    private ParcelItemType itemType;
+
+    private DeliveryPayer deliveryPaidBy;
 }
