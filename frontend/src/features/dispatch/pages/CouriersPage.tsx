@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { Pencil, Power, Truck, UserCheck, UserX, Users } from "lucide-react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
 import { EditCourierDialog } from "../components/EditCourierDialog";
@@ -37,18 +38,29 @@ export function CouriersPage() {
 
   const zoneName = (id: number) => zones.find((zone) => zone.id === id)?.name ?? "Unknown area";
 
+  const visible = couriers.filter(
+    (courier) => filter === "all" || (filter === "active" ? courier.active : !courier.active),
+  );
+  const availableCount = couriers.filter((courier) => courier.active).length;
+  const inProgress = couriers.reduce((sum, courier) => sum + courier.activeDeliveries, 0);
+  const stats = [
+    { label: "Total couriers", value: couriers.length, note: "Everyone you can assign parcels to", icon: Users, tone: "bg-mist text-ink" },
+    { label: "Available", value: availableCount, note: "Ready to take parcels", icon: UserCheck, tone: "bg-mint text-ink" },
+    { label: "Unavailable", value: couriers.length - availableCount, note: "Not taking parcels right now", icon: UserX, tone: "bg-coral/10 text-coral" },
+    { label: "Deliveries in progress", value: inProgress, note: "Across all couriers", icon: Truck, tone: "bg-ink/5 text-ink" },
+  ];
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const active = filter === "all" ? undefined : filter === "active";
-      setCouriers(await dispatchApi.workload({ active }));
+      setCouriers(await dispatchApi.workload());
     } catch (err) {
       setError(getApiErrorMessage(err, "We couldn't load the couriers. Please refresh the page."));
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, []);
 
   const loadLookups = useCallback(async () => {
     try {
@@ -120,10 +132,25 @@ export function CouriersPage() {
       {notice && <p className="mb-4 rounded-lg bg-mint/40 px-3 py-2 text-sm text-ink">{notice}</p>}
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
 
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map(({ label, value, note, icon: Icon, tone }) => (
+          <div key={label} className="rounded-2xl border border-ink/10 bg-white p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-ink/50">{label}</span>
+              <span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}>
+                <Icon size={17} />
+              </span>
+            </div>
+            <p className="mt-4 font-display text-4xl font-bold">{loading ? "…" : value}</p>
+            <p className="mt-1 text-xs text-ink/45">{note}</p>
+          </div>
+        ))}
+      </div>
+
       <section className="mb-8 rounded-2xl border border-ink/10 bg-white p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-xl font-bold">
-            Courier list {!loading && <span className="text-sm font-normal text-ink/45">({couriers.length})</span>}
+            Courier list {!loading && <span className="text-sm font-normal text-ink/45">({visible.length})</span>}
           </h2>
           <div className="inline-flex rounded-xl border border-ink/10 p-1">
             {FILTERS.map((option) => (
@@ -142,54 +169,68 @@ export function CouriersPage() {
 
         {loading ? (
           <p className="text-sm text-ink/50">Loading couriers…</p>
-        ) : couriers.length === 0 ? (
+        ) : visible.length === 0 ? (
           error ? null : (
             <p className="rounded-xl border border-dashed border-ink/20 p-6 text-sm text-ink/55">
               No couriers found. Add a courier below.
             </p>
           )
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-ink/10">
             <table className="w-full min-w-[34rem] text-left text-sm">
               <thead>
-                <tr className="border-b border-ink/10 text-xs uppercase tracking-wider text-ink/45">
-                  <th className="py-2 pr-4 font-semibold">Courier</th>
-                  <th className="py-2 pr-4 font-semibold">Vehicle</th>
-                  <th className="py-2 pr-4 font-semibold">Delivery area</th>
-                  <th className="py-2 pr-4 font-semibold">Active deliveries</th>
-                  <th className="py-2 pr-4 font-semibold">Status</th>
-                  <th className="py-2 font-semibold" />
+                <tr className="border-b border-ink/10 bg-mist/60 text-xs uppercase tracking-wider text-ink/45">
+                  <th className="px-4 py-3 font-semibold">Courier</th>
+                  <th className="px-4 py-3 font-semibold">Vehicle</th>
+                  <th className="px-4 py-3 font-semibold">Delivery area</th>
+                  <th className="px-4 py-3 font-semibold">Active deliveries</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold" />
                 </tr>
               </thead>
               <tbody>
-                {couriers.map((courier) => (
+                {visible.map((courier) => (
                   <tr key={courier.courierProfileId} className="border-b border-ink/5 last:border-0">
-                    <td className="py-3 pr-4 font-medium">{courier.courierName ?? "Courier"}</td>
-                    <td className="py-3 pr-4">{vehicleLabel(courier.vehicleType)}</td>
-                    <td className="py-3 pr-4">{zoneName(courier.zoneId)}</td>
-                    <td className="py-3 pr-4 font-semibold">{courier.activeDeliveries}</td>
-                    <td className="py-3 pr-4">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint font-bold text-ink">
+                          {(courier.courierName ?? "C").charAt(0).toUpperCase()}
+                        </span>
+                        <span className="font-semibold">{courier.courierName ?? "Courier"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">{vehicleLabel(courier.vehicleType)}</td>
+                    <td className="px-4 py-3">{zoneName(courier.zoneId)}</td>
+                    <td className="px-4 py-3 font-semibold">{courier.activeDeliveries}</td>
+                    <td className="px-4 py-3">
                       <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
-                          courier.active ? "bg-mint text-ink" : "bg-ink/10 text-ink/55"
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                          courier.active ? "border-mint bg-mint/40 text-ink" : "border-coral/30 bg-coral/10 text-coral"
                         }`}
                       >
+                        <span className={`h-1.5 w-1.5 rounded-full ${courier.active ? "bg-ink" : "bg-coral"}`} />
                         {courier.active ? "Available" : "Unavailable"}
                       </span>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => setEditing(courier)}
-                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink hover:text-white transition"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold transition hover:bg-ink hover:text-white"
                         >
+                          <Pencil size={13} />
                           Edit
                         </button>
                         <button
                           onClick={() => toggleActive(courier)}
                           disabled={busyId === courier.courierProfileId}
-                          className="rounded-lg border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-ink hover:text-white transition disabled:opacity-50"
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
+                            courier.active
+                              ? "border-coral/30 bg-coral/5 text-coral hover:bg-coral hover:text-white"
+                              : "border-ink/15 hover:bg-ink hover:text-white"
+                          }`}
                         >
+                          <Power size={13} />
                           {courier.active ? "Make unavailable" : "Make available"}
                         </button>
                       </div>
