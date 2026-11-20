@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./features/auth/AuthContext";
@@ -6,6 +6,11 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { BookParcelPage } from "./features/parcels/BookParcelPage";
+import { BookingDraftProvider } from "./features/parcels/booking/BookingDraft";
+import { BookModePage } from "./features/parcels/booking/BookModePage";
+import { ConfirmAddressPage } from "./features/parcels/booking/ConfirmAddressPage";
+import { LocationPage } from "./features/parcels/booking/LocationPage";
+import { SavedAddressesPage } from "./features/parcels/booking/SavedAddressesPage";
 import { ParcelHistoryPage } from "./features/parcels/ParcelHistoryPage";
 import { ParcelDetailPage, PublicTrackingLayout, TrackLookupPage, TrackingPage } from "./features/tracking";
 import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
@@ -88,11 +93,19 @@ export function App() {
               <Route index element={<TodayDeliveriesPage />} />
             </Route>
             <Route path="/notifications" element={<MyNotificationsPage />} />
-            <Route path="/parcels" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+             <Route path="/parcels" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<ParcelHistoryPage />} />
             </Route>
+            <Route path="/parcels/start" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<BookModePage />} />
+            </Route>
             <Route path="/parcels/new" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
-              <Route index element={<BookParcelPage />} />
+              <Route element={<BookingDraftProvider><Outlet /></BookingDraftProvider>}>
+                <Route index element={<BookParcelPage />} />
+                <Route path="location" element={<LocationPage />} />
+                <Route path="confirm" element={<ConfirmAddressPage />} />
+                <Route path="saved" element={<SavedAddressesPage />} />
+              </Route>
             </Route>
             <Route path="/parcels/:trackingNumber" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<ParcelDetailPage />} />

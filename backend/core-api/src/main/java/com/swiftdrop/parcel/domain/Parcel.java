@@ -94,6 +94,21 @@ public class Parcel {
     @Column(name = "pickup_zone_id")
     private Long pickupZoneId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_type", length = 30)
+    private ParcelItemType itemType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_paid_by", length = 10)
+    private DeliveryPayer deliveryPaidBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_reason", length = 30)
+    private CancelReason cancelReason;
+
+    @Column(name = "cancel_comment", length = 200)
+    private String cancelComment;
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();

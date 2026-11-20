@@ -92,6 +92,8 @@ public class ParcelService {
         parcel.setSize(request.getSize());
         parcel.setWeightKg(request.getWeightKg());
         parcel.setDeliveryInstructions(request.getDeliveryInstructions());
+        parcel.setItemType(request.getItemType());
+        parcel.setDeliveryPaidBy(request.getDeliveryPaidBy());
         parcel.setFee(quote.getFee());
         parcel.setPickupZoneId(quote.getPickupZoneId());
 
@@ -131,6 +133,10 @@ public class ParcelService {
                 .size(parcel.getSize())
                 .weightKg(parcel.getWeightKg())
                 .deliveryInstructions(parcel.getDeliveryInstructions())
+                .itemType(parcel.getItemType())
+                .deliveryPaidBy(parcel.getDeliveryPaidBy())
+                .cancelReason(parcel.getCancelReason())
+                .cancelComment(parcel.getCancelComment())
                 .createdAt(parcel.getCreatedAt())
                 .updatedAt(parcel.getUpdatedAt())
                 .build();
