@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { fetchUserProfile, updateUserProfile, UserProfile } from "./profile.api";
 
 export const UserProfilePage: React.FC = () => {
+  const { user } = useAuth();
+
+  // Strict Rule: Customers and Admins have their own dedicated profile pages
+  if (user?.role === "CUSTOMER") {
+    return <Navigate to="/customer/profile" replace />;
+  }
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin/profile" replace />;
+  }
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");

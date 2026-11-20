@@ -1,12 +1,18 @@
 import { useState } from 'react';
+import { useAuth } from '../auth/AuthContext';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
 
 export const ChatWidget = () => {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  if (!user) {
+    return null;
+  }
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -16,8 +22,7 @@ export const ChatWidget = () => {
     setLoading(true);
 
     try {
-      const baseUrl = import.meta.env.VITE_AI_BASE_URL || 'http://localhost:8083';
-      const res = await fetch(`${baseUrl}/api/v1/ai/chat`, {
+      const res = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input }),

@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -465,6 +466,13 @@ class WebhookDispatcherServiceTest {
         assertThat(dto.getEndpointId()).isEqualTo(testEndpoint.getId());
         assertThat(dto.getTrackingNumber()).isEqualTo("SD1234567890");
 
+        WebhookDelivery deliveryNullEndpoint = WebhookDelivery.builder()
+                .id(16L)
+                .endpoint(null)
+                .build();
+        WebhookDeliveryDto dtoNullEndpoint = dispatcherService.toDto(deliveryNullEndpoint);
+        assertThat(dtoNullEndpoint.getEndpointId()).isNull();
+
         WebhookEndpointDto singleArgDto = dispatcherService.toEndpointDto(testEndpoint);
         assertThat(singleArgDto.getSecret()).contains("****");
 
@@ -473,5 +481,23 @@ class WebhookDispatcherServiceTest {
 
         WebhookEndpointDto unmaskedDto = dispatcherService.toEndpointDto(testEndpoint, true);
         assertThat(unmaskedDto.getSecret()).isEqualTo(testEndpoint.getSecret());
+    }
+
+    @Test
+    @DisplayName("dispatch should catch exceptions without propagating")
+    void shouldCatchExceptionsInDispatch() {
+        ParcelStatusChangedEvent event = new ParcelStatusChangedEvent(
+                UUID.randomUUID(), 42L, "SD7K2M9QX4LP", "CREATED", "PICKED_UP",
+                Instant.now(), "DISPATCHER", 1L, 101L, "Note"
+        );
+        when(endpointRepository.findByMerchantIdAndActiveTrue(101L)).thenReturn(Optional.of(testEndpoint));
+        when(deliveryRepository.save(any(WebhookDelivery.class))).thenThrow(new RuntimeException("DB down"));
+
+        // The event listener must not see the failure, so dispatch swallows it and logs.
+        assertThatNoException().isThrownBy(() -> dispatcherService.dispatch(event));
+
+        // And it gives up before calling the merchant: the delivery row was never persisted,
+        // so there is nothing to POST and nothing to retry against.
+        verify(webhookRestTemplate, never()).postForEntity(anyString(), any(HttpEntity.class), eq(String.class));
     }
 }

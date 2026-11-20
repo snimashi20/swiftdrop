@@ -2,7 +2,7 @@ import { ExternalLink, Package, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../lib/api";
-import { fetchDashboardOrderSummary, fetchDashboardOrders } from "../api";
+import { fetchDashboardOrders } from "../api";
 import type { MerchantOrder, Page, ParcelStatus } from "../types";
 
 const statuses: (ParcelStatus | "ALL")[] = ["ALL", "CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED"];
@@ -16,30 +16,23 @@ export function MerchantOrdersPage() {
   const [data, setData] = useState<Page<MerchantOrder> | null>(null);
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState<ParcelStatus | "ALL">("ALL");
-  const [summary, setSummary] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [orders, orderSummary] = await Promise.all([
-        fetchDashboardOrders(filter === "ALL" ? undefined : filter, page),
-        fetchDashboardOrderSummary(),
-      ]);
+      const orders = await fetchDashboardOrders(filter === "ALL" ? undefined : filter, page);
       setData(orders);
-      setSummary(orderSummary);
     }
     catch (requestError) { setError(getApiErrorMessage(requestError, "Could not load merchant orders.")); }
     finally { setLoading(false); }
   }, [filter, page]);
   useEffect(() => { void load(); }, [load]);
   const visibleOrders = data?.content ?? [];
-  const counts = statuses.slice(1).map((status) => ({ status, count: filter === "ALL" ? (summary[status] ?? 0) : filter === status ? (summary[status] ?? 0) : 0 }));
 
   return <section className="space-y-6 font-sans text-ink">
     <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Merchant workspace</p><h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Orders</h1><p className="mt-2 text-sm text-ink/55">Track the deliveries created through your merchant integration.</p></div><button onClick={() => void load()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/10 bg-white px-4 py-2.5 text-sm font-semibold"><RefreshCw size={16} />Refresh</button></header>
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{counts.map(({ status, count }) => <div key={status} className="rounded-2xl border border-ink/10 bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-ink/45">{labelStatus(status)}</p><p className="mt-2 font-display text-3xl font-bold">{count}</p><p className="text-xs text-ink/45">{filter === "ALL" ? "all your orders" : "matching status"}</p></div>)}</div>
     <div className="flex gap-2 overflow-x-auto pb-1">{statuses.map((status) => <button key={status} onClick={() => { setPage(0); setFilter(status); }} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${filter === status ? "bg-ink text-white" : "bg-white text-ink/60 hover:bg-ink/5"}`}>{status === "ALL" ? "All statuses" : labelStatus(status)}</button>)}</div>
     {error && <div role="alert" className="rounded-xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</div>}
     <div className="overflow-hidden rounded-2xl border border-ink/10 bg-white">

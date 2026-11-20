@@ -1,5 +1,5 @@
 import { Bell, ChevronDown, DollarSign, KeyRound, LayoutDashboard, LogOut, Menu, Package, Settings, ShieldCheck, Truck, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import type { Role } from "../features/auth/auth.types";
@@ -9,9 +9,9 @@ const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: R
   { label: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
   { label: "Today's Deliveries", to: "/courier/today", icon: Truck, roles: ["COURIER"] },
   { label: "Notifications", to: "/notifications", icon: Bell, roles: ["CUSTOMER"] },
-  { label: "Parcels", to: "/parcels", icon: Package, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
+  { label: "Parcels", to: "/parcels", icon: Package, roles: ["CUSTOMER", "ADMIN"] },
   { label: "Fleet & dispatch", to: "/fleet", icon: Truck, roles: ["DISPATCHER", "ADMIN"] },
-  { label: "People", to: "/people", icon: Users, roles: ["ADMIN"] },
+  { label: "Manage users", to: "/admin/users", icon: Users, roles: ["ADMIN"] },
   { label: "Zones & Pricing", to: "/admin/pricing", icon: DollarSign, roles: ["ADMIN"] },
   { label: "Merchant approvals", to: "/admin/merchants", icon: ShieldCheck, roles: ["ADMIN"] },
   { label: "Merchant orders", to: "/merchant/orders", icon: Package, roles: ["MERCHANT"] },
@@ -21,20 +21,63 @@ const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: R
 export function AppShell() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const visibleLinks = links.filter((link) => user && link.roles.includes(user.role));
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateAvatar = () => {
+      if (user?.email) {
+        const stored = localStorage.getItem(`swiftdrop_avatar_${user.email}`);
+        setAvatar(stored);
+      } else {
+        setAvatar(null);
+      }
+    };
+    updateAvatar();
+    window.addEventListener("avatarUpdated", updateAvatar);
+    window.addEventListener("storage", updateAvatar);
+    return () => {
+      window.removeEventListener("avatarUpdated", updateAvatar);
+      window.removeEventListener("storage", updateAvatar);
+    };
+  }, [user?.email]);
+
+  const overviewTarget = user?.role === "ADMIN" ? "/admin/overview" : "/dashboard";
+  const profileTarget =
+    user?.role === "ADMIN"
+      ? "/admin/profile"
+      : user?.role === "CUSTOMER"
+      ? "/customer/profile"
+      : "/profile";
+  const visibleLinks = links
+    .filter((link) => user && link.roles.includes(user.role))
+    .map((link) => (link.label === "Overview" ? { ...link, to: overviewTarget } : link));
 
   return (
     <div className="min-h-screen bg-mist text-ink">
       <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-ink/10 bg-mist/95 px-4 backdrop-blur md:px-8">
         <button className="rounded-lg p-2 md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
-        <NavLink to="/dashboard" className="font-display text-2xl font-bold tracking-tight">swift<span className="text-coral">drop</span><span className="ml-1 align-top font-sans text-xs text-ink/50">/ OS</span></NavLink>
+        <NavLink to={overviewTarget} className="font-display text-2xl font-bold tracking-tight">swift<span className="text-coral">drop</span><span className="ml-1 align-top font-sans text-xs text-ink/50">/ OS</span></NavLink>
         <div className="flex items-center gap-3">
           <NotificationBell />
-          <div className="hidden items-center gap-2 border-l border-ink/10 pl-3 sm:flex">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-mint font-bold text-ink">{user?.name[0]?.toUpperCase()}</div>
+          <NavLink
+            to={profileTarget}
+            className="hidden items-center gap-2 border-l border-ink/10 pl-3 sm:flex transition hover:opacity-80"
+            title="View Profile"
+          >
+            {avatar ? (
+              <img
+                src={avatar}
+                alt={user?.name || "Profile"}
+                className="h-8 w-8 rounded-full object-cover border border-ink/10"
+              />
+            ) : (
+              <div className="grid h-8 w-8 place-items-center rounded-full bg-mint font-bold text-ink">
+                {user?.name[0]?.toUpperCase()}
+              </div>
+            )}
             <span className="max-w-28 truncate text-sm font-medium">{user?.name}</span>
             <ChevronDown size={15} className="text-ink/50" />
-          </div>
+          </NavLink>
         </div>
       </header>
       <aside className={`${open ? "translate-x-0" : "-translate-x-full"} fixed left-0 top-16 z-20 h-[calc(100vh-4rem)] w-64 border-r border-ink/10 bg-mist p-4 transition-transform md:translate-x-0`}>
@@ -47,7 +90,18 @@ export function AppShell() {
           ))}
         </nav>
         <div className="absolute bottom-5 inset-x-4 space-y-1 border-t border-ink/10 pt-4">
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ink/60 hover:bg-ink/5"><Settings size={18} />Settings</button>
+          <NavLink
+            to={profileTarget}
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                isActive ? "bg-ink text-white" : "text-ink/60 hover:bg-ink/5 hover:text-ink"
+              }`
+            }
+          >
+            <Settings size={18} />
+            <span>Settings</span>
+          </NavLink>
           <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-coral hover:bg-coral/10"><LogOut size={18} />Sign out</button>
         </div>
       </aside>

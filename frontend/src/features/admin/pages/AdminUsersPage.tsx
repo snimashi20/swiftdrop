@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   Check,
   Clock,
+  ExternalLink,
   Filter,
   Key,
   Power,
@@ -23,11 +25,8 @@ import { ROLES } from "../../auth/auth.types";
 import { getApiErrorMessage } from "../../../lib/api";
 import { approveUser, fetchAdminUsers, rejectUser, toggleUserStatus, updateUserRole } from "../admin.api";
 import type { AdminUser, RoleFilterOption, StatusFilterOption, ToastMessage } from "../admin.types";
-import { CreateStaffModal } from "../components/CreateStaffModal";
 import { RoleBadge } from "../components/RoleBadge";
-import { RoleUpdateModal } from "../components/RoleUpdateModal";
 import { StatusBadge } from "../components/StatusBadge";
-import { StatusConfirmModal } from "../components/StatusConfirmModal";
 import { ToastContainer } from "../components/Toast";
 
 export const AdminUsersPage: React.FC = () => {
@@ -43,10 +42,11 @@ export const AdminUsersPage: React.FC = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<StatusFilterOption>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Modals state
-  const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null);
-  const [statusModalUser, setStatusModalUser] = useState<AdminUser | null>(null);
-  const [isCreateStaffOpen, setIsCreateStaffOpen] = useState<boolean>(false);
+  // Inline action state (Strictly Zero Modals)
+  const [editingRoleUserId, setEditingRoleUserId] = useState<number | null>(null);
+  const [pendingRole, setPendingRole] = useState<Role | "">("");
+  const [isSavingRole, setIsSavingRole] = useState<boolean>(false);
+  const [confirmStatusUserId, setConfirmStatusUserId] = useState<number | null>(null);
 
   // Toast feedback state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -204,38 +204,42 @@ export const AdminUsersPage: React.FC = () => {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">
+            Admin Directory
+          </p>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
               User Management
             </h1>
-            <span className="rounded-md bg-coral/10 px-2 py-0.5 text-xs font-bold text-coral">
-              Admin RBAC
+            <span className="rounded-full bg-coral/10 px-2.5 py-1 text-xs font-bold tracking-wide text-coral">
+              RBAC
             </span>
           </div>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-3 max-w-xl text-ink/55">
             Monitor accounts, assign access privileges, and manage security state across the SwiftDrop network.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          <button
-            onClick={() => setIsCreateStaffOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-ink/90 transition shadow-xs"
-          >
-            <UserPlus size={14} />
-            <span>+ Create Staff Account</span>
-          </button>
-
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => loadUsers(true)}
             disabled={loading || refreshing}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-ink/10 text-xs font-semibold text-ink shadow-xs hover:bg-ink/5 transition disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-xl border border-ink/10 bg-white px-4 py-3 text-sm font-semibold text-ink/70 transition hover:border-coral/40 hover:text-ink disabled:opacity-50"
+            title="Refresh user list"
           >
-            <RefreshCw size={14} className={refreshing ? "animate-spin text-coral" : ""} />
+            <RefreshCw size={16} className={refreshing ? "animate-spin text-coral" : ""} />
             <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
           </button>
+
+          <Link
+            to="/admin/users/new"
+            className="flex items-center justify-center gap-2 rounded-xl bg-coral px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-coral/20 transition hover:bg-coral/90"
+          >
+            <UserPlus size={17} />
+            <span>+ Create Staff Account</span>
+          </Link>
         </div>
       </div>
 
@@ -513,6 +517,16 @@ export const AdminUsersPage: React.FC = () => {
                         <td className="py-3.5 px-4 text-right">
                           {u.status === "PENDING_APPROVAL" ? (
                             <div className="inline-flex items-center gap-1.5">
+                              {/* Review Details Full Page Link */}
+                              <Link
+                                to={`/admin/users/${u.id}/review`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink/10 bg-white hover:border-coral hover:text-coral text-ink font-semibold text-[11px] transition shadow-xs"
+                                title="Inspect submitted application details"
+                              >
+                                <ExternalLink size={13} />
+                                <span>Review</span>
+                              </Link>
+
                               {/* Approve Button */}
                               <button
                                 onClick={() => handleApproveUser(u)}
@@ -535,38 +549,115 @@ export const AdminUsersPage: React.FC = () => {
                             </div>
                           ) : (
                             <div className="inline-flex items-center gap-1.5">
-                              {/* Change Role Button */}
-                              <button
-                                onClick={() => setRoleModalUser(u)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink/10 bg-white hover:bg-ink/5 text-ink font-semibold text-[11px] transition shadow-xs"
-                                title="Update user role"
+                              {/* Review Link */}
+                              <Link
+                                to={`/admin/users/${u.id}/review`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink/10 bg-white hover:border-coral hover:text-coral text-ink font-semibold text-[11px] transition shadow-xs"
+                                title="View full profile & review page"
                               >
-                                <UserCog size={13} className="text-ink/60" />
-                                <span>Role</span>
-                              </button>
+                                <ExternalLink size={13} />
+                                <span>Review</span>
+                              </Link>
 
-                              {/* Status Toggle Button */}
-                              <button
-                                onClick={() => setStatusModalUser(u)}
-                                disabled={isSelf && u.enabled}
-                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-semibold text-[11px] transition shadow-xs ${
-                                  u.enabled
-                                    ? isSelf
-                                      ? "bg-ink/5 text-ink/30 cursor-not-allowed border border-ink/10"
-                                      : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                                    : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                }`}
-                                title={
-                                  isSelf && u.enabled
-                                    ? "Cannot disable your own active account"
-                                    : u.enabled
-                                    ? "Disable user account"
-                                    : "Activate user account"
-                                }
-                              >
-                                <Power size={13} />
-                                <span>{u.enabled ? "Disable" : "Enable"}</span>
-                              </button>
+                              {/* Inline Role Selector (Zero Modals) */}
+                              {editingRoleUserId === u.id ? (
+                                <div className="inline-flex items-center gap-1 bg-ink/5 p-1 rounded-lg border border-ink/10">
+                                  <select
+                                    value={pendingRole}
+                                    onChange={(e) => setPendingRole(e.target.value as Role)}
+                                    className="rounded border border-ink/15 bg-white px-1.5 py-1 text-[11px] font-semibold text-ink"
+                                  >
+                                    {ROLES.map((r) => (
+                                      <option key={r} value={r}>
+                                        {r}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={async () => {
+                                      if (pendingRole && pendingRole !== u.role) {
+                                        setIsSavingRole(true);
+                                        try {
+                                          await handleRoleUpdate(u.id, pendingRole);
+                                        } finally {
+                                          setIsSavingRole(false);
+                                          setEditingRoleUserId(null);
+                                        }
+                                      } else {
+                                        setEditingRoleUserId(null);
+                                      }
+                                    }}
+                                    disabled={isSavingRole}
+                                    className="px-2 py-1 rounded bg-ink text-white font-bold text-[10px] hover:bg-coral transition"
+                                  >
+                                    {isSavingRole ? "..." : "Save"}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingRoleUserId(null)}
+                                    className="px-1.5 py-1 rounded border border-ink/10 bg-white text-[10px]"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingRoleUserId(u.id);
+                                    setPendingRole(u.role);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink/10 bg-white hover:bg-ink/5 text-ink font-semibold text-[11px] transition shadow-xs"
+                                  title="Change role inline"
+                                >
+                                  <UserCog size={13} className="text-ink/60" />
+                                  <span>Role</span>
+                                </button>
+                              )}
+
+                              {/* Inline Status Toggle Confirmation (Zero Modals) */}
+                              {confirmStatusUserId === u.id ? (
+                                <div className="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200">
+                                  <span className="text-[10px] font-semibold text-rose-800">
+                                    {u.enabled ? "Disable?" : "Enable?"}
+                                  </span>
+                                  <button
+                                    onClick={async () => {
+                                      await handleStatusToggle(u.id, !u.enabled);
+                                      setConfirmStatusUserId(null);
+                                    }}
+                                    className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-bold text-[10px] hover:bg-rose-700 transition"
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmStatusUserId(null)}
+                                    className="px-1.5 py-0.5 rounded border border-ink/10 bg-white text-ink text-[10px]"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmStatusUserId(u.id)}
+                                  disabled={isSelf && u.enabled}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-semibold text-[11px] transition shadow-xs ${
+                                    u.enabled
+                                      ? isSelf
+                                        ? "bg-ink/5 text-ink/30 cursor-not-allowed border border-ink/10"
+                                        : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                      : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  }`}
+                                  title={
+                                    isSelf && u.enabled
+                                      ? "Cannot disable your own active account"
+                                      : u.enabled
+                                      ? "Disable user account"
+                                      : "Activate user account"
+                                  }
+                                >
+                                  <Power size={13} />
+                                  <span>{u.enabled ? "Disable" : "Enable"}</span>
+                                </button>
+                              )}
                             </div>
                           )}
                         </td>
@@ -611,7 +702,17 @@ export const AdminUsersPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2 border-t border-ink/5">
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-ink/5">
+                      {/* Review Details Link */}
+                      <Link
+                        to={`/admin/users/${u.id}/review`}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-ink/15 text-xs font-semibold text-ink hover:border-coral hover:text-coral transition"
+                        title="View full registration & application review"
+                      >
+                        <ExternalLink size={13} />
+                        <span>Review</span>
+                      </Link>
+
                       {u.status === "PENDING_APPROVAL" ? (
                         <>
                           <button
@@ -631,27 +732,98 @@ export const AdminUsersPage: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <button
-                            onClick={() => setRoleModalUser(u)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-ink/15 text-xs font-semibold text-ink hover:bg-ink/5"
-                          >
-                            <UserCog size={14} />
-                            Change Role
-                          </button>
-                          <button
-                            onClick={() => setStatusModalUser(u)}
-                            disabled={isSelf && u.enabled}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold ${
-                              u.enabled
-                                ? isSelf
-                                  ? "bg-ink/5 text-ink/30 cursor-not-allowed"
-                                  : "bg-rose-50 text-rose-700 hover:bg-rose-100"
-                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            }`}
-                          >
-                            <Power size={14} />
-                            {u.enabled ? "Disable Account" : "Enable Account"}
-                          </button>
+                          {/* Mobile Inline Role */}
+                          {editingRoleUserId === u.id ? (
+                            <div className="flex w-full items-center gap-2 p-1.5 bg-ink/5 rounded-xl">
+                              <select
+                                value={pendingRole}
+                                onChange={(e) => setPendingRole(e.target.value as Role)}
+                                className="flex-1 rounded border border-ink/15 bg-white p-1 text-xs"
+                              >
+                                {ROLES.map((r) => (
+                                  <option key={r} value={r}>
+                                    {r}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={async () => {
+                                  if (pendingRole && pendingRole !== u.role) {
+                                    setIsSavingRole(true);
+                                    try {
+                                      await handleRoleUpdate(u.id, pendingRole);
+                                    } finally {
+                                      setIsSavingRole(false);
+                                      setEditingRoleUserId(null);
+                                    }
+                                  } else {
+                                    setEditingRoleUserId(null);
+                                  }
+                                }}
+                                className="px-2.5 py-1 rounded bg-ink text-white font-bold text-xs"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingRoleUserId(null)}
+                                className="px-2 py-1 rounded border text-xs"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingRoleUserId(u.id);
+                                setPendingRole(u.role);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-ink/15 text-xs font-semibold text-ink hover:bg-ink/5"
+                            >
+                              <UserCog size={14} />
+                              Role
+                            </button>
+                          )}
+
+                          {/* Mobile Inline Status Toggle */}
+                          {confirmStatusUserId === u.id ? (
+                            <div className="flex w-full items-center justify-between gap-2 p-1.5 bg-rose-50 rounded-xl border border-rose-200">
+                              <span className="text-xs font-semibold text-rose-800">
+                                {u.enabled ? "Disable this account?" : "Activate this account?"}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={async () => {
+                                    await handleStatusToggle(u.id, !u.enabled);
+                                    setConfirmStatusUserId(null);
+                                  }}
+                                  className="px-2.5 py-1 rounded bg-rose-600 text-white font-bold text-xs"
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  onClick={() => setConfirmStatusUserId(null)}
+                                  className="px-2 py-1 rounded border bg-white text-xs"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmStatusUserId(u.id)}
+                              disabled={isSelf && u.enabled}
+                              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold ${
+                                u.enabled
+                                  ? isSelf
+                                    ? "bg-ink/5 text-ink/30 cursor-not-allowed"
+                                    : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              }`}
+                            >
+                              <Power size={14} />
+                              {u.enabled ? "Disable" : "Enable"}
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
@@ -673,48 +845,6 @@ export const AdminUsersPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Role Update Modal */}
-      <RoleUpdateModal
-        user={roleModalUser}
-        isOpen={Boolean(roleModalUser)}
-        onClose={() => setRoleModalUser(null)}
-        onSave={handleRoleUpdate}
-        isCurrentUser={
-          Boolean(
-            roleModalUser &&
-              currentUser?.email?.toLowerCase() === roleModalUser.email?.toLowerCase()
-          )
-        }
-      />
-
-      {/* Status Toggle Confirmation Modal */}
-      <StatusConfirmModal
-        user={statusModalUser}
-        isOpen={Boolean(statusModalUser)}
-        onClose={() => setStatusModalUser(null)}
-        onConfirm={handleStatusToggle}
-        isCurrentUser={
-          Boolean(
-            statusModalUser &&
-              currentUser?.email?.toLowerCase() === statusModalUser.email?.toLowerCase()
-          )
-        }
-      />
-
-      {/* Create Staff Account Modal */}
-      <CreateStaffModal
-        isOpen={isCreateStaffOpen}
-        onClose={() => setIsCreateStaffOpen(false)}
-        onSuccess={(created) => {
-          addToast(
-            "success",
-            "Staff Account Created",
-            `${created.fullName} has been registered as a ${created.role}.`
-          );
-          loadUsers(true);
-        }}
-      />
     </div>
   );
 };

@@ -8,6 +8,7 @@ export interface UserProfile {
   provider: string;
   role: string;
   enabled?: boolean;
+  status?: string;
 }
 
 export interface UpdateProfileRequest {
@@ -54,6 +55,11 @@ export const fetchUserAddresses = async (): Promise<Address[]> => {
 
 export const createUserAddress = async (data: CreateAddressRequest): Promise<Address> => {
   const response = await api.post<Address>("/users/addresses", data);
+  return response.data;
+};
+
+export const updateUserAddress = async (addressId: number, data: CreateAddressRequest): Promise<Address> => {
+  const response = await api.put<Address>(`/users/addresses/${addressId}`, data);
   return response.data;
 };
 

@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { CourierDelivery } from '../types';
 import { getTodayDeliveries, updateDeliveryStatus } from '../api';
 import { DeliveryProofModal } from '../components/DeliveryProofModal';
 import { FailDeliveryModal } from '../components/FailDeliveryModal';
 
-type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED';
+type FilterTab = 'ALL' | 'ACTIVE' | 'DELIVERED' | 'FAILED';
+
+const VALID_TABS: readonly FilterTab[] = ['ALL', 'ACTIVE', 'DELIVERED', 'FAILED'];
+
+function parseFilterParam(raw: string | null): FilterTab {
+  if (!raw) return 'ALL';
+  const upper = raw.toUpperCase() as FilterTab;
+  return VALID_TABS.includes(upper) ? upper : 'ALL';
+}
 
 export const TodayDeliveriesPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [deliveries, setDeliveries] = useState<CourierDelivery[]>([]);
-  const [filter, setFilter] = useState<FilterTab>('ALL');
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
+  const filter: FilterTab = parseFilterParam(searchParams.get('filter'));
+
+  const handleSelectTab = (tab: FilterTab) => {
+    setSearchParams({ filter: tab }, { replace: true });
+  };
 
   // Modals state
   const [selectedParcel, setSelectedParcel] = useState<CourierDelivery | null>(null);
@@ -45,12 +60,24 @@ export const TodayDeliveriesPage: React.FC = () => {
     }
   };
 
+  const counts: Record<FilterTab, number> = {
+    ALL: deliveries.length,
+    ACTIVE: deliveries.filter((d) =>
+      ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(d.status)
+    ).length,
+    DELIVERED: deliveries.filter((d) => d.status === 'DELIVERED').length,
+    FAILED: deliveries.filter((d) => d.status === 'FAILED').length,
+  };
+
   const filtered = deliveries.filter((d) => {
     if (filter === 'ACTIVE') {
       return ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(d.status);
     }
-    if (filter === 'COMPLETED') {
-      return ['DELIVERED', 'FAILED'].includes(d.status);
+    if (filter === 'DELIVERED') {
+      return d.status === 'DELIVERED';
+    }
+    if (filter === 'FAILED') {
+      return d.status === 'FAILED';
     }
     return true;
   });
@@ -61,10 +88,10 @@ export const TodayDeliveriesPage: React.FC = () => {
       <header className="bg-blue-600 text-white p-4 sticky top-0 z-10 shadow-md">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold">Today's Deliveries</h1>
+            <h1 className="text-xl font-bold">Today&apos;s Deliveries</h1>
             <p className="text-xs text-blue-100">{deliveries.length} total parcels assigned</p>
           </div>
-          <button 
+          <button
             onClick={fetchDeliveries}
             className="text-xs bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-500"
           >
@@ -72,17 +99,17 @@ export const TodayDeliveriesPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex gap-2 mt-3">
-          {(['ALL', 'ACTIVE', 'COMPLETED'] as const).map((tab) => (
+        {/* Filter Pills (Synced with URL ?filter=...) */}
+        <div className="flex flex-wrap gap-2 mt-3">
+          {VALID_TABS.map((tab) => (
             <button
               key={tab}
-              onClick={() => setFilter(tab)}
+              onClick={() => handleSelectTab(tab)}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                filter === tab ? 'bg-white text-blue-600 shadow-sm' : 'bg-blue-500/60 text-white'
+                filter === tab ? 'bg-white text-blue-600 shadow-sm' : 'bg-blue-500/60 text-white hover:bg-blue-500'
               }`}
             >
-              {tab}
+              {tab} ({counts[tab]})
             </button>
           ))}
         </div>
@@ -100,8 +127,8 @@ export const TodayDeliveriesPage: React.FC = () => {
         )}
 
         {filtered.map((item) => (
-          <div 
-            key={item.parcelId} 
+          <div
+            key={item.parcelId}
             className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3"
           >
             {/* Top row: Tracking number & Status pill */}
@@ -124,8 +151,8 @@ export const TodayDeliveriesPage: React.FC = () => {
               <div className="flex justify-between items-start">
                 <h3 className="font-semibold text-slate-900 text-base">{item.recipientName}</h3>
                 {item.recipientPhone && (
-                  <a 
-                    href={`tel:${item.recipientPhone}`} 
+                  <a
+                    href={`tel:${item.recipientPhone}`}
                     className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded flex items-center gap-1 font-medium"
                   >
                     📞 Call
