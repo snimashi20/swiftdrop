@@ -21,15 +21,33 @@ const CHANNEL_LABELS: Record<NotificationChannel, string> = {
 };
 
 const STATUS_STYLE: Record<NotificationDeliveryStatus, string> = {
-  SENT: "bg-mint text-ink",
-  PENDING: "border border-ink/15 bg-mist text-ink/60",
-  FAILED: "bg-coral/15 text-coral",
+  SENT: "border-mint bg-mint/40 text-ink",
+  PENDING: "border-ink/15 bg-mist text-ink/60",
+  FAILED: "border-coral/30 bg-coral/10 text-coral",
 };
 
 const inputClass =
   "w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10";
 
 const formatTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
+
+// PICKED_UP -> "Picked up"
+const humanise = (value: string | null) =>
+  value ? value.toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "—";
+
+const STATUS_LABEL: Record<NotificationDeliveryStatus, string> = {
+  SENT: "Sent",
+  PENDING: "Waiting to send",
+  FAILED: "Not sent",
+};
+
+// The notification service stores only the technical error type; show a plain sentence instead.
+const friendlyReason = (reason: string) => {
+  if (/mail.?send|send.?failed/i.test(reason)) return "The e-mail could not be sent.";
+  if (/connect|timeout|socket|unavailable/i.test(reason)) return "The mail service could not be reached.";
+  if (/sms/i.test(reason)) return "The text message could not be sent.";
+  return "The message could not be sent.";
+};
 
 export function NotificationLogPage() {
   const [form, setForm] = useState<Filters>(NO_FILTERS);
@@ -98,11 +116,11 @@ export function NotificationLogPage() {
             <option value="">All</option>
             <option value="IN_APP">In-app</option>
             <option value="EMAIL">E-mail</option>
-            <option value="SMS">SMS</option>
+            <option value="SMS">Text message</option>
           </select>
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Delivery status</span>
+          <span className="text-xs font-semibold text-ink/60">Message status</span>
           <select
             className={inputClass}
             value={form.status}
@@ -146,40 +164,42 @@ export function NotificationLogPage() {
           )
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-ink/10">
               <table className="w-full min-w-[48rem] text-left text-sm">
                 <thead>
-                  <tr className="border-b border-ink/10 text-xs uppercase tracking-wider text-ink/45">
-                    <th className="py-2 pr-4 font-semibold">Time</th>
-                    <th className="py-2 pr-4 font-semibold">Tracking no.</th>
-                    <th className="py-2 pr-4 font-semibold">Channel</th>
-                    <th className="py-2 pr-4 font-semibold">Recipient</th>
-                    <th className="py-2 pr-4 font-semibold">Parcel status</th>
-                    <th className="py-2 pr-4 font-semibold">Delivery</th>
-                    <th className="py-2 font-semibold">Sent at</th>
+                  <tr className="border-b border-ink/10 bg-mist/60 text-xs uppercase tracking-wider text-ink/45">
+                    <th className="px-4 py-3 font-semibold">Time</th>
+                    <th className="px-4 py-3 font-semibold">Tracking no.</th>
+                    <th className="px-4 py-3 font-semibold">Channel</th>
+                    <th className="px-4 py-3 font-semibold">Recipient</th>
+                    <th className="px-4 py-3 font-semibold">Parcel status</th>
+                    <th className="px-4 py-3 font-semibold">Result</th>
+                    <th className="px-4 py-3 font-semibold">Sent at</th>
                   </tr>
                 </thead>
                 <tbody>
                   {entries.map((entry) => (
                     <tr key={entry.id} className="border-b border-ink/5 align-top last:border-0">
-                      <td className="py-3 pr-4 text-ink/60">{formatTime(entry.createdAt)}</td>
-                      <td className="py-3 pr-4 font-semibold">{entry.trackingNumber}</td>
-                      <td className="py-3 pr-4">{CHANNEL_LABELS[entry.type] ?? entry.type}</td>
-                      <td className="py-3 pr-4 font-mono text-xs">{entry.recipient}</td>
-                      <td className="py-3 pr-4">
-                        {entry.oldStatus ?? "—"} → <span className="font-semibold">{entry.newStatus}</span>
+
+                      <td className="px-4 py-3 text-ink/60">{formatTime(entry.createdAt)}</td>
+                      <td className="px-4 py-3 font-semibold">{entry.trackingNumber}</td>
+                      <td className="px-4 py-3">{CHANNEL_LABELS[entry.type] ?? entry.type}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{entry.recipient}</td>
+                      <td className="px-4 py-3">
+                        {entry.oldStatus ? humanise(entry.oldStatus) : "—"} → <span className="font-semibold">{humanise(entry.newStatus)}</span>
+
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="px-4 py-3">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${STATUS_STYLE[entry.status]}`}
+                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${STATUS_STYLE[entry.status]}`}
                         >
-                          {entry.status}
+                          {STATUS_LABEL[entry.status]}
                         </span>
                         {entry.failureReason && (
-                          <span className="mt-1 block text-xs text-coral">{entry.failureReason}</span>
+                          <span className="mt-1 block text-xs text-coral">{friendlyReason(entry.failureReason)}</span>
                         )}
                       </td>
-                      <td className="py-3 text-ink/60">{formatTime(entry.sentAt)}</td>
+                      <td className="px-4 py-3 text-ink/60">{formatTime(entry.sentAt)}</td>
                     </tr>
                   ))}
                 </tbody>

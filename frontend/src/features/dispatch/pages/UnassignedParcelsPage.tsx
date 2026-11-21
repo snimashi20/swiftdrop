@@ -193,35 +193,35 @@ export function UnassignedParcelsPage() {
           )
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-ink/10">
               <table className="w-full min-w-[40rem] text-left text-sm">
                 <thead>
-                  <tr className="border-b border-ink/10 text-xs uppercase tracking-wider text-ink/45">
-                    <th className="py-2 pr-4 font-semibold">Tracking no.</th>
-                    <th className="py-2 pr-4 font-semibold">Pickup</th>
-                    <th className="py-2 pr-4 font-semibold">Drop-off</th>
-                    <th className="py-2 pr-4 font-semibold">Parcel</th>
-                    <th className="py-2 pr-4 font-semibold">Booked</th>
-                    <th className="py-2 font-semibold" />
+                  <tr className="border-b border-ink/10 bg-mist/60 text-xs uppercase tracking-wider text-ink/45">
+                    <th className="px-4 py-3 font-semibold">Tracking no.</th>
+                    <th className="px-4 py-3 font-semibold">Pickup</th>
+                    <th className="px-4 py-3 font-semibold">Drop-off</th>
+                    <th className="px-4 py-3 font-semibold">Parcel</th>
+                    <th className="px-4 py-3 font-semibold">Booked</th>
+                    <th className="px-4 py-3 font-semibold" />
                   </tr>
                 </thead>
                 <tbody>
                   {parcels.map((parcel) => (
                     <tr key={parcel.id} className="border-b border-ink/5 last:border-0">
-                      <td className="py-3 pr-4 font-semibold">{parcel.trackingNumber}</td>
-                      <td className="py-3 pr-4">
+                      <td className="px-4 py-3 font-semibold">{parcel.trackingNumber}</td>
+                      <td className="px-4 py-3">
                         {parcel.pickupCity ?? "—"}
                         <span className="block text-xs text-ink/45">{parcel.pickupDistrict ?? "—"}</span>
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="px-4 py-3">
                         {parcel.dropoffCity ?? "—"}
                         <span className="block text-xs text-ink/45">{parcel.dropoffDistrict ?? "—"}</span>
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="px-4 py-3">
                         {parcel.size} · {parcel.weightKg} kg
                       </td>
-                      <td className="py-3 pr-4 text-ink/60">{new Date(parcel.createdAt).toLocaleDateString()}</td>
-                      <td className="py-3 text-right">
+                      <td className="px-4 py-3 text-ink/60">{new Date(parcel.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setAssigning(parcel)}
                           className="rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ink"
