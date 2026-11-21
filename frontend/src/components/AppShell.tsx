@@ -17,7 +17,7 @@ const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: R
   { label: "Courier approvals", to: "/admin/couriers", icon: ShieldCheck, roles: ["ADMIN"] },
   { label: "Merchant orders", to: "/merchant/orders", icon: Package, roles: ["MERCHANT"] },
   { label: "API keys", to: "/merchant/api-keys", icon: KeyRound, roles: ["MERCHANT"] },
-  { label: "Webhooks", to: "/webhooks", icon: Webhook, roles: ["MERCHANT", "ADMIN"] },
+  { label: "Webhooks", to: "/webhooks", icon: Webhook, roles: ["MERCHANT"] },
 ];
 
 export function AppShell() {
