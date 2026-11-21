@@ -9,6 +9,8 @@ import com.swiftdrop.courier.domain.CourierApplicationStatus;
 import com.swiftdrop.courier.dto.CourierApplicationMapper;
 import com.swiftdrop.courier.dto.CourierApplicationResponseDto;
 import com.swiftdrop.courier.repository.CourierApplicationRepository;
+import com.swiftdrop.dispatch.domain.CourierProfile;
+import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +39,9 @@ class CourierApplicationServiceTest {
 
     @Mock
     private CourierApplicationMapper courierApplicationMapper;
+
+    @Mock
+    private CourierProfileRepository courierProfileRepository;
 
     @Mock
     private Authentication authentication;
@@ -108,6 +113,71 @@ class CourierApplicationServiceTest {
         assertEquals(7L, application.getReviewedBy());
         assertNotNull(application.getReviewedAt());
         assertEquals(CourierApplicationStatus.APPROVED, result.getStatus());
+    }
+
+    @Test
+    @DisplayName("Approval activates the courier profile so a dispatcher can assign work")
+    void approve_pendingApplication_activatesCourierProfile() {
+        CourierApplication application = CourierApplication.builder()
+                .id(55L).userId(9L).status(CourierApplicationStatus.PENDING).build();
+        User admin = new User();
+        admin.setId(7L);
+        CourierProfile profile = CourierProfile.builder().id(31L).userId(9L).active(false).build();
+        when(courierApplicationRepository.findById(55L)).thenReturn(Optional.of(application));
+        when(authentication.getName()).thenReturn("admin@example.com");
+        when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(courierProfileRepository.findByUserId(9L)).thenReturn(Optional.of(profile));
+        when(courierApplicationRepository.save(application)).thenReturn(application);
+        when(courierApplicationMapper.toDto(application)).thenReturn(CourierApplicationResponseDto.builder()
+                .id(55L).status(CourierApplicationStatus.APPROVED).build());
+
+        courierApplicationService.approve(55L, authentication);
+
+        assertTrue(profile.isActive(), "approved rider must end up with an active profile");
+        verify(courierProfileRepository).save(profile);
+    }
+
+    @Test
+    @DisplayName("Approval still succeeds when the rider has no courier profile yet")
+    void approve_withoutCourierProfile_doesNotFail() {
+        CourierApplication application = CourierApplication.builder()
+                .id(55L).userId(9L).status(CourierApplicationStatus.PENDING).build();
+        User admin = new User();
+        admin.setId(7L);
+        when(courierApplicationRepository.findById(55L)).thenReturn(Optional.of(application));
+        when(authentication.getName()).thenReturn("admin@example.com");
+        when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(courierProfileRepository.findByUserId(9L)).thenReturn(Optional.empty());
+        when(courierApplicationRepository.save(application)).thenReturn(application);
+        when(courierApplicationMapper.toDto(application)).thenReturn(CourierApplicationResponseDto.builder()
+                .id(55L).status(CourierApplicationStatus.APPROVED).build());
+
+        courierApplicationService.approve(55L, authentication);
+
+        assertEquals(CourierApplicationStatus.APPROVED, application.getStatus());
+        verify(courierProfileRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Rejection leaves the courier profile inactive")
+    void reject_pendingApplication_deactivatesCourierProfile() {
+        CourierApplication application = CourierApplication.builder()
+                .id(55L).userId(9L).status(CourierApplicationStatus.PENDING).build();
+        User admin = new User();
+        admin.setId(7L);
+        CourierProfile profile = CourierProfile.builder().id(31L).userId(9L).active(true).build();
+        when(courierApplicationRepository.findById(55L)).thenReturn(Optional.of(application));
+        when(authentication.getName()).thenReturn("admin@example.com");
+        when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(courierProfileRepository.findByUserId(9L)).thenReturn(Optional.of(profile));
+        when(courierApplicationRepository.save(application)).thenReturn(application);
+        when(courierApplicationMapper.toDto(application)).thenReturn(CourierApplicationResponseDto.builder()
+                .id(55L).status(CourierApplicationStatus.REJECTED).build());
+
+        courierApplicationService.reject(55L, "No valid licence", authentication);
+
+        assertFalse(profile.isActive());
+        verify(courierProfileRepository).save(profile);
     }
 
     @Test
