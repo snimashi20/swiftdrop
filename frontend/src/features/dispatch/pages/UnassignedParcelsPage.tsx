@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Package, Truck } from "lucide-react";
 import type { FormEvent } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
@@ -16,7 +17,7 @@ type Filters = { zoneId: string; from: string; to: string };
 const NO_FILTERS: Filters = { zoneId: "", from: "", to: "" };
 
 const inputClass =
-  "w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10";
+  "w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10";
 
 export function UnassignedParcelsPage() {
   const [form, setForm] = useState<Filters>(NO_FILTERS);
@@ -95,6 +96,8 @@ export function UnassignedParcelsPage() {
   return (
     <div>
       <PageHeader
+        icon={view === "unassigned" ? Package : Truck}
+        badges={[{ label: "Dispatcher desk" }]}
         eyebrow="Operations desk"
         title={view === "unassigned" ? "Unassigned parcels" : "Assigned parcels"}
         text={
@@ -126,9 +129,9 @@ export function UnassignedParcelsPage() {
       {notice && <p className="mb-4 rounded-lg bg-mint/40 px-3 py-2 text-sm text-ink">{notice}</p>}
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
 
-      <form onSubmit={applyFilters} className="mb-6 grid gap-3 rounded-2xl border border-ink/10 bg-white p-4 sm:grid-cols-4">
+      <form onSubmit={applyFilters} className="mb-6 grid gap-3 rounded-3xl border border-ink/10 bg-white p-5 sm:grid-cols-4">
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Pickup area</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Pickup area</span>
           <select
             className={inputClass}
             value={form.zoneId}
@@ -143,7 +146,7 @@ export function UnassignedParcelsPage() {
           </select>
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Booked from</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Booked from</span>
           <input
             type="date"
             className={inputClass}
@@ -156,7 +159,7 @@ export function UnassignedParcelsPage() {
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Booked until</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Booked until</span>
           <input
             type="date"
             className={inputClass}
@@ -182,7 +185,7 @@ export function UnassignedParcelsPage() {
         {dateError && <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral sm:col-span-4">{dateError}</p>}
       </form>
 
-      <section className="rounded-2xl border border-ink/10 bg-white p-5">
+      <section className="rounded-3xl border border-ink/10 bg-white p-6">
         {loading && !data ? (
           <p className="text-sm text-ink/50">Loading parcels…</p>
         ) : parcels.length === 0 ? (
@@ -208,7 +211,7 @@ export function UnassignedParcelsPage() {
                 <tbody>
                   {parcels.map((parcel) => (
                     <tr key={parcel.id} className="border-b border-ink/5 last:border-0">
-                      <td className="px-4 py-3 font-semibold">{parcel.trackingNumber}</td>
+                      <td className="px-4 py-3 font-mono text-[13px] font-semibold">{parcel.trackingNumber}</td>
                       <td className="px-4 py-3">
                         {parcel.pickupCity ?? "—"}
                         <span className="block text-xs text-ink/45">{parcel.pickupDistrict ?? "—"}</span>
