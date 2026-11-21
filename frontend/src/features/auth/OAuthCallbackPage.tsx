@@ -14,7 +14,7 @@ const getRolePortalRoute = (rawRole?: string): string => {
     case "DISPATCHER":
       return "/fleet";
     case "COURIER":
-      return "/courier/today";
+      return "/dashboard";
     case "MERCHANT":
       return "/merchant/orders";
     case "CUSTOMER":
