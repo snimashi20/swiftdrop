@@ -12,7 +12,7 @@ sequenceDiagram
     participant MQ as RabbitMQ
 
     Note over C,MQ: Step 1 - fill the form, see the fee first
-    C->>FE: Enter addresses, receiver, size (S/M/L), weight
+    C->>FE: Pick addresses on the map, enter receiver, item type, size (S/M/L), weight, who pays
     FE->>PR: POST /api/v1/pricing/quote {pickupDistrict, dropoffDistrict, size, weightKg}
     PR-->>FE: 200 {fee, pickupZone, dropoffZone, interZone}
     FE-->>C: Show fee preview
@@ -20,14 +20,14 @@ sequenceDiagram
     Note over C,MQ: Step 2 - confirm the booking (one transaction)
     C->>FE: Click Confirm
     FE->>PC: POST /api/v1/parcels (JWT, body validated with @Valid)
-    PC->>PS: createParcel(request, customerId from JWT)
-    PS->>PR: calculateQuote(QuoteRequest)
+    PC->>PS: createForCustomer(customerId from JWT, request)
+    PS->>PR: calculateQuote(QuoteRequest) - fee is always calculated on the server
     PR-->>PS: QuoteResponse (fee)
     PS->>TG: generate()
     TG-->>PS: trackingNumber (SD + 10 chars)
-    PS->>DB: INSERT parcels (status = CREATED, fee, trackingNumber)
+    PS->>DB: INSERT parcels (status = CREATED, fee, trackingNumber, pickupZoneId, itemType, deliveryPaidBy)
     DB-->>PS: saved Parcel
-    PS->>SS: recordCreated(parcel, "CUSTOMER", userId)
+    PS->>SS: recordCreated(savedParcel, "CUSTOMER", userId)
     SS->>DB: INSERT status_history (old = null, new = CREATED)
     SS->>SS: raise ParcelStatusChangedEvent (oldStatus = null)
     PS-->>PC: ParcelResponse (DTO)
@@ -37,7 +37,7 @@ sequenceDiagram
     Note over SS,MQ: After the database commit only
     SS-)MQ: publish parcel.status.changed (notification + webhook queues, WebSocket push)
 
-    alt Validation fails (missing field, bad phone, weight <= 0)
+    alt Validation fails (missing field, bad name or phone, weight <= 0)
         PC-->>FE: 400 error JSON {timestamp, status, code, message, path}
         FE-->>C: Show field errors
     end

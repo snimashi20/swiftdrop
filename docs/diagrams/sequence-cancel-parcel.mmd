@@ -1,0 +1,39 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#EFF6FF','primaryBorderColor':'#1E3A5F','primaryTextColor':'#1E3A5F','lineColor':'#1E3A5F','actorBkg':'#1E3A5F','actorTextColor':'#FFFFFF','actorBorder':'#1E3A5F','signalColor':'#1E3A5F','signalTextColor':'#1E3A5F','noteBkgColor':'#FEF9C3','noteBorderColor':'#EAB308','noteTextColor':'#374151','activationBkgColor':'#EFF6FF','activationBorderColor':'#1E3A5F','sequenceNumberColor':'#FFFFFF','labelBoxBkgColor':'#1E3A5F','labelTextColor':'#FFFFFF','loopTextColor':'#374151','labelBoxBorderColor':'#1E3A5F'}}}%%
+sequenceDiagram
+    autonumber
+    participant C as Customer
+    participant FE as React My parcels page
+    participant CC as ParcelCancelController
+    participant CS as ParcelCancelService
+    participant SS as ParcelStatusService (M5)
+    participant DB as PostgreSQL
+    participant MQ as RabbitMQ
+
+    Note over C,MQ: Step 1 - choose a reason
+    C->>FE: Click Cancel on a Booked parcel
+    FE-->>C: Ask "Why are you cancelling?" (reason list, comment if Other)
+    C->>FE: Pick a reason and click Confirm cancellation
+
+    Note over C,MQ: Step 2 - cancel (one transaction)
+    FE->>CC: POST /api/v1/parcels/{id}/cancel {reason, comment} (JWT, @Valid)
+    CC->>CS: cancelForCustomer(customerId from JWT, id, request)
+    CS->>DB: SELECT parcel owned by this customer
+    DB-->>CS: Parcel (status = CREATED)
+    CS->>DB: UPDATE parcels SET cancel_reason, cancel_comment
+    CS->>SS: changeStatus(id, CANCELLED, "CUSTOMER", customerId, note)
+    SS->>SS: StatusTransitionRules.validate(CREATED, CANCELLED)
+    SS->>DB: UPDATE status, INSERT status_history
+    SS->>SS: raise ParcelStatusChangedEvent
+    CC-->>FE: 200 ParcelDetailResponse (status = CANCELLED, cancelReason)
+    FE-->>C: Card shows Cancelled and the reason
+
+    Note over SS,MQ: After the database commit only
+    SS-)MQ: publish parcel.status.changed (notification + webhook queues, WebSocket push)
+
+    alt Not the owner or unknown parcel
+        CC-->>FE: 404 error JSON
+    else Parcel already picked up
+        CC-->>FE: 409 error JSON (only CREATED can be cancelled)
+    else Reason Other without a comment
+        CC-->>FE: 400 error JSON
+    end
