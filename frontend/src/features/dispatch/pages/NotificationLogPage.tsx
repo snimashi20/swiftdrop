@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Bell, Mail, MessageSquare } from "lucide-react";
 import type { FormEvent } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { notificationsApi } from "../api";
@@ -14,12 +15,6 @@ const PAGE_SIZE = 20;
 type Filters = { channel: "" | NotificationChannel; status: "" | NotificationDeliveryStatus; trackingNumber: string };
 const NO_FILTERS: Filters = { channel: "", status: "", trackingNumber: "" };
 
-const CHANNEL_LABELS: Record<NotificationChannel, string> = {
-  IN_APP: "In-app",
-  EMAIL: "E-mail",
-  SMS: "SMS",
-};
-
 const STATUS_STYLE: Record<NotificationDeliveryStatus, string> = {
   SENT: "border-mint bg-mint/40 text-ink",
   PENDING: "border-ink/15 bg-mist text-ink/60",
@@ -27,7 +22,7 @@ const STATUS_STYLE: Record<NotificationDeliveryStatus, string> = {
 };
 
 const inputClass =
-  "w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10";
+  "w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-ink/30 focus:border-coral focus:ring-4 focus:ring-coral/10";
 
 const formatTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
 
@@ -98,29 +93,30 @@ export function NotificationLogPage() {
   return (
     <div>
       <PageHeader
+        icon={Bell}
+        badges={[{ label: "Admin" }]}
         eyebrow="Admin"
         title="Notification log"
-        text="Every in-app, e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
+        text="Every e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
       />
 
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
 
-      <form onSubmit={applyFilters} className="mb-6 grid gap-3 rounded-2xl border border-ink/10 bg-white p-4 sm:grid-cols-4">
+      <form onSubmit={applyFilters} className="mb-6 grid gap-3 rounded-3xl border border-ink/10 bg-white p-5 sm:grid-cols-4">
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Channel</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Channel</span>
           <select
             className={inputClass}
             value={form.channel}
             onChange={(e) => setForm({ ...form, channel: e.target.value as Filters["channel"] })}
           >
             <option value="">All</option>
-            <option value="IN_APP">In-app</option>
             <option value="EMAIL">E-mail</option>
             <option value="SMS">Text message</option>
           </select>
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Message status</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Message status</span>
           <select
             className={inputClass}
             value={form.status}
@@ -133,7 +129,7 @@ export function NotificationLogPage() {
           </select>
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-ink/60">Tracking number</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Tracking number</span>
           <input
             className={inputClass}
             placeholder="e.g. SD7K2M9QX4LP"
@@ -153,7 +149,7 @@ export function NotificationLogPage() {
         </div>
       </form>
 
-      <section className="rounded-2xl border border-ink/10 bg-white p-5">
+      <section className="rounded-3xl border border-ink/10 bg-white p-6">
         {loading && !data ? (
           <p className="text-sm text-ink/50">Loading notifications…</p>
         ) : entries.length === 0 ? (
@@ -180,14 +176,15 @@ export function NotificationLogPage() {
                 <tbody>
                   {entries.map((entry) => (
                     <tr key={entry.id} className="border-b border-ink/5 align-top last:border-0">
-
                       <td className="px-4 py-3 text-ink/60">{formatTime(entry.createdAt)}</td>
-                      <td className="px-4 py-3 font-semibold">{entry.trackingNumber}</td>
-                      <td className="px-4 py-3">{CHANNEL_LABELS[entry.type] ?? entry.type}</td>
+                      <td className="px-4 py-3 font-mono text-[13px] font-semibold">{entry.trackingNumber}</td>
+                      <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-mist px-2.5 py-1 text-xs font-semibold">
+                          {entry.type === "EMAIL" ? <Mail size={13} /> : <MessageSquare size={13} />}
+                          {entry.type === "EMAIL" ? "E-mail" : "Text message"}
+                        </span></td>
                       <td className="px-4 py-3 font-mono text-xs">{entry.recipient}</td>
                       <td className="px-4 py-3">
-                        {entry.oldStatus ? humanise(entry.oldStatus) : "—"} → <span className="font-semibold">{humanise(entry.newStatus)}</span>
-
+                        {humanise(entry.oldStatus)} → <span className="font-semibold">{humanise(entry.newStatus)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span
