@@ -10,6 +10,7 @@ RUN mvn -q package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 RUN groupadd --system swiftdrop && useradd --system --gid swiftdrop --no-create-home swiftdrop
+RUN mkdir -p /app/uploads/proofs && chown -R swiftdrop:swiftdrop /app
 COPY --from=build /app/target/*.jar app.jar
 USER swiftdrop
 EXPOSE 8080

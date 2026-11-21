@@ -1,8 +1,9 @@
-import { Check, ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Eye, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { approveCourierApplication, fetchCourierApplications, rejectCourierApplication } from "../admin.api";
 import type { CourierApplication, CourierApplicationStatus } from "../types";
+import { Link } from "react-router-dom";
 
 const statusStyle: Record<CourierApplicationStatus, string> = {
   PENDING: "bg-coral/10 text-coral",
@@ -124,10 +125,34 @@ export function CourierApprovalsPage() {
             <p className="mt-1 text-xs text-ink/45">{courier.vehicleType ? `${vehicleLabel[courier.vehicleType] ?? courier.vehicleType} · ` : ""}{courier.licenseNumber ? `Licence ${courier.licenseNumber} · ` : ""}Applied {new Date(courier.createdAt).toLocaleDateString()}</p>
             {courier.rejectionReason && <p className="mt-2 text-sm text-ink/60">Reason: {courier.rejectionReason}</p>}
           </div>
-          {courier.status === "PENDING" && <div className="flex gap-2">
-            <button disabled={busyId === courier.id} onClick={() => void review(courier, "approve")} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Check size={16} />Approve</button>
-            <button disabled={busyId === courier.id} onClick={() => void review(courier, "reject")} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-coral/30 px-4 py-2.5 text-sm font-semibold text-coral disabled:opacity-50"><X size={16} />Reject</button>
-          </div>}
+                    <div className="flex flex-wrap items-center gap-2">
+            {/* Link to Application Details Review Page */}
+            <Link
+              to={`/admin/users/${courier.userId ?? courier.id}/review`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-ink/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink transition hover:bg-mist"
+            >
+              <Eye size={14} className="text-coral" /> Review Details
+            </Link>
+
+            {courier.status === "PENDING" && (
+              <>
+                <button
+                  disabled={busyId === courier.id}
+                  onClick={() => void review(courier, "approve")}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-ink px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  <Check size={14} /> Approve
+                </button>
+                <button
+                  disabled={busyId === courier.id}
+                  onClick={() => void review(courier, "reject")}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-coral/30 px-4 py-2 text-xs font-semibold text-coral disabled:opacity-50"
+                >
+                  <X size={14} /> Reject
+                </button>
+              </>
+            )}
+          </div>
         </article>)}
       </div>}
       <footer className="flex items-center justify-between border-t border-ink/10 px-5 py-3 text-sm text-ink/50"><span>Page {page + 1}{totalPages ? ` of ${totalPages}` : ""}</span><div className="flex gap-2"><button aria-label="Previous page" disabled={page === 0 || loading} onClick={() => setPage((value) => Math.max(0, value - 1))} className="rounded-lg border border-ink/10 p-2 disabled:opacity-40"><ChevronLeft size={16} /></button><button aria-label="Next page" disabled={loading || page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-ink/10 p-2 disabled:opacity-40"><ChevronRight size={16} /></button></div></footer>

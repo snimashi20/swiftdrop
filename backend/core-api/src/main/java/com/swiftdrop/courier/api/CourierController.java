@@ -8,6 +8,7 @@ import com.swiftdrop.courier.service.CourierService;
 import com.swiftdrop.dispatch.domain.CourierProfile;
 import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import com.swiftdrop.security.AuthenticatedUser;
+import com.swiftdrop.dispatch.service.ZoneLookup;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -35,6 +36,7 @@ public class CourierController {
     private final CourierService courierService;
     private final UserRepository userRepository;
     private final CourierProfileRepository courierProfileRepository;
+    private final ZoneLookup zoneLookup;
 
     private record CourierIdentity(Long userId, Long profileId) {}
 
@@ -47,6 +49,22 @@ public class CourierController {
     public ResponseEntity<List<CourierDeliveryResponse>> getTodayDeliveries(Authentication authentication) {
         CourierIdentity courier = resolveCourierIdentity(authentication);
         return ResponseEntity.ok(courierService.getTodayDeliveries(courier.profileId()));
+    }
+
+    @GetMapping("/profile")
+    @Operation(summary = "Get authenticated courier full profile", description = "Retrieves complete onboarding identity, vehicle, license, and zone details for the authenticated courier.")
+    public ResponseEntity<CourierFullProfileResponse> getMyProfile(Authentication authentication) {
+        CourierIdentity courier = resolveCourierIdentity(authentication);
+        User user = userRepository.findById(courier.userId())
+                .orElseThrow(() -> new ForbiddenException("User not found"));
+        CourierProfile profile = courierProfileRepository.findById(courier.profileId())
+                .orElseThrow(() -> new ForbiddenException("Courier profile not found"));
+
+        String zoneName = (zoneLookup != null && profile.getZoneId() != null)
+                ? zoneLookup.districtOf(profile.getZoneId()).map(d -> d + " District").orElse("Zone #" + profile.getZoneId())
+                : "Zone #" + profile.getZoneId();
+
+        return ResponseEntity.ok(CourierFullProfileResponse.from(user, profile, zoneName));
     }
 
     @PatchMapping("/deliveries/{parcelId}/status")

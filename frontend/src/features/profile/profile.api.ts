@@ -66,3 +66,24 @@ export const updateUserAddress = async (addressId: number, data: CreateAddressRe
 export const deleteUserAddress = async (addressId: number): Promise<void> => {
   await api.delete(`/users/addresses/${addressId}`);
 };
+
+export interface CourierFullProfile extends UserProfile {
+  nicNumber?: string;
+  dateOfBirth?: string;
+  residentialAddress?: string;
+  vehicleType?: string;
+  vehiclePlateNumber?: string;
+  drivingLicenseNumber?: string;
+  drivingLicenseExpiry?: string;
+  zoneId?: number;
+  zoneName?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  nicFrontPhotoUrl?: string;
+  nicBackPhotoUrl?: string;
+}
+
+export const fetchCourierProfile = async (): Promise<CourierFullProfile> => {
+  const response = await api.get<CourierFullProfile>("/courier/profile");
+  return response.data;
+};

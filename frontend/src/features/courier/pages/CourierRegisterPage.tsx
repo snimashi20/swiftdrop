@@ -38,32 +38,92 @@ const isFutureDate = (dateStr: string) => {
   return d > today;
 };
 
+// Strict validation regex patterns
+const NAME_REGEX = /^[A-Za-z\s.'-]+$/;
+const PHONE_REGEX = /^(?:0|\+94)7\d{8}$/;
+const NIC_REGEX = /^(?:\d{9}[VvXx]|\d{12})$/;
+const DRIVING_LICENSE_REGEX = /^[A-Za-z0-9\s-]{6,20}$/;
+const VEHICLE_PLATE_REGEX = /^[A-Za-z0-9\s-]{4,15}$/;
+
 const schema = z.object({
-  fullName: z.string().trim().min(2, "Enter your full name as on NIC").max(100),
-  email: z.string().trim().email("Enter a valid email address"),
-  password: z.string().min(8, "Use at least 8 characters"),
-  phoneNumber: z.string().regex(/^(?:0|\+94)7\d{8}$/, "Use 07XXXXXXXX or +947XXXXXXXX"),
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Full name must be at least 2 characters")
+    .max(100, "Full name cannot exceed 100 characters")
+    .regex(NAME_REGEX, "Full name must contain letters only (e.g. Kamal Perera)"),
+
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email address is required")
+    .email("Enter a valid email address (e.g. rider@example.com)"),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+
+  phoneNumber: z
+    .string()
+    .regex(PHONE_REGEX, "Enter a valid 10-digit mobile number (e.g. 07XXXXXXXX or +947XXXXXXXX)"),
+
   nicNumber: z
     .string()
     .trim()
-    .regex(/^(?:\d{9}[VvXx]|\d{12})$/, "Enter a valid NIC (e.g., 991234567V or 200112345678)"),
+    .regex(NIC_REGEX, "Enter a valid NIC (e.g. 991234567V or 200112345678)"),
+
   dateOfBirth: z
     .string()
     .min(1, "Date of birth is required")
-    .refine(isAtLeast18, "You must be at least 18 years old to register as a courier"),
-  residentialAddress: z.string().trim().min(5, "Enter your full residential address").max(300),
-  vehicleType: z.enum(["BICYCLE", "MOTORBIKE", "THREE_WHEELER", "CAR", "VAN"] as const),
-  vehiclePlateNumber: z.string().trim().min(3, "Enter your vehicle registration plate (e.g., WP BEX-1234)").max(30),
-  drivingLicenseNumber: z.string().trim().min(4, "Enter your driving license number").max(50),
+    .refine(isAtLeast18, "Courier must be at least 18 years old to apply"),
+
+  residentialAddress: z
+    .string()
+    .trim()
+    .min(5, "Enter a full residential address (e.g. No. 45, Galle Road, Colombo)")
+    .max(300),
+
+  vehicleType: z.enum(["BICYCLE", "MOTORBIKE", "THREE_WHEELER", "CAR", "VAN"] as const, {
+    errorMap: () => ({ message: "Select your vehicle type" }),
+  }),
+
+  vehiclePlateNumber: z
+    .string()
+    .trim()
+    .min(3, "Vehicle plate must be at least 3 characters")
+    .max(30)
+    .regex(VEHICLE_PLATE_REGEX, "Enter a valid plate number (e.g. WP BEX-1234, CAB-1234, or 65-1234)"),
+
+  drivingLicenseNumber: z
+    .string()
+    .trim()
+    .min(4, "Driving license must be at least 4 characters")
+    .max(50)
+    .regex(DRIVING_LICENSE_REGEX, "Enter a valid driving license (e.g. B-1234567 or 12345678)"),
+
   drivingLicenseExpiry: z
     .string()
     .min(1, "Driving license expiry date is required")
-    .refine(isFutureDate, "Driving license must be valid and not expired"),
-  zoneId: z.coerce.number().int().positive("Select an operating delivery zone"),
-  emergencyContactName: z.string().trim().min(2, "Enter an emergency contact name").max(100),
-  emergencyContactPhone: z.string().regex(/^(?:0|\+94)7\d{8}$/, "Use 07XXXXXXXX or +947XXXXXXXX"),
+    .refine(isFutureDate, "Driving license must not be expired (must be a future date)"),
+
+  zoneId: z.coerce
+    .number({ invalid_type_error: "Select an operating delivery zone" })
+    .int()
+    .positive("Select an operating delivery zone from the dropdown list"),
+
+  emergencyContactName: z
+    .string()
+    .trim()
+    .min(2, "Emergency contact name must be at least 2 characters")
+    .max(100)
+    .regex(NAME_REGEX, "Emergency contact name must contain letters only (e.g. Nimal Perera)"),
+
+  emergencyContactPhone: z
+    .string()
+    .regex(PHONE_REGEX, "Enter a valid 10-digit mobile number (e.g. 07XXXXXXXX or +947XXXXXXXX)"),
+
   declarationAccepted: z.literal(true, {
-    errorMap: () => ({ message: "You must confirm the background and safety declaration" }),
+    errorMap: () => ({ message: "You must check the confirmation and safety declaration" }),
   }),
 });
 
@@ -173,27 +233,25 @@ export function CourierRegisterPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
-    setServerError("");
-    let missingFile = false;
+  // Validate NIC photos explicitly
+  if (!nicFront) {
+    setNicFrontError("Please upload the front photo of your NIC.");
+    return;
+  }
+  if (!nicBack) {
+    setNicBackError("Please upload the back photo of your NIC.");
+    return;
+  }
 
-    if (!nicFront) {
-      setNicFrontError("Please upload the front side of your NIC.");
-      missingFile = true;
-    }
-    if (!nicBack) {
-      setNicBackError("Please upload the back side of your NIC.");
-      missingFile = true;
-    }
-    if (missingFile || !nicFront || !nicBack) return;
-
-    try {
-      const { declarationAccepted: _ignored, ...payload } = values;
-      await registerCourier(payload, nicFront, nicBack);
-      setSubmitted(true);
-    } catch (err) {
-      setServerError(getApiErrorMessage(err, "We could not submit your courier application."));
-    }
-  };
+  setServerError("");
+  try {
+    const { declarationAccepted: _ignored, ...payload } = values;
+    await registerCourier(payload, nicFront, nicBack);
+    setSubmitted(true);
+  } catch (err) {
+    setServerError(getApiErrorMessage(err, "We could not submit your courier application."));
+  }
+};
 
   const canSubmit = isValid && Boolean(nicFront) && Boolean(nicBack) && !isSubmitting;
 
@@ -444,11 +502,15 @@ export function CourierRegisterPage() {
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/70">
                       Operating Delivery Zone (Country-Wide — {zones.length} Districts) *
                     </label>
-                    <select
+                                        <select
                       {...register("zoneId")}
                       disabled={zonesLoading || zones.length === 0}
                       defaultValue=""
-                      className="w-full rounded-xl border border-ink/15 bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none focus:border-coral focus:ring-2 focus:ring-coral/20 disabled:bg-mist"
+                      className={`w-full rounded-xl border bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none transition ${
+                        errors.zoneId
+                          ? "border-rose-500 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15"
+                          : "border-ink/15 focus:border-coral focus:ring-2 focus:ring-coral/20"
+                      } disabled:bg-mist`}
                     >
                       <option value="" disabled>
                         {zonesLoading
@@ -461,9 +523,10 @@ export function CourierRegisterPage() {
                         </option>
                       ))}
                     </select>
-                    {zonesError && <p className="mt-1 text-xs text-coral">{zonesError}</p>}
                     {errors.zoneId && (
-                      <p className="mt-1 text-xs text-coral">{errors.zoneId.message}</p>
+                      <p className="mt-1 text-xs font-semibold text-rose-600">
+                        ⚠️ {errors.zoneId.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -518,8 +581,7 @@ export function CourierRegisterPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-coral px-5 py-4 font-semibold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-coral px-5 py-4 font-semibold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-50">
                 {isSubmitting ? "Uploading documents & submitting..." : "Submit Courier Application"}
                 <ArrowRight size={17} />
               </button>

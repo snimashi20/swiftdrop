@@ -45,8 +45,7 @@ public class CourierOnboardingController {
     }
 
     @GetMapping("/documents/{category}/{filename}")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Fetch courier KYC document image", description = "Admin-only endpoint to securely view uploaded NIC front/back photos during approval review.")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COURIER')")    @Operation(summary = "Fetch courier KYC document image", description = "Admin-only endpoint to securely view uploaded NIC front/back photos during approval review.")
     public ResponseEntity<Resource> getDocument(
             @PathVariable String category,
             @PathVariable String filename) {
