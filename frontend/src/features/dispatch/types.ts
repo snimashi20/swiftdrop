@@ -76,7 +76,9 @@ export type CourierCandidate = { userId: number; fullName: string | null };
 export type ZoneOption = { id: number; name: string; district: string };
 
 // Contract of GET /api/v1/notifications/admin (notification-service, ADMIN and DISPATCHER).
-export type NotificationChannel = "EMAIL" | "SMS";
+// IN_APP has no gateway behind it: the log row itself is the notification the feed serves.
+// Only a customer is reachable by EMAIL or SMS; every other role is in-app only.
+export type NotificationChannel = "IN_APP" | "EMAIL" | "SMS";
 export type NotificationDeliveryStatus = "PENDING" | "SENT" | "FAILED";
 
 export type NotificationEntry = {
@@ -85,6 +87,8 @@ export type NotificationEntry = {
   trackingNumber: string;
   parcelId: number;
   customerId: number | null;
+  recipientUserId: number | null;
+  recipientRole: string | null;
   type: NotificationChannel; // the API calls the channel "type"
   recipient: string; // already masked by the notification service
   oldStatus: string | null;
@@ -105,7 +109,8 @@ export type NotificationPage = {
 };
 
 // Contract of GET /api/v1/notifications/me (notification-service, any signed-in user).
-// One item per status change, even when it went out by both e-mail and SMS.
+// One item per status change, even when it went out on several channels. The message is already
+// worded for the reader's role, so the page renders it as given.
 export type MyNotification = {
   id: number;
   parcelId: number;

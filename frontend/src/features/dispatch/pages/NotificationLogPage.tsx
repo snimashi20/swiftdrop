@@ -14,6 +14,12 @@ const PAGE_SIZE = 20;
 type Filters = { channel: "" | NotificationChannel; status: "" | NotificationDeliveryStatus; trackingNumber: string };
 const NO_FILTERS: Filters = { channel: "", status: "", trackingNumber: "" };
 
+const CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  IN_APP: "In-app",
+  EMAIL: "E-mail",
+  SMS: "SMS",
+};
+
 const STATUS_STYLE: Record<NotificationDeliveryStatus, string> = {
   SENT: "bg-mint text-ink",
   PENDING: "border border-ink/15 bg-mist text-ink/60",
@@ -76,7 +82,7 @@ export function NotificationLogPage() {
       <PageHeader
         eyebrow="Admin"
         title="Notification log"
-        text="Every e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
+        text="Every in-app, e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
       />
 
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
@@ -90,6 +96,7 @@ export function NotificationLogPage() {
             onChange={(e) => setForm({ ...form, channel: e.target.value as Filters["channel"] })}
           >
             <option value="">All</option>
+            <option value="IN_APP">In-app</option>
             <option value="EMAIL">E-mail</option>
             <option value="SMS">SMS</option>
           </select>
@@ -157,7 +164,7 @@ export function NotificationLogPage() {
                     <tr key={entry.id} className="border-b border-ink/5 align-top last:border-0">
                       <td className="py-3 pr-4 text-ink/60">{formatTime(entry.createdAt)}</td>
                       <td className="py-3 pr-4 font-semibold">{entry.trackingNumber}</td>
-                      <td className="py-3 pr-4">{entry.type === "EMAIL" ? "E-mail" : "SMS"}</td>
+                      <td className="py-3 pr-4">{CHANNEL_LABELS[entry.type] ?? entry.type}</td>
                       <td className="py-3 pr-4 font-mono text-xs">{entry.recipient}</td>
                       <td className="py-3 pr-4">
                         {entry.oldStatus ?? "—"} → <span className="font-semibold">{entry.newStatus}</span>

@@ -1,0 +1,215 @@
+package com.swiftdrop.notification.service;
+
+import com.swiftdrop.notification.event.ParcelStatusChangedEvent;
+import jakarta.mail.Address;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.MailPreparationException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.context.IContext;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/** The e-mail channel: template rendering, the MIME message it builds, and build failures. */
+@ExtendWith(MockitoExtension.class)
+class EmailNotifierTest {
+
+    private static final String FROM = "no-reply@swiftdrop.local";
+    private static final String FROM_NAME = "SwiftDrop";
+    private static final String TO = "sithmi@example.com";
+
+    @Mock JavaMailSender mailSender;
+    @Mock ITemplateEngine templateEngine;
+
+    EmailNotifier notifier;
+
+    @BeforeEach
+    void setUp() {
+        notifier = new EmailNotifier(mailSender, templateEngine, FROM, FROM_NAME);
+    }
+
+    @Test
+    @DisplayName("the subject carries the tracking number and the new status")
+    void subjectNamesTrackingNumberAndNewStatus() {
+        assertThat(EmailNotifier.subject(event("PICKED_UP", "IN_TRANSIT")))
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now in transit");
+    }
+
+    @Test
+    @DisplayName("the subject is the same standard line for a new parcel and for a cancellation")
+    void subjectHasNoSpecialCaseForCreationOrCancellation() {
+        assertThat(EmailNotifier.subject(event(null, "CREATED")))
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now created");
+        assertThat(EmailNotifier.subject(event("IN_TRANSIT", "CANCELLED")))
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now cancelled");
+    }
+
+    @Test
+    @DisplayName("a blank display name falls back to the bare address rather than an empty name")
+    void blankDisplayNameFallsBackToTheAddress() throws Exception {
+        EmailNotifier unnamed = new EmailNotifier(mailSender, templateEngine, FROM, "  ");
+        MimeMessage message = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>x</p>");
+
+        unnamed.send(TO, event("PICKED_UP", "IN_TRANSIT"));
+
+        assertThat(message.getFrom()[0].toString()).isEqualTo(FROM);
+        assertThat(((InternetAddress) message.getFrom()[0]).getPersonal()).isNull();
+    }
+
+    @Test
+    @DisplayName("a failure subject says the delivery did not happen instead of naming the status")
+    void failureSubjectDescribesWhatHappened() {
+        assertThat(EmailNotifier.subject(failure("RECIPIENT_NOT_AVAILABLE")))
+                .isEqualTo("SwiftDrop: we could not deliver parcel SD7K2M9QX4LP");
+        // The subject stays the same whether or not a reason came through; the reason is in the body.
+        assertThat(EmailNotifier.subject(failure(null)))
+                .isEqualTo("SwiftDrop: we could not deliver parcel SD7K2M9QX4LP");
+    }
+
+    @Test
+    @DisplayName("the template is given the reason as a sentence and the statuses as words")
+    void templateGetsReadableStatusesAndTheFailureReason() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>x</p>");
+
+        notifier.send("sithmi@example.com", failure("WRONG_ADDRESS"));
+
+        ArgumentCaptor<IContext> context = ArgumentCaptor.captor();
+        verify(templateEngine).process(eq("status-changed-email"), context.capture());
+        IContext rendered = context.getValue();
+        assertThat(rendered.getVariable("failureReason"))
+                .isEqualTo("The delivery address could not be found.");
+        assertThat(rendered.getVariable("newStatusText")).isEqualTo("failed");
+        assertThat(rendered.getVariable("oldStatusText")).isEqualTo("out for delivery");
+        // The raw codes stay available, because the template branches on them.
+        assertThat(rendered.getVariable("newStatus")).isEqualTo("FAILED");
+    }
+
+    @Test
+    @DisplayName("a status change that is not a failure passes no reason to the template")
+    void nonFailureHasNoReason() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>x</p>");
+
+        notifier.send("sithmi@example.com", event("PICKED_UP", "IN_TRANSIT"));
+
+        ArgumentCaptor<IContext> context = ArgumentCaptor.captor();
+        verify(templateEngine).process(eq("status-changed-email"), context.capture());
+        assertThat(context.getValue().getVariable("failureReason")).isNull();
+    }
+
+    @Test
+    @DisplayName("a valid recipient gets an HTML mail with the rendered template, from, to and subject set")
+    void sendsRenderedHtmlToTheRecipient() throws Exception {
+        MimeMessage message = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class)))
+                .thenReturn("<p>Parcel SD7K2M9QX4LP is now in transit</p>");
+
+        notifier.send(TO, event("PICKED_UP", "IN_TRANSIT"));
+
+        verify(mailSender).send(message);
+        // The display name is what a mail client shows in place of the address.
+        assertThat(message.getFrom()[0].toString()).isEqualTo(FROM_NAME + " <" + FROM + ">");
+        assertThat(((InternetAddress) message.getFrom()[0]).getAddress()).isEqualTo(FROM);
+        assertThat(((InternetAddress) message.getFrom()[0]).getPersonal()).isEqualTo(FROM_NAME);
+        assertThat(message.getAllRecipients()[0].toString()).isEqualTo(TO);
+        assertThat(message.getSubject()).isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now in transit");
+        // The Content-Type header is only written on saveChanges(), so read the body's own handler.
+        assertThat(message.getDataHandler().getContentType()).contains("text/html");
+        assertThat((String) message.getContent()).contains("Parcel SD7K2M9QX4LP is now in transit");
+    }
+
+    @Test
+    @DisplayName("the template receives the tracking number, both statuses and the note")
+    void passesEventFieldsToTheTemplate() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>hi</p>");
+
+        notifier.send(TO, event("PICKED_UP", "IN_TRANSIT"));
+
+        ArgumentCaptor<IContext> context = ArgumentCaptor.captor();
+        verify(templateEngine).process(eq("status-changed-email"), context.capture());
+        assertThat(context.getValue().getVariable("trackingNumber")).isEqualTo("SD7K2M9QX4LP");
+        assertThat(context.getValue().getVariable("oldStatus")).isEqualTo("PICKED_UP");
+        assertThat(context.getValue().getVariable("newStatus")).isEqualTo("IN_TRANSIT");
+        assertThat(context.getValue().getVariable("note")).isEqualTo("On the way");
+    }
+
+    @Test
+    @DisplayName("a first event passes a null oldStatus to the template instead of failing")
+    void passesNullOldStatusToTheTemplate() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>hi</p>");
+
+        notifier.send(TO, event(null, "CREATED"));
+
+        ArgumentCaptor<Context> context = ArgumentCaptor.captor();
+        verify(templateEngine).process(eq("status-changed-email"), context.capture());
+        assertThat(context.getValue().getVariable("oldStatus")).isNull();
+        assertThat(context.getValue().getVariable("newStatus")).isEqualTo("CREATED");
+    }
+
+    @Test
+    @DisplayName("an unparseable recipient address becomes a MailPreparationException and nothing is sent")
+    void invalidRecipientAddressIsRejectedWithoutSending() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>hi</p>");
+
+        assertThatThrownBy(() -> notifier.send("<no-closing-bracket@example.com", event("PICKED_UP", "IN_TRANSIT")))
+                .isInstanceOf(MailPreparationException.class)
+                .hasMessageContaining("Could not build status email")
+                .hasCauseInstanceOf(MessagingException.class);
+
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("a MIME failure while building the message becomes a MailPreparationException")
+    void mimeFailureBecomesMailPreparationException() throws Exception {
+        MimeMessage broken = mock(MimeMessage.class);
+        when(mailSender.createMimeMessage()).thenReturn(broken);
+        when(templateEngine.process(eq("status-changed-email"), any(IContext.class))).thenReturn("<p>hi</p>");
+        doThrow(new MessagingException("header rejected")).when(broken).setFrom(any(Address.class));
+
+        assertThatThrownBy(() -> notifier.send(TO, event("PICKED_UP", "IN_TRANSIT")))
+                .isInstanceOf(MailPreparationException.class)
+                .hasCauseInstanceOf(MessagingException.class);
+
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    private static ParcelStatusChangedEvent event(String oldStatus, String newStatus) {
+        return new ParcelStatusChangedEvent(UUID.randomUUID(), 42L, "SD7K2M9QX4LP", oldStatus, newStatus,
+                Instant.parse("2026-11-14T10:15:30Z"), "COURIER", 7L, 99L, "On the way");
+    }
+
+    private static ParcelStatusChangedEvent failure(String reason) {
+        return new ParcelStatusChangedEvent(UUID.randomUUID(), 42L, "SD7K2M9QX4LP", "OUT_FOR_DELIVERY",
+                "FAILED", Instant.parse("2026-11-14T10:15:30Z"), "COURIER", 7L, 99L, "Nobody home", reason);
+    }
+}
