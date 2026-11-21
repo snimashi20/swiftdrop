@@ -4,8 +4,11 @@ import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
+import com.swiftdrop.courier.domain.CourierApplication;
+import com.swiftdrop.courier.domain.CourierApplicationStatus;
 import com.swiftdrop.courier.dto.CourierRegistrationResponse;
 import com.swiftdrop.courier.dto.RegisterCourierRequest;
+import com.swiftdrop.courier.repository.CourierApplicationRepository;
 import com.swiftdrop.dispatch.domain.CourierProfile;
 import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import com.swiftdrop.dispatch.service.ZoneLookup;
@@ -26,6 +29,7 @@ public class CourierOnboardingService {
     private final UserRepository userRepository;
     private final AuthService authService;
     private final CourierProfileRepository courierProfileRepository;
+    private final CourierApplicationRepository courierApplicationRepository;
     private final ZoneLookup zoneLookup;
     private final FileStorageService fileStorageService;
 
@@ -91,6 +95,20 @@ public class CourierOnboardingService {
                 .build();
 
         CourierProfile savedProfile = courierProfileRepository.save(profile);
+
+        // Without this row the rider never appears in the admin courier approval queue,
+        // which reads courier_applications, so their account could never be activated.
+        CourierApplication application = CourierApplication.builder()
+                .userId(savedUser.getId())
+                .fullName(savedUser.getFullName())
+                .contactEmail(savedUser.getEmail())
+                .contactPhone(savedUser.getPhoneNumber())
+                .licenseNumber(savedProfile.getDrivingLicenseNumber())
+                .vehicleType(savedProfile.getVehicleType())
+                .preferredZone(zoneLookup.districtOf(savedProfile.getZoneId()).orElse(null))
+                .status(CourierApplicationStatus.PENDING)
+                .build();
+        courierApplicationRepository.save(application);
 
         return CourierRegistrationResponse.builder()
                 .userId(savedUser.getId())

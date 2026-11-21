@@ -9,6 +9,7 @@ import com.swiftdrop.courier.domain.CourierApplicationStatus;
 import com.swiftdrop.courier.dto.CourierApplicationMapper;
 import com.swiftdrop.courier.dto.CourierApplicationResponseDto;
 import com.swiftdrop.courier.repository.CourierApplicationRepository;
+import com.swiftdrop.dispatch.repository.CourierProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,12 @@ import java.time.Instant;
 
 /**
  * Admin review of courier (rider) applications. Approving activates the linked
- * user account; rejecting disables it, exactly as the merchant flow does.
+ * user account and their courier profile; rejecting disables both, exactly as the
+ * merchant flow does.
+ *
+ * <p>Both halves matter: {@code DispatchService.assign} refuses any courier whose
+ * profile is inactive, so activating the user alone would leave an approved rider
+ * that no dispatcher can hand work to.
  */
 @Slf4j
 @Service
@@ -31,6 +37,7 @@ public class CourierApplicationService {
     private final UserRepository userRepository;
     private final CourierApplicationRepository courierApplicationRepository;
     private final CourierApplicationMapper courierApplicationMapper;
+    private final CourierProfileRepository courierProfileRepository;
 
     @Transactional(readOnly = true)
     public Page<CourierApplicationResponseDto> listForAdmin(CourierApplicationStatus status, Pageable pageable) {
@@ -60,6 +67,7 @@ public class CourierApplicationService {
                 user.setEnabled(true);
                 userRepository.save(user);
             });
+            setProfileActive(application.getUserId(), true);
         }
 
         log.info("Approved courier application with id: {}", applicationId);
@@ -79,10 +87,23 @@ public class CourierApplicationService {
                 user.setEnabled(false);
                 userRepository.save(user);
             });
+            setProfileActive(application.getUserId(), false);
         }
 
         log.info("Rejected courier application with id: {}", applicationId);
         return courierApplicationMapper.toDto(courierApplicationRepository.save(application));
+    }
+
+    /**
+     * Keeps the courier profile flag in step with the review decision, so a rider the
+     * admin just approved is immediately assignable by a dispatcher. Mirrors what
+     * {@code AdminUserController.approveUser} already does for the same rider.
+     */
+    private void setProfileActive(Long userId, boolean active) {
+        courierProfileRepository.findByUserId(userId).ifPresent(profile -> {
+            profile.setActive(active);
+            courierProfileRepository.save(profile);
+        });
     }
 
     private CourierApplication getPendingApplication(Long applicationId) {
