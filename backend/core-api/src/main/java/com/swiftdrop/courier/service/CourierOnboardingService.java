@@ -109,7 +109,6 @@ public class CourierOnboardingService {
                 .status(CourierApplicationStatus.PENDING)
                 .build();
         courierApplicationRepository.save(application);
-
         return CourierRegistrationResponse.builder()
                 .userId(savedUser.getId())
                 .courierProfileId(savedProfile.getId())
