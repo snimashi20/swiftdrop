@@ -47,6 +47,8 @@ export function DispatcherDashboardPage() {
   return (
     <div>
       <PageHeader
+        icon={Truck}
+        badges={[{ label: "Dispatcher" }]}
         eyebrow="Operations desk"
         title="Fleet & dispatch"
         text="Choose who delivers each parcel, see how busy your couriers are, and follow the delivery numbers."
