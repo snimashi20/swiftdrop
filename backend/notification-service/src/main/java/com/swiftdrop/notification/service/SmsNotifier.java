@@ -10,7 +10,14 @@ import org.springframework.stereotype.Component;
 public class SmsNotifier {
 
     public static String text(ParcelStatusChangedEvent event) {
-        return "SwiftDrop: parcel " + event.trackingNumber() + " is now " + event.newStatus();
+        if ("FAILED".equalsIgnoreCase(event.newStatus())) {
+            String reason = StatusText.shortFailureReason(event.failureReason());
+            return "SwiftDrop: we could not deliver parcel " + event.trackingNumber()
+                    + (reason == null ? "." : " (" + reason + ").")
+                    + " We will be in touch to rearrange.";
+        }
+        return "SwiftDrop: parcel " + event.trackingNumber() + " is now "
+                + StatusText.readable(event.newStatus()) + ".";
     }
 
     public void send(String phoneNumber, ParcelStatusChangedEvent event) {
