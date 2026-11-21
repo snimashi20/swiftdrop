@@ -88,7 +88,9 @@ export function App() {
             <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminProfilePage />} />
             </Route>
-            <Route path="/webhooks" element={<WebhookSettingsPage />} />
+            <Route path="/webhooks" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<WebhookSettingsPage />} />
+            </Route>
             <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
               <Route index element={<TodayDeliveriesPage />} />
             </Route>

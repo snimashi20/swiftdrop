@@ -8,115 +8,23 @@ export const WebhookSettingsPage: React.FC = () => {
   const [endpoint, setEndpoint] = useState<WebhookEndpoint | null>(null);
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load initial data with fallback demo data for standalone dev
   const loadData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const ep = await webhookApi.getEndpoint();
-      setEndpoint(ep);
-    } catch {
-      // Graceful fallback during initial skeleton phase
-      setEndpoint({
-        id: 1,
-        merchantId: 101,
-        url: 'http://localhost:8085/api/webhooks/orders',
-        secret: 'whsec_7f9b2d3c1a8e4b5f90a1b2c3d4e5f6a7',
-        active: true,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    try {
-      const del = await webhookApi.getDeliveries();
-      setDeliveries(del.content);
-    } catch {
-      // Graceful demo seed logs for testing
-      setDeliveries([
-        {
-          id: 101,
-          endpointId: 1,
-          eventId: 'evt_a89f1092-23bf',
-          trackingNumber: 'SD7K2M9QX4LP',
-          payload: JSON.stringify({
-            eventId: 'evt_a89f1092-23bf',
-            parcelId: 42,
-            trackingNumber: 'SD7K2M9QX4LP',
-            oldStatus: null,
-            newStatus: 'CREATED',
-            changedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-            changedByRole: 'CUSTOMER',
-            note: 'Initial parcel creation'
-          }),
-          status: 'SUCCESS',
-          attempts: 1,
-          lastAttemptAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        },
-        {
-          id: 102,
-          endpointId: 1,
-          eventId: 'evt_b44f2011-88aa',
-          trackingNumber: 'SD8M1N9QX2KL',
-          payload: JSON.stringify({
-            eventId: 'evt_b44f2011-88aa',
-            parcelId: 46,
-            trackingNumber: 'SD8M1N9QX2KL',
-            oldStatus: 'CREATED',
-            newStatus: 'CANCELLED',
-            changedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-            changedByRole: 'CUSTOMER',
-            note: 'Order cancelled before courier dispatch'
-          }),
-          status: 'SUCCESS',
-          attempts: 1,
-          lastAttemptAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-          createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        },
-        {
-          id: 103,
-          endpointId: 1,
-          eventId: 'evt_c31a7741-98de',
-          trackingNumber: 'SD3X9L2MA1PQ',
-          payload: JSON.stringify({
-            eventId: 'evt_c31a7741-98de',
-            parcelId: 43,
-            trackingNumber: 'SD3X9L2MA1PQ',
-            oldStatus: 'IN_TRANSIT',
-            newStatus: 'OUT_FOR_DELIVERY',
-            changedAt: new Date().toISOString(),
-            changedByRole: 'COURIER',
-            note: 'Out with courier'
-          }),
-          status: 'RETRYING',
-          attempts: 2,
-          lastError: 'HTTP 500: Simulated Outage in Mock Merchant Store',
-          lastAttemptAt: new Date(Date.now() - 1000 * 25).toISOString(),
-          nextRetryAt: new Date(Date.now() + 1000 * 35).toISOString(),
-          createdAt: new Date(Date.now() - 1000 * 60).toISOString(),
-        },
-        {
-          id: 103,
-          endpointId: 1,
-          eventId: 'evt_e992bb10-54cc',
-          trackingNumber: 'SD9K1P8LA3YZ',
-          payload: JSON.stringify({
-            eventId: 'evt_e992bb10-54cc',
-            parcelId: 44,
-            trackingNumber: 'SD9K1P8LA3YZ',
-            oldStatus: 'CREATED',
-            newStatus: 'PICKED_UP',
-            changedAt: new Date().toISOString(),
-            changedByRole: 'COURIER',
-          }),
-          status: 'FAILED',
-          attempts: 5,
-          lastError: 'Connection refused: http://offline-store.local:8085',
-          lastAttemptAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-          createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        }
+      const [ep, del] = await Promise.all([
+        webhookApi.getEndpoint(),
+        webhookApi.getDeliveries()
       ]);
+      setEndpoint(ep);
+      setDeliveries(del?.content || []);
+    } catch (err: any) {
+      console.error('Failed to load webhook configuration', err);
+      const errMsg = err?.response?.data?.message || err?.message || "Couldn't load your webhook settings. Please make sure you are signed in as a registered merchant or verify backend connectivity.";
+      setLoadError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -131,24 +39,20 @@ export const WebhookSettingsPage: React.FC = () => {
       const updated = await webhookApi.updateEndpoint({ url, active });
       setEndpoint(updated);
       setMessage({ type: 'success', text: 'Webhook endpoint updated successfully!' });
-    } catch {
-      // Local state update fallback
-      if (endpoint) {
-        setEndpoint({ ...endpoint, url, active });
-      }
-      setMessage({ type: 'success', text: 'Webhook endpoint saved.' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to update webhook endpoint.' });
     }
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => setMessage(null), 4000);
   };
 
   const handleRegenerateSecret = async () => {
     try {
       const res = await webhookApi.regenerateSecret();
+      setMessage({ type: 'success', text: 'Webhook secret regenerated successfully.' });
       return res.secret;
-    } catch {
-      const sample = 'whsec_' + Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-      return sample;
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to regenerate webhook secret.' });
+      throw err;
     }
   };
 
@@ -161,12 +65,10 @@ export const WebhookSettingsPage: React.FC = () => {
       await webhookApi.resendDelivery(deliveryId);
       setMessage({ type: 'success', text: `Resend request queued for delivery #${deliveryId}` });
       await loadData();
-    } catch {
-      // Simulate state update in UI
-      setDeliveries(prev => prev.map(d => d.id === deliveryId ? { ...d, status: 'RETRYING', attempts: 1, lastError: 'Re-dispatched manually' } : d));
-      setMessage({ type: 'success', text: `Delivery #${deliveryId} marked for immediate re-dispatch.` });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.response?.data?.message || `Failed to re-dispatch delivery #${deliveryId}.` });
     }
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => setMessage(null), 4000);
   };
 
   return (
@@ -193,6 +95,22 @@ export const WebhookSettingsPage: React.FC = () => {
         }`}>
           <span>{message.text}</span>
           <button onClick={() => setMessage(null)} className="text-xs font-bold underline ml-4">&times;</button>
+        </div>
+      )}
+
+      {/* Load Error Banner */}
+      {loadError && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl text-sm mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚠️</span>
+            <span className="font-medium">{loadError}</span>
+          </div>
+          <button
+            onClick={loadData}
+            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold self-start sm:self-auto transition-colors whitespace-nowrap"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
