@@ -7,6 +7,9 @@ import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.dto.auth.AuthResponse;
 import com.swiftdrop.dto.auth.LoginRequest;
 import com.swiftdrop.dto.auth.RegisterRequest;
+import com.swiftdrop.courier.domain.CourierApplication;
+import com.swiftdrop.courier.domain.CourierApplicationStatus;
+import com.swiftdrop.courier.repository.CourierApplicationRepository;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.repository.MerchantRepository;
@@ -37,12 +40,21 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
     private final MerchantRepository merchantRepository;
+    private final CourierApplicationRepository courierApplicationRepository;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
                        AuthenticationManager authenticationManager) {
-        this(userRepository, passwordEncoder, tokenProvider, authenticationManager, null);
+        this(userRepository, passwordEncoder, tokenProvider, authenticationManager, null, null);
+    }
+
+    public AuthService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtTokenProvider tokenProvider,
+                       AuthenticationManager authenticationManager,
+                       MerchantRepository merchantRepository) {
+        this(userRepository, passwordEncoder, tokenProvider, authenticationManager, merchantRepository, null);
     }
 
     @Autowired
@@ -50,12 +62,14 @@ public class AuthService {
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
                        AuthenticationManager authenticationManager,
-                       @Autowired(required = false) MerchantRepository merchantRepository) {
+                       @Autowired(required = false) MerchantRepository merchantRepository,
+                       @Autowired(required = false) CourierApplicationRepository courierApplicationRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.authenticationManager = authenticationManager;
         this.merchantRepository = merchantRepository;
+        this.courierApplicationRepository = courierApplicationRepository;
     }
 
     @Transactional
@@ -68,6 +82,8 @@ public class AuthService {
 
         if ("MERCHANT".equalsIgnoreCase(normalizedRole)) {
             createMerchantProfileIfMissing(saved);
+        } else if ("COURIER".equalsIgnoreCase(normalizedRole)) {
+            createCourierApplicationIfMissing(saved);
         }
 
         String token = tokenProvider.generateToken(saved.getId(), saved.getEmail(), Set.of(saved.getRole()), saved.getStatus());
@@ -143,10 +159,28 @@ public class AuthService {
 
         if ("MERCHANT".equalsIgnoreCase(normalizedRole)) {
             createMerchantProfileIfMissing(saved);
+        } else if ("COURIER".equalsIgnoreCase(normalizedRole)) {
+            createCourierApplicationIfMissing(saved);
         }
 
         String token = tokenProvider.generateToken(saved.getId(), saved.getEmail(), Set.of(saved.getRole()), saved.getStatus());
         return response(saved, token);
+    }
+
+    private void createCourierApplicationIfMissing(User user) {
+        if (courierApplicationRepository == null) return;
+        if (courierApplicationRepository.findByUserId(user.getId()).isEmpty()) {
+            CourierApplication application = CourierApplication.builder()
+                    .userId(user.getId())
+                    .fullName(user.getFullName() != null && !user.getFullName().isBlank()
+                            ? user.getFullName()
+                            : user.getEmail())
+                    .contactEmail(user.getEmail())
+                    .contactPhone(user.getPhoneNumber())
+                    .status(CourierApplicationStatus.PENDING)
+                    .build();
+            courierApplicationRepository.save(application);
+        }
     }
 
     private void createMerchantProfileIfMissing(User user) {

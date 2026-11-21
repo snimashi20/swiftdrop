@@ -25,8 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * The notifications API of the notification service.
  *
- * <p>Every endpoint needs the Bearer token core-api issues. A customer only ever sees their own
- * rows, because the customer id comes from the token and never from a parameter.
+ * <p>Every endpoint needs the Bearer token core-api issues. The feed endpoints serve every role —
+ * customer, merchant, courier, dispatcher and admin — and a user only ever sees their own rows,
+ * because the recipient id comes from the token and never from a parameter.
  */
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -58,7 +59,10 @@ public class NotificationController {
         return notifications.markAllRead(user.id());
     }
 
-    /** Marks one notification of the signed-in user as read; 404 if it belongs to someone else. */
+    /**
+     * Marks one notification of the signed-in user as read; 404 if it belongs to someone else, even
+     * when it is another recipient's copy of the same status change.
+     */
     @PostMapping("/{id}/read")
     public MarkedReadResponse markRead(@AuthenticationPrincipal AuthenticatedUser user,
                                        @PathVariable Long id) {

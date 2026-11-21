@@ -7,7 +7,7 @@
         <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" value="SwiftDrop — Customer Use Case Diagram" vertex="1">
           <mxGeometry height="50" width="1000" x="200" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontFamily=Helvetica;fontColor=#6B7280;" value="Author: Isuri (M3) · Date: 2026-10-31 · Version: 1.0" vertex="1">
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontFamily=Helvetica;fontColor=#6B7280;" value="Author: Isuri (M3) · Date: 2026-11-21 · Version: 1.1" vertex="1">
           <mxGeometry height="28" width="1000" x="200" y="72" as="geometry" />
         </mxCell>
         <mxCell id="sysbox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;verticalAlign=top;fontSize=13;fontStyle=1;fontFamily=Helvetica;fontColor=#1E3A5F;" value="SwiftDrop system" vertex="1">
@@ -28,8 +28,8 @@
         <mxCell id="google" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Log in with Google" vertex="1">
           <mxGeometry height="50" width="246" x="366" y="461" as="geometry" />
         </mxCell>
-        <mxCell id="book" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Book a delivery" vertex="1">
-          <mxGeometry height="50" width="209" x="384" y="376" as="geometry" />
+        <mxCell id="book" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Book a delivery (item type, who pays)" vertex="1">
+          <mxGeometry height="60" width="270" x="384" y="376" as="geometry" />
         </mxCell>
         <mxCell id="quote" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Get fee quote (pricing service)" vertex="1">
           <mxGeometry height="71" width="244" x="887" y="421" as="geometry" />
@@ -43,7 +43,7 @@
         <mxCell id="detail" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="View parcel detail" vertex="1">
           <mxGeometry height="50" width="237" x="890" y="651" as="geometry" />
         </mxCell>
-        <mxCell id="cancel" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Cancel parcel (only while CREATED)" vertex="1">
+        <mxCell id="cancel" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Cancel parcel with a reason (only while CREATED)" vertex="1">
           <mxGeometry height="71" width="312" x="332" y="650" as="geometry" />
         </mxCell>
         <mxCell id="track" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#1E3A5F;fontColor=#1E3A5F;fontSize=11;fontFamily=Helvetica;" value="Track parcel live" vertex="1">

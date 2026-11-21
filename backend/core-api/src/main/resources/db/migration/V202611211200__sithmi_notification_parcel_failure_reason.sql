@@ -1,0 +1,11 @@
+-- A FAILED notification is the one a customer has to act on, so the feed item has to say why the
+-- delivery could not be completed - not just that it failed. The reason travels on the status event;
+-- this is where the consumer keeps it.
+--
+-- Named parcel_failure_reason, NOT failure_reason: that column already exists on this table and
+-- means something different - why the e-mail or SMS send itself failed.
+--
+-- Nullable, like the recipient columns in V202611141100 and for the same reason: we share one Flyway
+-- history, so this reaches everyone the moment it merges, including teammates still running a
+-- consumer that does not set it. NULL simply means "no reason recorded".
+ALTER TABLE notification_log ADD COLUMN IF NOT EXISTS parcel_failure_reason VARCHAR(50);

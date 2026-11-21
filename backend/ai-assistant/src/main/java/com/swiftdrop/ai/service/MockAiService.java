@@ -17,6 +17,8 @@ public class MockAiService implements AiService {
     private static final Pattern TRACKING = Pattern.compile("\\b(SD[A-Z0-9]{10})\\b", Pattern.CASE_INSENSITIVE);
     // Matches weight like "2kg" or "2.5 kg"
     private static final Pattern WEIGHT = Pattern.compile("(\\d+(?:\\.\\d+)?)\\s*kg", Pattern.CASE_INSENSITIVE);
+    // Extracts the fee from the JSON response
+    private static final Pattern FEE_PATTERN = Pattern.compile("\"fee\":(\\d+(?:\\.\\d+)?)");
 
     public MockAiService(SwiftDropTools tools) {
         this.tools = tools;
@@ -30,7 +32,13 @@ public class MockAiService implements AiService {
         Matcher trackingMatcher = TRACKING.matcher(message);
         if (trackingMatcher.find()) {
             String trackingNumber = trackingMatcher.group(1).toUpperCase();
-            return "Here is the status for " + trackingNumber + ":\n" + tools.getParcelStatus(trackingNumber);
+            String rawStatus = tools.getParcelStatus(trackingNumber);
+            
+            // If M5's API returns a JSON error or plain string, we just return it cleanly
+            if (rawStatus.contains("not found") || rawStatus.contains("Could not find")) {
+                return "I could not find a parcel with tracking number " + trackingNumber + ". Please check the number.";
+            }
+            return "Here is the latest status for parcel " + trackingNumber + ":\n\n" + rawStatus;
         }
 
         // 2. If the message mentions a fee/price/quote → try to call pricing API
@@ -40,7 +48,7 @@ public class MockAiService implements AiService {
         }
 
         // 3. Fallback
-        return "Hi! I can help you track a parcel (give me a tracking number like SD7K2M9QX4LP) "
+        return "Hi! I am the SwiftDrop Assistant. I can help you track a parcel (give me a tracking number like SD7K2M9QX4LP) "
                 + "or estimate a delivery fee (say something like 'how much to send 2kg from Colombo to Kandy').";
     }
 
@@ -72,7 +80,17 @@ public class MockAiService implements AiService {
             return "Please tell me the pickup and dropoff districts (e.g., Colombo, Kandy, Galle).";
         }
 
-        return "Here is the estimate for " + weight + "kg from " + from + " to " + to + ":\n"
-                + tools.getQuote(from, to, "M", weight);
+        // Get the raw JSON from the pricing API
+        String jsonResponse = tools.getQuote(from, to, "M", weight);
+
+        // Extract the fee to make the response look human-readable
+        Matcher feeMatcher = FEE_PATTERN.matcher(jsonResponse);
+        if (feeMatcher.find()) {
+            String fee = feeMatcher.group(1);
+            return "The estimated delivery fee for a " + weight + "kg parcel from " + from + " to " + to + " is LKR " + fee + ".";
+        }
+
+        // Fallback if parsing fails
+        return "Here is the estimate for " + weight + "kg from " + from + " to " + to + ":\n" + jsonResponse;
     }
 }

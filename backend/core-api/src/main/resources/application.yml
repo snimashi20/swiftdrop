@@ -7,7 +7,7 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
-      maximum-pool-size: 5
+      maximum-pool-size: ${DB_POOL_SIZE:3}
       minimum-idle: 1
 
   jpa:
@@ -30,7 +30,17 @@ spring:
     # contain a migration that your branch does not have yet. Without this, Flyway fails
     # startup with "Detected applied migration not resolved locally" and whoever is on an
     # older branch cannot boot. Schema drift is still caught by hibernate ddl-auto: validate.
-    ignore-migration-patterns: "*:missing"
+    #
+    # BOTH patterns are needed, because Flyway splits "applied here but absent from my code"
+    # into two states by version number, and suppressing one does nothing for the other:
+    #   missing - its version is BELOW the highest version your branch resolves locally
+    #   future  - its version is ABOVE every version your branch resolves locally
+    # Both report the same "not resolved locally" message, so the log cannot tell you which
+    # one you hit. A teammate who ran a newer branch against the shared database leaves a
+    # future migration behind, which is the common case and the one "*:missing" alone misses.
+    ignore-migration-patterns:
+      - "*:missing"
+      - "*:future"
 
   rabbitmq:
     host: ${RABBITMQ_HOST}

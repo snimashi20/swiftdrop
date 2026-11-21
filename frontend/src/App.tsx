@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./features/auth/AuthContext";
@@ -6,6 +6,11 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { BookParcelPage } from "./features/parcels/BookParcelPage";
+import { BookingDraftProvider } from "./features/parcels/booking/BookingDraft";
+import { BookModePage } from "./features/parcels/booking/BookModePage";
+import { ConfirmAddressPage } from "./features/parcels/booking/ConfirmAddressPage";
+import { LocationPage } from "./features/parcels/booking/LocationPage";
+import { SavedAddressesPage } from "./features/parcels/booking/SavedAddressesPage";
 import { ParcelHistoryPage } from "./features/parcels/ParcelHistoryPage";
 import { ParcelDetailPage, PublicTrackingLayout, TrackLookupPage, TrackingPage } from "./features/tracking";
 import { OAuthCallbackPage } from "./features/auth/OAuthCallbackPage";
@@ -31,7 +36,7 @@ import {
   ApprovalReviewPage,
   CreateStaffPage,
 } from "./features/admin";
-import { TodayDeliveriesPage } from "./features/courier";
+import { CourierApprovalsPage, TodayDeliveriesPage } from "./features/courier";
 import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprovalsPage";
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
@@ -39,6 +44,7 @@ import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPag
 import { RoleSelectionPage } from "./features/auth/RoleSelectionPage";
 import { WaitingApprovalPage } from "./features/auth/WaitingApprovalPage";
 import { MyNotificationsPage } from "./features/notifications/MyNotificationsPage";
+import { SettingsPage } from "./features/settings/SettingsPage";
 
 function PublicRedirect() {
   const { user } = useAuth();
@@ -71,6 +77,7 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/profile/addresses" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<AddressBookPage />} />
@@ -86,11 +93,19 @@ export function App() {
               <Route index element={<TodayDeliveriesPage />} />
             </Route>
             <Route path="/notifications" element={<MyNotificationsPage />} />
-            <Route path="/parcels" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+             <Route path="/parcels" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<ParcelHistoryPage />} />
             </Route>
+            <Route path="/parcels/start" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+              <Route index element={<BookModePage />} />
+            </Route>
             <Route path="/parcels/new" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
-              <Route index element={<BookParcelPage />} />
+              <Route element={<BookingDraftProvider><Outlet /></BookingDraftProvider>}>
+                <Route index element={<BookParcelPage />} />
+                <Route path="location" element={<LocationPage />} />
+                <Route path="confirm" element={<ConfirmAddressPage />} />
+                <Route path="saved" element={<SavedAddressesPage />} />
+              </Route>
             </Route>
             <Route path="/parcels/:trackingNumber" element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
               <Route index element={<ParcelDetailPage />} />
@@ -106,6 +121,9 @@ export function App() {
             </Route>
             <Route path="/admin/merchants" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<MerchantApprovalsPage />} />
+            </Route>
+            <Route path="/admin/couriers" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route index element={<CourierApprovalsPage />} />
             </Route>
             <Route path="/merchant/api-keys" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
               <Route index element={<MerchantApiKeysPage />} />
