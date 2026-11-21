@@ -93,7 +93,10 @@ public class ParcelStatusService {
                 changedByRole,
                 parcel.getCustomerId(),
                 parcel.getMerchantId(),
-                note));
+                note,
+                // The courier sets the reason on the parcel before asking for the status change, so
+                // it is already on the managed entity here. Only a failure carries one.
+                newStatus == ParcelStatus.FAILED ? parcel.getFailureReason() : null));
     }
 
     private ParcelStatus parseStatus(String value) {

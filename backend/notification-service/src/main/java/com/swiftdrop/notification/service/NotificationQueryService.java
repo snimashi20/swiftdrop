@@ -135,10 +135,17 @@ public class NotificationQueryService {
      */
     private static String message(NotificationLog row) {
         String tracking = row.getTrackingNumber();
-        String status = readable(row.getNewStatus());
+        String status = StatusText.readable(row.getNewStatus());
         String role = row.getRecipientRole() == null
                 ? NotificationRecipient.CUSTOMER
                 : row.getRecipientRole().toUpperCase(Locale.ROOT);
+
+        if ("FAILED".equalsIgnoreCase(row.getNewStatus())
+                && !NotificationRecipient.DISPATCHER.equals(role)
+                && !NotificationRecipient.ADMIN.equals(role)) {
+            return "Delivery of parcel " + tracking + " could not be completed."
+                    + reasonSuffix(row);
+        }
 
         return switch (role) {
             case NotificationRecipient.MERCHANT -> "Shipment " + tracking + " is now " + status + ".";
@@ -149,22 +156,21 @@ public class NotificationQueryService {
         };
     }
 
+    /** " <reason>" when the row recorded one, otherwise nothing at all. */
+    private static String reasonSuffix(NotificationLog row) {
+        String reason = StatusText.failureReason(row.getParcelFailureReason());
+        return reason == null ? "" : " " + reason;
+    }
+
     /** Staff only hear about the transitions that need a decision, so each one names the decision. */
     private static String staffMessage(NotificationLog row, String tracking) {
         String status = row.getNewStatus() == null ? "" : row.getNewStatus().toUpperCase(Locale.ROOT);
         return switch (status) {
             case "CREATED" -> "Parcel " + tracking + " was booked and is waiting to be assigned.";
-            case "FAILED" -> "Delivery of parcel " + tracking + " failed and needs re-dispatch.";
+            case "FAILED" -> "Delivery of parcel " + tracking + " failed and needs re-dispatch."
+                    + reasonSuffix(row);
             case "CANCELLED" -> "Parcel " + tracking + " was cancelled.";
-            default -> "Parcel " + tracking + " is now " + readable(row.getNewStatus()) + ".";
+            default -> "Parcel " + tracking + " is now " + StatusText.readable(row.getNewStatus()) + ".";
         };
-    }
-
-    /** {@code OUT_FOR_DELIVERY} reads as {@code out for delivery} in the message text. */
-    private static String readable(String status) {
-        if (status == null) {
-            return "updated";
-        }
-        return status.toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 }

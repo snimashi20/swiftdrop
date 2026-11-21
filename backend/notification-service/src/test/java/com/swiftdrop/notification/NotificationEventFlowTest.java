@@ -101,7 +101,7 @@ class NotificationEventFlowTest {
         });
 
         await().atMost(Duration.ofSeconds(10))
-                .until(() -> mailpitMessages().contains("SwiftDrop: parcel SD7K2M9QX4LP is now IN_TRANSIT"));
+                .until(() -> mailpitMessages().contains("SwiftDrop: parcel SD7K2M9QX4LP is now in transit"));
     }
 
     @Test

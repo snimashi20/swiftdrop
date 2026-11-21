@@ -116,7 +116,7 @@ class NotificationServiceTest {
         assertThat(rows).extracting(NotificationLog::getNewStatus).containsOnly("CREATED");
         // No special-casing in production: the text is the standard "is now <status>" line.
         assertThat(EmailNotifier.subject(event))
-                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now CREATED");
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now created");
     }
 
     // ----- everyone else: in-app only -----
@@ -195,6 +195,34 @@ class NotificationServiceTest {
         verify(emailNotifier, never()).send(eq("shop@example.com"), any());
         verify(emailNotifier, never()).send(eq("rider@example.com"), any());
         verify(emailNotifier, never()).send(eq("admin@example.com"), any());
+    }
+
+    @Test
+    @DisplayName("a failure stores the parcel's reason on every row, kept apart from the send's own failure reason")
+    void failureReasonIsStoredOnEveryRow() {
+        givenRecipients(customer(EMAIL, PHONE), new NotificationRecipient(ADMIN_USER, "ADMIN", null, null));
+        givenSaveReturnsTheRow();
+
+        service.handle(failureEvent("RECIPIENT_NOT_AVAILABLE"));
+
+        List<NotificationLog> rows = savedRows(4);
+        assertThat(rows).allSatisfy(row -> {
+            assertThat(row.getParcelFailureReason()).isEqualTo("RECIPIENT_NOT_AVAILABLE");
+            // The send succeeded, so the column about this row's own delivery stays empty.
+            assertThat(row.getFailureReason()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("a status change that is not a failure records no parcel failure reason")
+    void nonFailureStoresNoReason() {
+        givenRecipients(customer(EMAIL, null));
+        givenSaveReturnsTheRow();
+
+        service.handle(event("PICKED_UP", "IN_TRANSIT"));
+
+        assertThat(savedRows(2)).allSatisfy(row ->
+                assertThat(row.getParcelFailureReason()).isNull());
     }
 
     // ----- missing / blank contact details -----
@@ -416,5 +444,10 @@ class NotificationServiceTest {
     private static ParcelStatusChangedEvent event(String oldStatus, String newStatus) {
         return new ParcelStatusChangedEvent(EVENT_ID, 42L, "SD7K2M9QX4LP", oldStatus, newStatus,
                 Instant.parse("2026-11-14T10:15:30Z"), "COURIER", CUSTOMER_USER, 99L, "On the way");
+    }
+
+    private static ParcelStatusChangedEvent failureEvent(String reason) {
+        return new ParcelStatusChangedEvent(EVENT_ID, 42L, "SD7K2M9QX4LP", "OUT_FOR_DELIVERY", "FAILED",
+                Instant.parse("2026-11-14T10:15:30Z"), "COURIER", CUSTOMER_USER, 99L, "Nobody home", reason);
     }
 }

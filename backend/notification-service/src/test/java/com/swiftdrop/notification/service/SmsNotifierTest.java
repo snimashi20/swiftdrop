@@ -47,16 +47,32 @@ class SmsNotifierTest {
     @DisplayName("the text carries the tracking number and the new status")
     void textNamesTrackingNumberAndNewStatus() {
         assertThat(SmsNotifier.text(event("PICKED_UP", "IN_TRANSIT")))
-                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now IN_TRANSIT");
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now in transit.");
     }
 
     @Test
     @DisplayName("the text is the same standard line for a new parcel and for a cancellation")
     void textHasNoSpecialCaseForCreationOrCancellation() {
         assertThat(SmsNotifier.text(event(null, "CREATED")))
-                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now CREATED");
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now created.");
         assertThat(SmsNotifier.text(event("IN_TRANSIT", "CANCELLED")))
-                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now CANCELLED");
+                .isEqualTo("SwiftDrop: parcel SD7K2M9QX4LP is now cancelled.");
+    }
+
+    @Test
+    @DisplayName("a failure names the short reason and says someone will be in touch")
+    void failureTextCarriesTheShortReason() {
+        assertThat(SmsNotifier.text(failure("RECIPIENT_NOT_AVAILABLE")))
+                .isEqualTo("SwiftDrop: we could not deliver parcel SD7K2M9QX4LP "
+                        + "(recipient not available). We will be in touch to rearrange.");
+    }
+
+    @Test
+    @DisplayName("a failure with no reason recorded still reads as a sentence")
+    void failureTextWithoutAReason() {
+        assertThat(SmsNotifier.text(failure(null)))
+                .isEqualTo("SwiftDrop: we could not deliver parcel SD7K2M9QX4LP. "
+                        + "We will be in touch to rearrange.");
     }
 
     @Test
@@ -66,7 +82,7 @@ class SmsNotifierTest {
 
         assertThat(appender.list).hasSize(1);
         String line = appender.list.get(0).getFormattedMessage();
-        assertThat(line).isEqualTo("[MOCK SMS] to *******567: SwiftDrop: parcel SD7K2M9QX4LP is now IN_TRANSIT");
+        assertThat(line).isEqualTo("[MOCK SMS] to *******567: SwiftDrop: parcel SD7K2M9QX4LP is now in transit.");
         assertThat(line).doesNotContain("0771234567");
     }
 
@@ -90,5 +106,10 @@ class SmsNotifierTest {
     private static ParcelStatusChangedEvent event(String oldStatus, String newStatus) {
         return new ParcelStatusChangedEvent(UUID.randomUUID(), 42L, "SD7K2M9QX4LP", oldStatus, newStatus,
                 Instant.parse("2026-11-14T10:15:30Z"), "COURIER", 7L, 99L, "On the way");
+    }
+
+    private static ParcelStatusChangedEvent failure(String reason) {
+        return new ParcelStatusChangedEvent(UUID.randomUUID(), 42L, "SD7K2M9QX4LP", "OUT_FOR_DELIVERY",
+                "FAILED", Instant.parse("2026-11-14T10:15:30Z"), "COURIER", 7L, 99L, "Nobody home", reason);
     }
 }

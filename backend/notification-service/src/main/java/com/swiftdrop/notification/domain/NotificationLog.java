@@ -61,7 +61,15 @@ public class NotificationLog {
     @Enumerated(EnumType.STRING)
     private NotificationStatus status;
 
+    /** Why the send failed, as an exception class name. Never why the delivery failed. */
     private String failureReason;
+
+    /**
+     * Why the parcel could not be delivered, on a FAILED status change only; the FailureReason name
+     * the event carried. Distinct from {@link #failureReason}, which is about this row's own send.
+     */
+    @Column(name = "parcel_failure_reason", length = 50)
+    private String parcelFailureReason;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

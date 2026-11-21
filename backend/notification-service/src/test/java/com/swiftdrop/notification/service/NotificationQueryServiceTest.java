@@ -213,6 +213,62 @@ class NotificationQueryServiceTest {
                 .isEqualTo("Parcel SD7K2M9QX4LP is now delivered.");
     }
 
+    // ----- failed deliveries name the reason -----
+
+    @Test
+    @DisplayName("a customer is told the delivery could not be completed, and why")
+    void customerFailureNamesTheReason() {
+        when(logs.findRecipientFeed(eq(CUSTOMER_ID), any(Pageable.class)))
+                .thenReturn(pageOf(failureRow("CUSTOMER", "RECIPIENT_NOT_AVAILABLE")));
+
+        assertThat(service.feed(CUSTOMER_ID, 0, 20, false).content().get(0).message())
+                .isEqualTo("Delivery of parcel SD7K2M9QX4LP could not be completed."
+                        + " Nobody was available to receive the parcel.");
+    }
+
+    @Test
+    @DisplayName("a dispatcher gets the reason appended to the re-dispatch line")
+    void staffFailureNamesTheReason() {
+        when(logs.findRecipientFeed(eq(CUSTOMER_ID), any(Pageable.class)))
+                .thenReturn(pageOf(failureRow("DISPATCHER", "WRONG_ADDRESS")));
+
+        assertThat(service.feed(CUSTOMER_ID, 0, 20, false).content().get(0).message())
+                .isEqualTo("Delivery of parcel SD7K2M9QX4LP failed and needs re-dispatch."
+                        + " The delivery address could not be found.");
+    }
+
+    @Test
+    @DisplayName("a failure with no reason recorded reads as a complete sentence, with nothing dangling")
+    void failureWithoutAReasonStillReadsCleanly() {
+        when(logs.findRecipientFeed(eq(CUSTOMER_ID), any(Pageable.class)))
+                .thenReturn(pageOf(failureRow("CUSTOMER", null)));
+
+        assertThat(service.feed(CUSTOMER_ID, 0, 20, false).content().get(0).message())
+                .isEqualTo("Delivery of parcel SD7K2M9QX4LP could not be completed.");
+    }
+
+    @Test
+    @DisplayName("a reason this service has no wording for is still rendered readably")
+    void unknownReasonFallsBackToReadableText() {
+        when(logs.findRecipientFeed(eq(CUSTOMER_ID), any(Pageable.class)))
+                .thenReturn(pageOf(failureRow("CUSTOMER", "VEHICLE_BREAKDOWN")));
+
+        assertThat(service.feed(CUSTOMER_ID, 0, 20, false).content().get(0).message())
+                .isEqualTo("Delivery of parcel SD7K2M9QX4LP could not be completed."
+                        + " Vehicle breakdown.");
+    }
+
+    @Test
+    @DisplayName("a merchant sees the failure wording too, not the shipment line")
+    void merchantFailureUsesTheFailureWording() {
+        when(logs.findRecipientFeed(eq(CUSTOMER_ID), any(Pageable.class)))
+                .thenReturn(pageOf(failureRow("MERCHANT", "REFUSED")));
+
+        assertThat(service.feed(CUSTOMER_ID, 0, 20, false).content().get(0).message())
+                .isEqualTo("Delivery of parcel SD7K2M9QX4LP could not be completed."
+                        + " The recipient refused the parcel.");
+    }
+
     // ----- unread count and read marking -----
 
     @Test
@@ -340,6 +396,13 @@ class NotificationQueryServiceTest {
     /** One log row as the consumer writes it: an SMS row for the customer, recipient masked. */
     private static NotificationLog row(String newStatus, Instant readAt) {
         return rowFor("CUSTOMER", newStatus, readAt);
+    }
+
+    /** A FAILED row as the consumer writes it, carrying the parcel's own failure reason. */
+    private static NotificationLog failureRow(String recipientRole, String parcelFailureReason) {
+        NotificationLog row = rowFor(recipientRole, "FAILED", null);
+        row.setParcelFailureReason(parcelFailureReason);
+        return row;
     }
 
     /** The same row written for another role, which is what changes the wording of the message. */

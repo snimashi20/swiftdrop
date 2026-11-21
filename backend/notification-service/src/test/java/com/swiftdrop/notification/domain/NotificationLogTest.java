@@ -97,12 +97,15 @@ class NotificationLogTest {
 
         NotificationLog row = new NotificationLog(5L, EVENT_ID, 42L, "SD7K2M9QX4LP", null, "CREATED", 7L,
                 7L, "CUSTOMER", NotificationType.EMAIL, "s***@example.com", NotificationStatus.PENDING,
-                null, createdAt, null, null);
+                null, "RECIPIENT_NOT_AVAILABLE", createdAt, null, null);
 
         assertThat(row.getOldStatus()).isNull();
         assertThat(row.getNewStatus()).isEqualTo("CREATED");
         assertThat(row.getRecipientUserId()).isEqualTo(7L);
         assertThat(row.getRecipientRole()).isEqualTo("CUSTOMER");
+        // The two reason columns are distinct: this one is the parcel's, failureReason is the send's.
+        assertThat(row.getParcelFailureReason()).isEqualTo("RECIPIENT_NOT_AVAILABLE");
+        assertThat(row.getFailureReason()).isNull();
         assertThat(row.getStatus()).isEqualTo(NotificationStatus.PENDING);
         assertThat(row.getCreatedAt()).isEqualTo(createdAt);
         assertThat(row.getReadAt()).isNull();

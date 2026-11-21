@@ -92,6 +92,7 @@ public class NotificationService {
                     .customerId(event.customerId())
                     .recipientUserId(target.userId())
                     .recipientRole(target.role())
+                    .parcelFailureReason(event.failureReason())
                     .type(type)
                     .recipient(maskedRecipient)
                     .status(NotificationStatus.PENDING)
@@ -108,15 +109,32 @@ public class NotificationService {
             row.setSentAt(Instant.now());
             log.info("Sent {} for event {} to {}", type, event.eventId(), maskedRecipient);
         } catch (RuntimeException e) {
-            // Exception messages can contain the raw address, so only the type is stored and logged.
+            // Only the exception type is stored: the column is read back by the admin log page, and a
+            // gateway message can quote the raw address. The log line carries the gateway's own reason
+            // with addresses masked, because without it a failure is undiagnosable - "MailSendException"
+            // alone cannot tell a rejected password from an unreachable host.
             row.setStatus(NotificationStatus.FAILED);
             row.setFailureReason(e.getClass().getSimpleName());
-            log.warn("Failed {} for event {}: {}", type, event.eventId(), e.getClass().getSimpleName());
+            log.warn("Failed {} for event {} to {}: {} - {}", type, event.eventId(), maskedRecipient,
+                    e.getClass().getSimpleName(), Masking.text(rootCauseMessage(e)));
         }
         logs.save(row);
     }
 
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    /**
+     * The deepest message in the chain, which is where a gateway puts its own reason. Spring wraps
+     * the provider's exception, so the outer message is usually just "Mail server connection failed".
+     */
+    private static String rootCauseMessage(Throwable error) {
+        Throwable cause = error;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        String message = cause.getMessage();
+        return message == null ? cause.getClass().getSimpleName() : message;
     }
 }
