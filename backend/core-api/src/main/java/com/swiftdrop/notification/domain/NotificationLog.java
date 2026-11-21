@@ -37,6 +37,14 @@ public class NotificationLog {
     @Column(nullable = false)
     private Long customerId;
 
+    /** The user the row was written for; see V202611141100. Not always the customer. */
+    @Column(name = "recipient_user_id", nullable = false)
+    private Long recipientUserId;
+
+    /** The recipient's role when the row was written. */
+    @Column(name = "recipient_role", nullable = false, length = 20)
+    private String recipientRole;
+
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private NotificationType type;

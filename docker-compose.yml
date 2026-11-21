@@ -115,9 +115,16 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      MAIL_HOST: mailpit
-      MAIL_PORT: 1025
+      # Defaults to the local Mailpit catcher. Point MAIL_HOST at a real provider in .env to send
+      # for real; the value must resolve from inside this container, so "mailpit", not "localhost".
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
       MAIL_FROM: ${MAIL_FROM:-noreply@swiftdrop.local}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-SwiftDrop}
       JWT_SECRET: ${JWT_SECRET}
       DB_POOL_SIZE: ${NOTIFICATION_DB_POOL_SIZE:-2}
       SPRING_FLYWAY_ENABLED: "false"
