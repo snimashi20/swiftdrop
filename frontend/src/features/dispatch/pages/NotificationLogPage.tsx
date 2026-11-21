@@ -14,6 +14,12 @@ const PAGE_SIZE = 20;
 type Filters = { channel: "" | NotificationChannel; status: "" | NotificationDeliveryStatus; trackingNumber: string };
 const NO_FILTERS: Filters = { channel: "", status: "", trackingNumber: "" };
 
+const CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  IN_APP: "In-app",
+  EMAIL: "E-mail",
+  SMS: "SMS",
+};
+
 const STATUS_STYLE: Record<NotificationDeliveryStatus, string> = {
   SENT: "border-mint bg-mint/40 text-ink",
   PENDING: "border-ink/15 bg-mist text-ink/60",
@@ -94,7 +100,7 @@ export function NotificationLogPage() {
       <PageHeader
         eyebrow="Admin"
         title="Notification log"
-        text="Every e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
+        text="Every in-app, e-mail and text message sent to customers about their parcels, newest first. Contact details are partly hidden for privacy."
       />
 
       {error && <p className="mb-4 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
@@ -108,6 +114,7 @@ export function NotificationLogPage() {
             onChange={(e) => setForm({ ...form, channel: e.target.value as Filters["channel"] })}
           >
             <option value="">All</option>
+            <option value="IN_APP">In-app</option>
             <option value="EMAIL">E-mail</option>
             <option value="SMS">Text message</option>
           </select>
@@ -173,12 +180,14 @@ export function NotificationLogPage() {
                 <tbody>
                   {entries.map((entry) => (
                     <tr key={entry.id} className="border-b border-ink/5 align-top last:border-0">
+
                       <td className="px-4 py-3 text-ink/60">{formatTime(entry.createdAt)}</td>
                       <td className="px-4 py-3 font-semibold">{entry.trackingNumber}</td>
-                      <td className="px-4 py-3">{entry.type === "EMAIL" ? "E-mail" : "Text message"}</td>
+                      <td className="px-4 py-3">{CHANNEL_LABELS[entry.type] ?? entry.type}</td>
                       <td className="px-4 py-3 font-mono text-xs">{entry.recipient}</td>
                       <td className="px-4 py-3">
-                        {humanise(entry.oldStatus)} → <span className="font-semibold">{humanise(entry.newStatus)}</span>
+                        {entry.oldStatus ? humanise(entry.oldStatus) : "—"} → <span className="font-semibold">{humanise(entry.newStatus)}</span>
+
                       </td>
                       <td className="px-4 py-3">
                         <span

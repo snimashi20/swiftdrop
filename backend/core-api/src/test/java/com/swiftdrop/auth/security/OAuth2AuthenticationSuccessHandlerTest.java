@@ -2,6 +2,9 @@ package com.swiftdrop.auth.security;
 
 import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.merchant.domain.Merchant;
+import com.swiftdrop.merchant.domain.MerchantStatus;
+import com.swiftdrop.merchant.repository.MerchantRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +33,9 @@ class OAuth2AuthenticationSuccessHandlerTest {
     private UserRepository userRepository;
 
     @Mock
+    private MerchantRepository merchantRepository;
+
+    @Mock
     private JwtService jwtService;
 
     @Mock
@@ -52,7 +58,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
     @BeforeEach
     void setUp() {
-        successHandler = new OAuth2AuthenticationSuccessHandler(userRepository, jwtService, frontendBaseUrl);
+        successHandler = new OAuth2AuthenticationSuccessHandler(userRepository, jwtService, frontendBaseUrl, merchantRepository);
         successHandler.setRedirectStrategy(redirectStrategy);
         when(authentication.getPrincipal()).thenReturn(oAuth2User);
     }
@@ -155,6 +161,14 @@ class OAuth2AuthenticationSuccessHandlerTest {
         assertEquals("ROLE_MERCHANT", savedUser.getRole());
         assertEquals("PENDING_APPROVAL", savedUser.getStatus());
         assertFalse(savedUser.isEnabled());
+
+        ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);
+        verify(merchantRepository).save(merchantCaptor.capture());
+        Merchant savedMerchant = merchantCaptor.getValue();
+        assertEquals(103L, savedMerchant.getUserId());
+        assertEquals("New Merchant Store", savedMerchant.getBusinessName());
+        assertEquals("newmerchant@gmail.com", savedMerchant.getContactEmail());
+        assertEquals(MerchantStatus.PENDING, savedMerchant.getStatus());
 
         verify(jwtService, never()).generateToken(any(), any(), any(), any(), any());
 

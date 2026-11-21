@@ -32,38 +32,38 @@ public class NotificationQueryService {
 
     private final NotificationLogRepository logs;
 
-    /** The signed-in customer's own status changes, newest first. */
+    /** The signed-in user's own notifications, newest first, whatever their role. */
     @Transactional(readOnly = true)
-    public PageResponse<NotificationResponse> feed(Long customerId, int page, int size, boolean unreadOnly) {
+    public PageResponse<NotificationResponse> feed(Long userId, int page, int size, boolean unreadOnly) {
         // The feed queries carry their own ORDER BY, so the Pageable must stay unsorted.
         Pageable pageable = PageRequest.of(page, size);
         Page<NotificationLog> rows = unreadOnly
-                ? logs.findUnreadCustomerFeed(customerId, pageable)
-                : logs.findCustomerFeed(customerId, pageable);
-        return PageResponse.of(rows, NotificationQueryService::toCustomerView);
+                ? logs.findUnreadRecipientFeed(userId, pageable)
+                : logs.findRecipientFeed(userId, pageable);
+        return PageResponse.of(rows, NotificationQueryService::toFeedItem);
     }
 
     @Transactional(readOnly = true)
-    public UnreadCountResponse unreadCount(Long customerId) {
-        return new UnreadCountResponse(logs.countUnreadEvents(customerId));
+    public UnreadCountResponse unreadCount(Long userId) {
+        return new UnreadCountResponse(logs.countUnreadEvents(userId));
     }
 
     @Transactional
-    public MarkedReadResponse markAllRead(Long customerId) {
-        return new MarkedReadResponse(logs.markAllRead(customerId, Instant.now()));
+    public MarkedReadResponse markAllRead(Long userId) {
+        return new MarkedReadResponse(logs.markAllRead(userId, Instant.now()));
     }
 
     /**
      * Marks one status change as read.
      *
-     * @throws NotFoundException if the id does not exist or belongs to another customer, so the
+     * @throws NotFoundException if the id does not exist or belongs to another user, so the
      *         response cannot be used to find out whether someone else's notification exists.
      */
     @Transactional
-    public MarkedReadResponse markRead(Long id, Long customerId) {
-        NotificationLog row = logs.findByIdAndCustomerId(id, customerId)
+    public MarkedReadResponse markRead(Long id, Long userId) {
+        NotificationLog row = logs.findByIdAndRecipientUserId(id, userId)
                 .orElseThrow(() -> new NotFoundException("No notification " + id + " for this account."));
-        return new MarkedReadResponse(logs.markEventRead(row.getEventId(), customerId, Instant.now()));
+        return new MarkedReadResponse(logs.markEventRead(row.getEventId(), userId, Instant.now()));
     }
 
     /** The admin and dispatcher log: one row per channel, with optional filters. */
@@ -96,14 +96,14 @@ public class NotificationQueryService {
         return trackingNumber.trim().toUpperCase(Locale.ROOT);
     }
 
-    private static NotificationResponse toCustomerView(NotificationLog row) {
+    private static NotificationResponse toFeedItem(NotificationLog row) {
         return new NotificationResponse(
                 row.getId(),
                 row.getParcelId(),
                 row.getTrackingNumber(),
                 row.getOldStatus(),
                 row.getNewStatus(),
-                "Parcel " + row.getTrackingNumber() + " is now " + readable(row.getNewStatus()) + ".",
+                message(row),
                 row.getCreatedAt(),
                 row.getReadAt() != null,
                 row.getReadAt());
@@ -118,6 +118,8 @@ public class NotificationQueryService {
                 row.getOldStatus(),
                 row.getNewStatus(),
                 row.getCustomerId(),
+                row.getRecipientUserId(),
+                row.getRecipientRole(),
                 row.getType(),
                 row.getRecipient(),
                 row.getStatus(),
@@ -126,11 +128,49 @@ public class NotificationQueryService {
                 row.getSentAt());
     }
 
-    /** {@code OUT_FOR_DELIVERY} reads as {@code out for delivery} in the message text. */
-    private static String readable(String status) {
-        if (status == null) {
-            return "updated";
+    /**
+     * The same status change says something different to each role: the customer is being kept
+     * informed, the courier is being told about work in their own hands, and staff are being told
+     * something needs doing.
+     */
+    private static String message(NotificationLog row) {
+        String tracking = row.getTrackingNumber();
+        String status = StatusText.readable(row.getNewStatus());
+        String role = row.getRecipientRole() == null
+                ? NotificationRecipient.CUSTOMER
+                : row.getRecipientRole().toUpperCase(Locale.ROOT);
+
+        if ("FAILED".equalsIgnoreCase(row.getNewStatus())
+                && !NotificationRecipient.DISPATCHER.equals(role)
+                && !NotificationRecipient.ADMIN.equals(role)) {
+            return "Delivery of parcel " + tracking + " could not be completed."
+                    + reasonSuffix(row);
         }
-        return status.toLowerCase(Locale.ROOT).replace('_', ' ');
+
+        return switch (role) {
+            case NotificationRecipient.MERCHANT -> "Shipment " + tracking + " is now " + status + ".";
+            case NotificationRecipient.COURIER ->
+                    "Parcel " + tracking + " assigned to you is now " + status + ".";
+            case NotificationRecipient.DISPATCHER, NotificationRecipient.ADMIN -> staffMessage(row, tracking);
+            default -> "Parcel " + tracking + " is now " + status + ".";
+        };
+    }
+
+    /** " <reason>" when the row recorded one, otherwise nothing at all. */
+    private static String reasonSuffix(NotificationLog row) {
+        String reason = StatusText.failureReason(row.getParcelFailureReason());
+        return reason == null ? "" : " " + reason;
+    }
+
+    /** Staff only hear about the transitions that need a decision, so each one names the decision. */
+    private static String staffMessage(NotificationLog row, String tracking) {
+        String status = row.getNewStatus() == null ? "" : row.getNewStatus().toUpperCase(Locale.ROOT);
+        return switch (status) {
+            case "CREATED" -> "Parcel " + tracking + " was booked and is waiting to be assigned.";
+            case "FAILED" -> "Delivery of parcel " + tracking + " failed and needs re-dispatch."
+                    + reasonSuffix(row);
+            case "CANCELLED" -> "Parcel " + tracking + " was cancelled.";
+            default -> "Parcel " + tracking + " is now " + StatusText.readable(row.getNewStatus()) + ".";
+        };
     }
 }

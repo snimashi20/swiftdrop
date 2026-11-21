@@ -6,8 +6,8 @@ import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
-// Table is created by core-api's Flyway migrations (V202610262300, V202610311800, V202611041000);
-// keep this mapping in sync.
+// Table is created by core-api's Flyway migrations (V202610262300, V202610311800, V202611041000,
+// V202611141100); keep this mapping in sync.
 @Entity
 @Table(name = "notification_log")
 @Getter
@@ -39,6 +39,17 @@ public class NotificationLog {
     @Column(nullable = false)
     private Long customerId;
 
+    /** The user this row was written for: the customer, the merchant, the courier or a staff user. */
+    @Column(name = "recipient_user_id", nullable = false)
+    private Long recipientUserId;
+
+    /**
+     * The recipient's role when the row was written. Denormalised on purpose: it decides how the
+     * feed item is worded, and a later role change must not rewrite history.
+     */
+    @Column(name = "recipient_role", nullable = false, length = 20)
+    private String recipientRole;
+
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private NotificationType type;
@@ -50,14 +61,22 @@ public class NotificationLog {
     @Enumerated(EnumType.STRING)
     private NotificationStatus status;
 
+    /** Why the send failed, as an exception class name. Never why the delivery failed. */
     private String failureReason;
+
+    /**
+     * Why the parcel could not be delivered, on a FAILED status change only; the FailureReason name
+     * the event carried. Distinct from {@link #failureReason}, which is about this row's own send.
+     */
+    @Column(name = "parcel_failure_reason", length = 50)
+    private String parcelFailureReason;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     private Instant sentAt;
 
-    /** When the customer saw this notification; null means unread. */
+    /** When the recipient saw this notification; null means unread. */
     private Instant readAt;
 
     @PrePersist
