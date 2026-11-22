@@ -141,16 +141,24 @@ class MerchantControllerMockMvcTest {
                 .email("store@example.lk")
                 .password("password123")
                 .businessName("Store LK")
+                .businessType("PRIVATE_LIMITED_COMPANY")
                 .registrationNumber("REG-999")
+                .businessAddress("12 Main Street, Colombo 03")
+                .businessDescription("Retail sale of household goods and gifts.")
                 .contactName("Kasun Perera")
                 .contactPhone("0712345678")
+                .verificationDeclarationAccepted(true)
                 .build();
 
         MerchantResponseDto responseDto = MerchantResponseDto.builder()
                 .id(1L)
                 .userId(100L)
                 .businessName("Store LK")
+                .businessType("PRIVATE_LIMITED_COMPANY")
                 .registrationNumber("REG-999")
+                .businessAddress("12 Main Street, Colombo 03")
+                .businessDescription("Retail sale of household goods and gifts.")
+                .verificationDeclarationAccepted(true)
                 .contactName("Kasun Perera")
                 .contactEmail("store@example.lk")
                 .contactPhone("0712345678")
@@ -166,6 +174,10 @@ class MerchantControllerMockMvcTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.businessName").value("Store LK"))
+                .andExpect(jsonPath("$.businessType").value("PRIVATE_LIMITED_COMPANY"))
+                .andExpect(jsonPath("$.businessAddress").value("12 Main Street, Colombo 03"))
+                .andExpect(jsonPath("$.businessDescription").value("Retail sale of household goods and gifts."))
+                .andExpect(jsonPath("$.verificationDeclarationAccepted").value(true))
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.contactEmail").value("store@example.lk"));
     }
@@ -177,9 +189,13 @@ class MerchantControllerMockMvcTest {
                 .email("store@example.lk")
                 .password("password123")
                 .businessName("Store LK")
+                .businessType("PRIVATE_LIMITED_COMPANY")
                 .registrationNumber("REG-999")
+                .businessAddress("12 Main Street, Colombo 03")
+                .businessDescription("Retail sale of household goods and gifts.")
                 .contactName("Kasun Perera")
                 .contactPhone("1234567890") // Invalid Sri Lankan mobile format
+                .verificationDeclarationAccepted(true)
                 .build();
 
         mockMvc.perform(post("/api/v1/merchants/register")
@@ -205,15 +221,42 @@ class MerchantControllerMockMvcTest {
     }
 
     @Test
+    @DisplayName("POST /merchants/register: rejects unsupported business type and missing declaration")
+    void register_invalidBusinessVerificationDetails_returns400() throws Exception {
+        RegisterMerchantRequest request = RegisterMerchantRequest.builder()
+                .email("store@example.lk")
+                .password("password123")
+                .businessName("Store LK")
+                .businessType("UNREGISTERED_TYPE")
+                .registrationNumber("REG-999")
+                .businessAddress("12 Main Street, Colombo 03")
+                .businessDescription("Retail sale of household goods and gifts.")
+                .contactName("Kasun Perera")
+                .contactPhone("0712345678")
+                .verificationDeclarationAccepted(false)
+                .build();
+
+        mockMvc.perform(post("/api/v1/merchants/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     @DisplayName("POST /merchants/register: returns 409 when email is already registered")
     void register_duplicateEmail_returns409() throws Exception {
         RegisterMerchantRequest request = RegisterMerchantRequest.builder()
                 .email("store@example.lk")
                 .password("password123")
                 .businessName("Store LK")
+                .businessType("PRIVATE_LIMITED_COMPANY")
                 .registrationNumber("REG-999")
+                .businessAddress("12 Main Street, Colombo 03")
+                .businessDescription("Retail sale of household goods and gifts.")
                 .contactName("Kasun Perera")
                 .contactPhone("0712345678")
+                .verificationDeclarationAccepted(true)
                 .build();
 
         when(merchantService.register(any(RegisterMerchantRequest.class)))
@@ -234,9 +277,13 @@ class MerchantControllerMockMvcTest {
                 .email("store2@example.lk")
                 .password("password123")
                 .businessName("Store LK")
+                .businessType("PRIVATE_LIMITED_COMPANY")
                 .registrationNumber("REG-999")
+                .businessAddress("12 Main Street, Colombo 03")
+                .businessDescription("Retail sale of household goods and gifts.")
                 .contactName("Kasun Perera")
                 .contactPhone("0712345678")
+                .verificationDeclarationAccepted(true)
                 .build();
 
         when(merchantService.register(any(RegisterMerchantRequest.class)))

@@ -1,13 +1,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { Check, MapPin, Truck } from "lucide-react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { dispatchApi } from "../api";
 import type { CourierWorkload, VehicleType, ZoneOption } from "../types";
 import { VEHICLES } from "../vehicles";
 import { Modal } from "./Modal";
-
-const inputClass =
-  "w-full rounded-xl border border-ink/15 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-coral focus:ring-4 focus:ring-coral/10";
+import { Field, fieldClass, ghostButtonClass, primaryButtonClass } from "./Section";
 
 type EditCourierDialogProps = {
   courier: CourierWorkload;
@@ -39,34 +38,38 @@ export function EditCourierDialog({ courier, zones, onClose, onSaved }: EditCour
 
   return (
     <Modal title="Edit courier" onClose={onClose}>
-      <p className="mb-4 text-sm text-ink/60">{name}</p>
-      <form onSubmit={save} className="space-y-4">
-        <label className="block space-y-1.5">
-          <span className="text-sm font-semibold text-ink/80">Vehicle</span>
-          <select className={inputClass} value={vehicleType} onChange={(e) => setVehicleType(e.target.value as VehicleType)}>
+      <div className="mb-6 flex items-center gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-mint font-bold text-ink">
+          {name.charAt(0).toUpperCase()}
+        </span>
+        <p className="font-semibold">{name}</p>
+      </div>
+      <form onSubmit={save} className="space-y-5">
+        <Field label="Vehicle" icon={Truck} hint="What this courier delivers with.">
+          <select className={fieldClass} value={vehicleType} onChange={(e) => setVehicleType(e.target.value as VehicleType)}>
             {VEHICLES.map((vehicle) => (
               <option key={vehicle.value} value={vehicle.value}>
                 {vehicle.label}
               </option>
             ))}
           </select>
-        </label>
-        <label className="block space-y-1.5">
-          <span className="text-sm font-semibold text-ink/80">Delivery area</span>
-          <select className={inputClass} value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
+        </Field>
+        <Field label="Delivery area" icon={MapPin} hint="Parcels from this area are recommended to this courier.">
+          <select className={fieldClass} value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
                 {zone.name} ({zone.district})
               </option>
             ))}
           </select>
-        </label>
-        {error && <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="rounded-xl border border-ink/15 px-4 py-2.5 text-sm font-semibold">
+        </Field>
+        {error && <p className="rounded-xl bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
+        <div className="flex justify-end gap-3 border-t border-ink/10 pt-5">
+          <button type="button" onClick={onClose} className={ghostButtonClass}>
             Cancel
           </button>
-          <button disabled={saving} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition hover:bg-coral">
+          <button disabled={saving} className={primaryButtonClass}>
+            <Check size={16} />
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>

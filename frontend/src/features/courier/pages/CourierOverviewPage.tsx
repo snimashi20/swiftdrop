@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   MapPin,
+  Navigation,
   Package,
   Phone,
   RefreshCw,
@@ -13,11 +14,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getTodayDeliveries } from "../api";
 import type { CourierDelivery } from "../types";
+import { CourierRouteModal, getGoogleMapsNavigationUrl } from "../components/CourierRouteModal";
 
 export function CourierOverviewPage() {
   const [deliveries, setDeliveries] = useState<CourierDelivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [routeModalOpen, setRouteModalOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -103,12 +106,13 @@ export function CourierOverviewPage() {
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
-          <Link
-            to="/courier/today?filter=ALL"
-            className="flex items-center justify-center gap-2 rounded-xl bg-coral px-5 py-3 font-semibold text-white shadow-lg shadow-coral/20 transition hover:bg-coral/90"
+          <button
+            type="button"
+            onClick={() => setRouteModalOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-coral px-5 py-3 font-semibold text-white shadow-lg shadow-coral/20 transition hover:bg-coral/90 cursor-pointer"
           >
-            View route <ArrowUpRight size={17} />
-          </Link>
+            <Route size={17} /> View route
+          </button>
         </div>
       </div>
 
@@ -169,13 +173,21 @@ export function CourierOverviewPage() {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <a
                   href={`tel:${nextStop.recipientPhone}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-semibold text-white hover:bg-white/20"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-semibold text-white hover:bg-white/20 transition"
                 >
                   <Phone size={14} /> Call {nextStop.recipientPhone}
                 </a>
+                <a
+                  href={getGoogleMapsNavigationUrl(nextStop.deliveryAddress)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 border border-white/15 px-3.5 py-2 text-xs font-semibold text-white hover:bg-white/20 transition"
+                >
+                  <Navigation size={14} className="text-coral" /> Navigate (GPS)
+                </a>
                 <Link
                   to="/courier/today?filter=ACTIVE"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-coral px-4 py-2 text-xs font-semibold text-white hover:bg-coral/90"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-coral px-4 py-2 text-xs font-semibold text-white hover:bg-coral/90 transition"
                 >
                   Update status / Deliver <ArrowUpRight size={14} />
                 </Link>
@@ -210,6 +222,12 @@ export function CourierOverviewPage() {
           </div>
         </section>
       </div>
+      {/* Interactive Delivery Route & Multi-Stop GPS Map Modal */}
+      <CourierRouteModal
+        isOpen={routeModalOpen}
+        onClose={() => setRouteModalOpen(false)}
+        deliveries={deliveries}
+      />
     </div>
   );
 }
