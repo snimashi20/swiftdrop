@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,9 +28,22 @@ public class RegisterMerchantRequest {
     @Size(max = 150, message = "Business name cannot exceed 150 characters")
     private String businessName;
 
+    @NotBlank(message = "Business type is required")
+    @Pattern(regexp = "SOLE_PROPRIETORSHIP|PARTNERSHIP|PRIVATE_LIMITED_COMPANY|OTHER",
+        message = "Select a supported business type")
+    private String businessType;
+
     @NotBlank(message = "Business registration number is required")
     @Size(max = 100, message = "Registration number cannot exceed 100 characters")
     private String registrationNumber;
+
+    @NotBlank(message = "Business address is required")
+    @Size(min = 5, max = 300, message = "Business address must be between 5 and 300 characters")
+    private String businessAddress;
+
+    @NotBlank(message = "Business activity description is required")
+    @Size(min = 10, max = 500, message = "Business activity description must be between 10 and 500 characters")
+    private String businessDescription;
 
     @NotBlank(message = "Contact name is required")
     @Size(max = 100, message = "Contact name cannot exceed 100 characters")
@@ -41,4 +55,7 @@ public class RegisterMerchantRequest {
         message = "Must be a valid Sri Lankan mobile number (e.g. 07XXXXXXXX or +947XXXXXXXX)"
     )
     private String contactPhone;
+
+    @AssertTrue(message = "You must confirm that the business information is accurate")
+    private boolean verificationDeclarationAccepted;
 }

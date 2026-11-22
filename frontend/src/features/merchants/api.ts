@@ -1,5 +1,5 @@
 import { api } from "../../lib/api";
-import type { ApiKey, GeneratedApiKey, Merchant, MerchantOrder, MerchantOrderTrendPoint, MerchantStatus, Page, RegisterMerchantRequest, ParcelStatus } from "./types";
+import type { ApiKey, GeneratedApiKey, Merchant, MerchantOrder, MerchantOrderTrendPoint, MerchantStatus, Page, RegisterMerchantRequest, UpdateMerchantProfileRequest, ParcelStatus } from "./types";
 
 export async function registerMerchant(data: RegisterMerchantRequest): Promise<Merchant> {
   return (await api.post<Merchant>("/merchants/register", data)).data;
@@ -7,6 +7,10 @@ export async function registerMerchant(data: RegisterMerchantRequest): Promise<M
 
 export async function fetchMyMerchant(): Promise<Merchant> {
   return (await api.get<Merchant>("/merchants/me")).data;
+}
+
+export async function updateMyMerchantProfile(data: UpdateMerchantProfileRequest): Promise<Merchant> {
+  return (await api.put<Merchant>("/merchants/me", data)).data;
 }
 
 export async function fetchMerchants(status?: MerchantStatus, page = 0): Promise<Page<Merchant>> {

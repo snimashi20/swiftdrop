@@ -29,8 +29,20 @@ public class Merchant {
     @Column(name = "business_name", nullable = false, length = 150)
     private String businessName;
 
+    @Column(name = "business_type", length = 40)
+    private String businessType;
+
     @Column(name = "registration_number", nullable = false, unique = true, length = 100)
     private String registrationNumber;
+
+    @Column(name = "business_address", length = 300)
+    private String businessAddress;
+
+    @Column(name = "business_description", length = 500)
+    private String businessDescription;
+
+    @Column(name = "verification_declaration_accepted")
+    private Boolean verificationDeclarationAccepted;
 
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;

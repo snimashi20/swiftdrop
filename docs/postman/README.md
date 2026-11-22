@@ -40,6 +40,8 @@ The collection uses `POST /api/v1/auth/login` with `{ "email", "password" }`. A 
 
 Do **not** use `/api/v1/auth/register` for merchant setup. It is outside the M9 onboarding flow and has a known role issue. The M9 public registration endpoint is `/api/v1/merchants/register`.
 
+Merchant applications include the legal business structure, registration number, registered or operating address, a short description of products or services, primary contact details, and an accuracy declaration. These values are returned with the merchant record and appear on the admin **Merchant approvals** page for review. Merchant applicants do not upload files in this workflow.
+
 ## Workflow order
 
 The Collection Runner follows these folders and requests in order:
