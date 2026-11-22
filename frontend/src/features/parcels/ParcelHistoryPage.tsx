@@ -31,6 +31,13 @@ const JOURNEY: ParcelStatus[] = ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
+// Shows the town the customer typed plus its district, e.g. "Moratuwa, Colombo".
+// When both are the same (or the town is empty) it shows the district once.
+function place(a: { city?: string | null; district: string }): string {
+  const city = a.city?.trim();
+  return city && city.toLowerCase() !== a.district.toLowerCase() ? `${city}, ${a.district}` : a.district;
+}
+
 function Progress({ status }: { status: ParcelStatus }) {
   const reached = JOURNEY.indexOf(status);
   if (reached < 0) return null; // failed or cancelled parcels are not on the journey
@@ -199,9 +206,9 @@ export function ParcelHistoryPage() {
               </div>
 
               <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
-                {parcel.pickup.district}
+                {place(parcel.pickup)}
                 <ArrowRight className="h-4 w-4 text-coral" />
-                {parcel.dropoff.district}
+                {place(parcel.dropoff)}
               </p>
               <p className="text-sm text-ink/60">For {parcel.receiverName}</p>
 
