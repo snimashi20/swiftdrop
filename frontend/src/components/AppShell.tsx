@@ -49,6 +49,8 @@ export function AppShell() {
       ? "/admin/profile"
       : user?.role === "CUSTOMER"
       ? "/customer/profile"
+      : user?.role === "MERCHANT"
+      ? "/merchant/profile"
       : "/profile";
   const visibleLinks = links
     .filter((link) => user && link.roles.includes(user.role))

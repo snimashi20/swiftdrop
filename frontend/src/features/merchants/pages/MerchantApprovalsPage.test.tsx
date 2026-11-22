@@ -15,7 +15,11 @@ vi.mock("../api", () => ({
 const pendingMerchant: Merchant = {
   id: 12,
   businessName: "Northstar Goods",
+  businessType: "PRIVATE_LIMITED_COMPANY",
   registrationNumber: "BR-123456",
+  businessAddress: "12 Main Street, Colombo 03",
+  businessDescription: "Retail sale of household goods and gifts.",
+  verificationDeclarationAccepted: true,
   contactName: "Alex Morgan",
   contactEmail: "orders@example.test",
   contactPhone: "0771234567",
@@ -49,6 +53,10 @@ describe("MerchantApprovalsPage", () => {
     expect(await screen.findByRole("heading", { name: "Northstar Goods" })).toBeInTheDocument();
     expect(screen.getAllByText("PENDING").length).toBeGreaterThan(1);
     expect(screen.getByText(/orders@example\.test/)).toBeInTheDocument();
+    expect(screen.getByText(/Private limited company/)).toBeInTheDocument();
+    expect(screen.getByText(/12 Main Street, Colombo 03/)).toBeInTheDocument();
+    expect(screen.getByText(/Retail sale of household goods and gifts/)).toBeInTheDocument();
+    expect(screen.getByText(/Applicant confirmation:/).closest("p")).toHaveTextContent("Confirmed");
     expect(screen.getByRole("button", { name: /^Approve$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Reject$/i })).toBeInTheDocument();
     expect(fetchMerchants).toHaveBeenCalledWith("PENDING", 0);

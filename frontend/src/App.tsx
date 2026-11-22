@@ -41,6 +41,7 @@ import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprov
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
 import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
+import { MerchantProfilePage } from "./features/merchants/pages/MerchantProfilePage";
 import { RoleSelectionPage } from "./features/auth/RoleSelectionPage";
 import { WaitingApprovalPage } from "./features/auth/WaitingApprovalPage";
 import { MyNotificationsPage } from "./features/notifications/MyNotificationsPage";
@@ -132,6 +133,9 @@ export function App() {
             </Route>
             <Route path="/merchant/orders" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
               <Route index element={<MerchantOrdersPage />} />
+            </Route>
+            <Route path="/merchant/profile" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<MerchantProfilePage />} />
             </Route>
             <Route path="/admin/overview" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminOverviewPage />} />

@@ -204,8 +204,10 @@ class SecurityConfigIntegrationTest {
         mockMvc.perform(post("/api/v1/merchants/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"new-merchant@example.test\",\"password\":\"test-password\","
-                                + "\"businessName\":\"New Test Merchant\",\"registrationNumber\":\"SECURITY-TEST-33\","
-                                + "\"contactName\":\"Test User\",\"contactPhone\":\"0700000033\"}"))
+                                + "\"businessName\":\"New Test Merchant\",\"businessType\":\"PRIVATE_LIMITED_COMPANY\","
+                                + "\"registrationNumber\":\"SECURITY-TEST-33\",\"businessAddress\":\"33 Test Street, Colombo\","
+                                + "\"businessDescription\":\"Test merchant selling household goods.\","
+                                + "\"verificationDeclarationAccepted\":true,\"contactName\":\"Test User\",\"contactPhone\":\"0700000033\"}"))
                 .andExpect(status().isCreated());
     }
 
