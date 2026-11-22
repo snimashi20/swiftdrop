@@ -50,7 +50,7 @@ export function SignupPage() {
 
   return (
     <div className="min-h-screen bg-ink p-4 sm:p-8 flex items-center justify-center">
-      <div className="mx-auto max-w-2xl w-full rounded-3xl bg-[#fbfcfa] p-6 sm:p-12 shadow-2xl">
+      <div className="mx-auto max-w-2xl w-full rounded-3xl bg-mist p-6 sm:p-12 shadow-2xl">
         <Link to="/login" className="font-display text-2xl font-bold">
           swift<span className="text-coral">drop</span>
         </Link>
@@ -90,15 +90,15 @@ export function SignupPage() {
             {/* Dynamic helper badge */}
             <div className="pt-1">
               {selectedRole === "CUSTOMER" ? (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 text-xs text-emerald-800">
-                  <Sparkles size={16} className="text-emerald-600 shrink-0" />
+                <div className="flex items-center gap-2 rounded-xl bg-mint/50 border border-mint p-3 text-xs text-ink">
+                  <Sparkles size={16} className="text-coral shrink-0" />
                   <span>
                     <strong>Instant Access:</strong> Customers can book, track deliveries, and enter the dashboard immediately without admin review.
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-900">
-                  <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                <div className="flex items-center gap-2 rounded-xl bg-mist border border-coral/20 p-3 text-xs text-ink">
+                  <ShieldAlert size={16} className="text-coral shrink-0" />
                   <span>
                     <strong>Admin Review Required:</strong> {selectedRole === "MERCHANT" ? "Merchant" : "Courier"} accounts require manual Admin approval before accessing their dashboard.
                   </span>
@@ -162,7 +162,7 @@ export function SignupPage() {
                 <li>Confirm that you are authorized to represent the business</li>
               </ul>
 
-              <p className="mb-5 rounded-xl border border-amber-200/80 bg-amber-50 p-3 text-xs text-amber-900">
+              <p className="mb-5 rounded-xl border border-coral/20 bg-mist p-3 text-xs text-ink">
                 <strong>Admin review required:</strong> Your merchant account stays pending until your business application is approved. No document uploads are required.
               </p>
 
@@ -189,7 +189,7 @@ export function SignupPage() {
 
               <div className="relative my-6 flex items-center justify-center">
                 <div className="w-full border-t border-ink/10" />
-                <span className="absolute bg-[#fbfcfa] px-3 text-xs font-semibold text-ink/50 uppercase tracking-wider">
+                <span className="absolute bg-mist px-3 text-xs font-semibold text-ink/50 uppercase tracking-wider">
                   or register with email
                 </span>
               </div>

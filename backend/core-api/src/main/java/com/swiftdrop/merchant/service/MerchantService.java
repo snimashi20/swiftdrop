@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -83,19 +84,40 @@ public class MerchantService {
     @Transactional
     public MerchantResponseDto updateMyProfile(UpdateMerchantProfileRequest request, Authentication authentication) {
         Merchant merchant = currentMerchantProvider.getCurrentMerchant(authentication);
+        String businessName = request.getBusinessName().trim();
+        String businessType = request.getBusinessType();
         String registrationNumber = request.getRegistrationNumber().trim();
+        String businessAddress = request.getBusinessAddress().trim();
+        String businessDescription = request.getBusinessDescription().trim();
+        String contactName = request.getContactName().trim();
+        String contactPhone = request.getContactPhone().trim();
+        boolean declarationAccepted = request.isVerificationDeclarationAccepted();
+
+        boolean verificationDetailsChanged = !Objects.equals(merchant.getBusinessName(), businessName)
+                || !Objects.equals(merchant.getBusinessType(), businessType)
+                || !Objects.equals(merchant.getRegistrationNumber(), registrationNumber)
+                || !Objects.equals(merchant.getBusinessAddress(), businessAddress)
+                || !Objects.equals(merchant.getBusinessDescription(), businessDescription)
+                || !Objects.equals(merchant.getContactName(), contactName)
+                || !Objects.equals(merchant.getContactPhone(), contactPhone)
+                || !Objects.equals(merchant.getVerificationDeclarationAccepted(), declarationAccepted);
+
+        if (!verificationDetailsChanged) {
+            return merchantMapper.toDto(merchant);
+        }
+
         if (merchantRepository.existsByRegistrationNumberAndIdNot(registrationNumber, merchant.getId())) {
             throw new ConflictException("Business registration number already registered");
         }
 
-        merchant.setBusinessName(request.getBusinessName().trim());
-        merchant.setBusinessType(request.getBusinessType());
+        merchant.setBusinessName(businessName);
+        merchant.setBusinessType(businessType);
         merchant.setRegistrationNumber(registrationNumber);
-        merchant.setBusinessAddress(request.getBusinessAddress().trim());
-        merchant.setBusinessDescription(request.getBusinessDescription().trim());
-        merchant.setContactName(request.getContactName().trim());
-        merchant.setContactPhone(request.getContactPhone().trim());
-        merchant.setVerificationDeclarationAccepted(request.isVerificationDeclarationAccepted());
+        merchant.setBusinessAddress(businessAddress);
+        merchant.setBusinessDescription(businessDescription);
+        merchant.setContactName(contactName);
+        merchant.setContactPhone(contactPhone);
+        merchant.setVerificationDeclarationAccepted(declarationAccepted);
 
         // Any change to submitted verification details must be reviewed again.
         merchant.setStatus(MerchantStatus.PENDING);
@@ -108,8 +130,10 @@ public class MerchantService {
                     .orElseThrow(() -> new com.swiftdrop.common.exception.NotFoundException("Merchant user not found"));
             user.setFullName(merchant.getContactName());
             user.setPhoneNumber(merchant.getContactPhone());
-            user.setStatus("PENDING_APPROVAL");
-            user.setEnabled(false);
+            // Keep the merchant able to sign in and edit their profile while review is pending.
+            // Machine API access is gated separately by the merchant's APPROVED status.
+            user.setStatus("ACTIVE");
+            user.setEnabled(true);
             userRepository.save(user);
         }
 

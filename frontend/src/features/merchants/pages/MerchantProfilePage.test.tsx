@@ -40,14 +40,15 @@ describe("MerchantProfilePage", () => {
     expect(screen.getByText("APPROVED")).toBeInTheDocument();
   });
 
-  it("submits the current business details and shows that admin review is required", async () => {
+  it("submits changed business details and explains that API access pauses during review", async () => {
     const user = userEvent.setup();
     render(<MerchantProfilePage />);
     await screen.findByDisplayValue("Ceylon Craft Corner (Demo)");
 
-    await user.click(screen.getByRole("button", { name: /save and resubmit for review/i }));
+    await user.click(screen.getByRole("button", { name: /save business profile/i }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("pending admin review");
+    expect(screen.getByRole("status")).toHaveTextContent("you can continue signing in");
     expect(updateMyMerchantProfile).toHaveBeenCalledWith({
       businessName: "Ceylon Craft Corner (Demo)",
       businessType: "SOLE_PROPRIETORSHIP",
@@ -58,5 +59,18 @@ describe("MerchantProfilePage", () => {
       contactPhone: "0771234567",
       verificationDeclarationAccepted: true,
     });
+  });
+
+  it("keeps the approved status and access when saving unchanged details", async () => {
+    const user = userEvent.setup();
+    vi.mocked(updateMyMerchantProfile).mockResolvedValue(existingProfile);
+    render(<MerchantProfilePage />);
+    await screen.findByDisplayValue("Ceylon Craft Corner (Demo)");
+
+    await user.click(screen.getByRole("button", { name: /save business profile/i }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("No verification details changed");
+    expect(screen.getByText("APPROVED")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("API access remain active");
   });
 });

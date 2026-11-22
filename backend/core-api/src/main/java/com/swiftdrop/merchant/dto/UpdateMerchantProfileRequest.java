@@ -15,34 +15,36 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateMerchantProfileRequest {
 
-    @NotBlank
-    @Size(max = 150)
+    @NotBlank(message = "Business name is required.")
+    @Size(max = 150, message = "Business name must be 150 characters or fewer.")
     private String businessName;
 
-    @NotBlank
-    @Pattern(regexp = "SOLE_PROPRIETORSHIP|PARTNERSHIP|PRIVATE_LIMITED_COMPANY|OTHER")
+    @NotBlank(message = "Business structure is required.")
+    @Pattern(regexp = "SOLE_PROPRIETORSHIP|PARTNERSHIP|PRIVATE_LIMITED_COMPANY|OTHER",
+            message = "Select a valid business structure.")
     private String businessType;
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "Business registration number is required.")
+    @Size(max = 100, message = "Business registration number must be 100 characters or fewer.")
     private String registrationNumber;
 
-    @NotBlank
-    @Size(min = 5, max = 300)
+    @NotBlank(message = "Business address is required.")
+    @Size(min = 5, max = 300, message = "Business address must be between 5 and 300 characters.")
     private String businessAddress;
 
-    @NotBlank
-    @Size(min = 10, max = 500)
+    @NotBlank(message = "Business description is required.")
+    @Size(min = 10, max = 500, message = "Business description must be between 10 and 500 characters.")
     private String businessDescription;
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "Contact name is required.")
+    @Size(max = 100, message = "Contact name must be 100 characters or fewer.")
     private String contactName;
 
-    @NotBlank
-    @Pattern(regexp = "^(?:0|\\+94)7[0-9]{8}$")
+    @NotBlank(message = "Contact phone number is required.")
+    @Pattern(regexp = "^(?:0|\\+94)7[0-9]{8}$",
+            message = "Enter a Sri Lankan mobile number such as 0771234567 or +94771234567.")
     private String contactPhone;
 
-    @AssertTrue
+    @AssertTrue(message = "Confirm that you are authorized to represent this business and that the information is accurate.")
     private boolean verificationDeclarationAccepted;
 }

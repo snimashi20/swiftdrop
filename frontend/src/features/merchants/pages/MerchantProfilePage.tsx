@@ -44,7 +44,7 @@ export function MerchantProfilePage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: emptyValues,
@@ -78,11 +78,17 @@ export function MerchantProfilePage() {
 
   const submit = async (values: FormValues) => {
     setSaveError("");
-    setSaved(false);
+    setSavedMessage("");
     try {
       const updated = await updateMyMerchantProfile(values satisfies UpdateMerchantProfileRequest);
       setMerchant(updated);
-      setSaved(true);
+      if (updated.status === "APPROVED") {
+        setSavedMessage("No verification details changed. Your approved merchant status and API access remain active.");
+      } else if (updated.status === "PENDING") {
+        setSavedMessage("Your profile is pending admin review. Merchant API access is paused until approval, but you can continue signing in.");
+      } else {
+        setSavedMessage("Your profile remains rejected. Update your business details and save them to request another review.");
+      }
     } catch (error) {
       setSaveError(getApiErrorMessage(error, "We could not update your merchant profile."));
     }
@@ -100,16 +106,16 @@ export function MerchantProfilePage() {
             <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">Business profile</h1>
             <p className="mt-2 max-w-2xl text-sm text-ink/60">Keep your business and primary contact details up to date for SwiftDrop admin review.</p>
           </div>
-          <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${merchant?.status === "APPROVED" ? "bg-mint text-ink" : merchant?.status === "REJECTED" ? "bg-coral/10 text-coral" : "bg-amber-100 text-amber-900"}`}>
+          <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${merchant?.status === "APPROVED" ? "bg-mint text-ink" : merchant?.status === "REJECTED" ? "bg-coral/10 text-coral" : "bg-mist text-ink"}`}>
             {merchant?.status ?? "PROFILE"}
           </span>
         </div>
       </header>
 
-      {saved && (
-        <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+      {savedMessage && (
+        <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-mint bg-mint/40 p-4 text-sm text-ink">
           <CheckCircle2 size={19} className="mt-0.5 shrink-0" />
-          <p>Your business details were submitted. Your merchant account is pending admin review before merchant services are available again.</p>
+          <p>{savedMessage}</p>
         </div>
       )}
       {merchant?.rejectionReason && (
@@ -153,9 +159,9 @@ export function MerchantProfilePage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 sm:p-6">
+        <section className="rounded-2xl border border-coral/20 bg-mist p-5 sm:p-6">
           <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-ink"><ShieldCheck size={19} className="text-coral" /> Submit for review</h2>
-          <p className="mb-4 text-sm text-ink/70">Submitting updated verification details sends your profile back to the admin approval queue. If it is currently approved, merchant API access will pause until an admin reviews it again.</p>
+          <p className="mb-4 text-sm text-ink/70">Changed verification details go back to the admin approval queue. While review is pending, merchant API access is paused, but your account stays enabled so you can sign in and manage your profile.</p>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-ink/10 bg-white p-4 text-sm text-ink/75">
             <input type="checkbox" {...register("verificationDeclarationAccepted")} className="mt-0.5 h-4 w-4 accent-coral" />
             <span>I confirm that I am authorized to represent this business and that the information submitted is accurate.</span>
@@ -165,7 +171,7 @@ export function MerchantProfilePage() {
 
         {saveError && <p role="alert" className="rounded-xl border border-coral/20 bg-coral/10 px-4 py-3 text-sm text-coral">{saveError}</p>}
         <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-ink px-5 py-3.5 font-semibold text-white transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-60">
-          {isSubmitting ? "Submitting for review…" : "Save and resubmit for review"}
+          {isSubmitting ? "Saving business profile..." : "Save business profile"}
         </button>
       </form>
     </main>

@@ -238,8 +238,8 @@ class MerchantServiceTest {
     }
 
     @Test
-    @DisplayName("Updating merchant verification details resubmits the profile for admin review")
-    void updateMyProfile_resubmitsForReview() {
+    @DisplayName("Updating changed merchant verification details resubmits for review without locking out login")
+    void updateMyProfile_changedDetailsResubmitsForReviewAndKeepsLoginEnabled() {
         Merchant merchant = Merchant.builder()
                 .id(20L)
                 .userId(10L)
@@ -287,10 +287,61 @@ class MerchantServiceTest {
         assertNull(merchant.getReviewedAt());
         assertNull(merchant.getReviewedBy());
         assertNull(merchant.getRejectionReason());
-        assertEquals("PENDING_APPROVAL", user.getStatus());
-        assertFalse(user.isEnabled());
+        assertEquals("ACTIVE", user.getStatus());
+        assertTrue(user.isEnabled());
         verify(userRepository).save(user);
         verify(merchantRepository).save(merchant);
+    }
+
+    @Test
+    @DisplayName("Saving unchanged merchant verification details keeps approval and does not write")
+    void updateMyProfile_unchangedDetailsKeepsApproval() {
+        Instant reviewedAt = Instant.parse("2026-11-20T10:15:30Z");
+        Merchant merchant = Merchant.builder()
+                .id(20L)
+                .userId(10L)
+                .businessName("Ceylon Craft Corner")
+                .businessType("SOLE_PROPRIETORSHIP")
+                .registrationNumber("BR-M9-2026-01")
+                .businessAddress("24 Galle Road, Colombo 03, Sri Lanka")
+                .businessDescription("Locally made crafts and gifts for customers across Sri Lanka.")
+                .verificationDeclarationAccepted(true)
+                .contactName("Alex Morgan")
+                .contactEmail("merchant@example.test")
+                .contactPhone("0771234567")
+                .status(MerchantStatus.APPROVED)
+                .reviewedAt(reviewedAt)
+                .reviewedBy(99L)
+                .build();
+        UpdateMerchantProfileRequest request = UpdateMerchantProfileRequest.builder()
+                .businessName("Ceylon Craft Corner")
+                .businessType("SOLE_PROPRIETORSHIP")
+                .registrationNumber("BR-M9-2026-01")
+                .businessAddress("24 Galle Road, Colombo 03, Sri Lanka")
+                .businessDescription("Locally made crafts and gifts for customers across Sri Lanka.")
+                .contactName("Alex Morgan")
+                .contactPhone("0771234567")
+                .verificationDeclarationAccepted(true)
+                .build();
+        MerchantResponseDto expected = MerchantResponseDto.builder()
+                .id(20L)
+                .businessName("Ceylon Craft Corner")
+                .status(MerchantStatus.APPROVED)
+                .build();
+
+        when(currentMerchantProvider.getCurrentMerchant(authentication)).thenReturn(merchant);
+        when(merchantMapper.toDto(merchant)).thenReturn(expected);
+
+        MerchantResponseDto result = merchantService.updateMyProfile(request, authentication);
+
+        assertEquals(MerchantStatus.APPROVED, result.getStatus());
+        assertEquals(MerchantStatus.APPROVED, merchant.getStatus());
+        assertEquals(reviewedAt, merchant.getReviewedAt());
+        assertEquals(99L, merchant.getReviewedBy());
+        verify(merchantRepository, never()).existsByRegistrationNumberAndIdNot(anyString(), any());
+        verify(merchantRepository, never()).save(any());
+        verify(userRepository, never()).findById(any());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
