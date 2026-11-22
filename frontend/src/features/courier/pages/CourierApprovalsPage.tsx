@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { approveCourierApplication, fetchCourierApplications, rejectCourierApplication } from "../admin.api";
 import type { CourierApplication, CourierApplicationStatus } from "../types";
-import { Link } from "react-router-dom";
 
 const statusStyle: Record<CourierApplicationStatus, string> = {
   PENDING: "bg-coral/10 text-coral",
@@ -127,12 +126,11 @@ export function CourierApprovalsPage() {
           </div>
                     <div className="flex flex-wrap items-center gap-2">
             {/* Link to Application Details Review Page */}
-            <Link
-              to={`/admin/users/${courier.userId ?? courier.id}/review`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-ink/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink transition hover:bg-mist"
-            >
+            <a
+              href={`/admin/users/${courier.userId ?? courier.id}/review`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-ink/15 bg-white px-3.5 py-2 text-xs font-semibold text-ink transition hover:bg-mist">
               <Eye size={14} className="text-coral" /> Review Details
-            </Link>
+            </a>
 
             {courier.status === "PENDING" && (
               <>

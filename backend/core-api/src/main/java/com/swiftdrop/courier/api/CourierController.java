@@ -15,19 +15,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/courier")
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('COURIER')")
 @Tag(name = "Courier Deliveries", description = "Endpoints for courier mobile delivery workflow, status transitions, and proof of delivery")
 @SecurityRequirement(name = "bearerAuth")
@@ -38,6 +36,20 @@ public class CourierController {
     private final CourierProfileRepository courierProfileRepository;
     private final ZoneLookup zoneLookup;
 
+        public CourierController(CourierService courierService, UserRepository userRepository, CourierProfileRepository courierProfileRepository) {
+        this(courierService, userRepository, courierProfileRepository, null);
+    }
+
+    @Autowired
+    public CourierController(CourierService courierService, UserRepository userRepository,
+                             CourierProfileRepository courierProfileRepository,
+                             @Autowired(required = false) ZoneLookup zoneLookup) {
+        this.courierService = courierService;
+        this.userRepository = userRepository;
+        this.courierProfileRepository = courierProfileRepository;
+        this.zoneLookup = zoneLookup;
+    }
+    
     private record CourierIdentity(Long userId, Long profileId) {}
 
     @GetMapping("/deliveries/today")

@@ -20,7 +20,7 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
       />
       {error && (
         <span className="block mt-1 text-xs font-semibold text-rose-600">
-          ⚠️ {error}
+          {error}
         </span>
       )}
     </label>
