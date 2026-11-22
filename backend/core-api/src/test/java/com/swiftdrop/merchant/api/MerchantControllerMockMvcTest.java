@@ -13,6 +13,8 @@ import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.parcel.domain.ParcelStatus;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,6 +51,7 @@ import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -325,13 +329,17 @@ class MerchantControllerMockMvcTest {
     void dashboardOrders_areScopedToCurrentMerchantAndFilterable() throws Exception {
         Merchant merchant = Merchant.builder().id(41L).build();
         when(currentMerchantProvider.getCurrentMerchant(any())).thenReturn(merchant);
-        when(merchantOrderService.listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), any()))
+        when(merchantOrderService.listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), eq("WEB-1001"), any()))
                 .thenReturn(new PageImpl<>(java.util.List.of(), PageRequest.of(0, 20), 0));
 
-        mockMvc.perform(get("/api/v1/merchants/me/orders?status=DELIVERED&page=0&size=20"))
+        mockMvc.perform(get("/api/v1/merchants/me/orders?status=DELIVERED&page=0&size=20&search=WEB-1001&sortDirection=ASC"))
                 .andExpect(status().isOk());
 
-        org.mockito.Mockito.verify(merchantOrderService).listDashboard(eq(41L), eq(ParcelStatus.DELIVERED), any());
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        org.mockito.Mockito.verify(merchantOrderService).listDashboard(
+                eq(41L), eq(ParcelStatus.DELIVERED), eq("WEB-1001"), pageable.capture());
+        assertEquals(Sort.Direction.ASC, pageable.getValue().getSort().getOrderFor("createdAt").getDirection());
+        assertEquals(Sort.Direction.ASC, pageable.getValue().getSort().getOrderFor("id").getDirection());
     }
 
     @ParameterizedTest

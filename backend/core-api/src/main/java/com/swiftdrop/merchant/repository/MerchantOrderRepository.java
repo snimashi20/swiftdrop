@@ -32,9 +32,23 @@ public interface MerchantOrderRepository extends JpaRepository<MerchantOrder, Lo
             join Parcel p on p.id = o.parcelId
             where o.merchant.id = :merchantId
               and (:status is null or p.status = :status)
-            order by o.createdAt desc
             """)
-    Page<MerchantOrder> findDashboardOrders(Long merchantId, ParcelStatus status, Pageable pageable);
+    Page<MerchantOrder> findDashboardOrders(@Param("merchantId") Long merchantId,
+                                            @Param("status") ParcelStatus status,
+                                            Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("""
+            select o from MerchantOrder o
+            join Parcel p on p.id = o.parcelId
+            where o.merchant.id = :merchantId
+              and (:status is null or p.status = :status)
+              and (lower(coalesce(o.externalOrderId, '')) like lower(concat('%', :search, '%'))
+                   or lower(p.trackingNumber) like lower(concat('%', :search, '%')))
+            """)
+    Page<MerchantOrder> searchDashboardOrders(@Param("merchantId") Long merchantId,
+                                              @Param("status") ParcelStatus status,
+                                              @Param("search") String search,
+                                              Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("""
             select p.status, count(o) from MerchantOrder o

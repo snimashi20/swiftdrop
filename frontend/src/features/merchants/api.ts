@@ -37,8 +37,15 @@ export async function revokeApiKey(id: number): Promise<ApiKey> {
   return (await api.post<ApiKey>(`/merchants/me/api-keys/${id}/revoke`)).data;
 }
 
-export async function fetchDashboardOrders(status?: ParcelStatus, page = 0): Promise<Page<MerchantOrder>> {
-  return (await api.get<Page<MerchantOrder>>("/merchants/me/orders", { params: { status: status || undefined, page, size: 20 } })).data;
+export async function fetchDashboardOrders(
+  status?: ParcelStatus,
+  page = 0,
+  search?: string,
+  sortDirection: "ASC" | "DESC" = "DESC",
+): Promise<Page<MerchantOrder>> {
+  return (await api.get<Page<MerchantOrder>>("/merchants/me/orders", {
+    params: { status: status || undefined, page, size: 20, search: search || undefined, sortDirection },
+  })).data;
 }
 
 export async function fetchDashboardOrderSummary(): Promise<Record<string, number>> {
