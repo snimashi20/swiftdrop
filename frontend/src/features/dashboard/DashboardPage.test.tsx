@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardPage } from "./DashboardPage";
 import { useAuth } from "../auth/AuthContext";
 import { fetchApiKeys, fetchDashboardOrderSummary, fetchDashboardOrderTrend } from "../merchants/api";
+import { listParcels } from "../parcels/parcels.api";
+import type { ParcelDetail, ParcelPage } from "../parcels/parcels.api";
 
 vi.mock("../auth/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../merchants/api", () => ({
@@ -11,6 +13,42 @@ vi.mock("../merchants/api", () => ({
   fetchDashboardOrderSummary: vi.fn(),
   fetchDashboardOrderTrend: vi.fn(),
 }));
+vi.mock("../parcels/parcels.api", () => ({
+  listParcels: vi.fn(),
+  STATUS_LABELS: {
+    CREATED: "Booked",
+    PICKED_UP: "Picked up",
+    IN_TRANSIT: "In transit",
+    OUT_FOR_DELIVERY: "Out for delivery",
+    DELIVERED: "Delivered",
+    FAILED: "Failed",
+    CANCELLED: "Cancelled",
+  },
+}));
+
+const mockParcel = (over: Partial<ParcelDetail> = {}): ParcelDetail => ({
+  id: 1,
+  trackingNumber: "SDABC1234567",
+  status: "CREATED",
+  pickup: { line1: "123 Galle Rd", city: "Colombo", district: "Colombo" },
+  dropoff: { line1: "456 Kandy Rd", city: "Peradeniya", district: "Kandy" },
+  receiverName: "Nimal Perera",
+  receiverPhone: "0771234567",
+  size: "M",
+  weightKg: 2,
+  fee: 750,
+  deliveryInstructions: null,
+  createdAt: "2026-11-20T10:00:00Z",
+  updatedAt: "2026-11-20T10:00:00Z",
+  ...over,
+});
+
+const mockPage = (items: ParcelDetail[]): ParcelPage => ({
+  content: items,
+  number: 0,
+  totalPages: 1,
+  totalElements: items.length,
+});
 
 describe("MerchantOverview", () => {
   beforeEach(() => {
@@ -65,5 +103,72 @@ describe("MerchantOverview", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("trend unavailable");
     expect(screen.getByText("Total orders")).toBeInTheDocument();
     expect(screen.getByText("Active API keys")).toBeInTheDocument();
+  });
+});
+
+describe("CustomerOverviewPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 10, name: "Kasun Silva", email: "kasun@example.com", role: "CUSTOMER", status: "ACTIVE" },
+      isLoading: false,
+      login: vi.fn(),
+      signup: vi.fn(),
+      selectRole: vi.fn(),
+      refreshProfile: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+    });
+  });
+
+  it("renders live customer metrics and recent shipments from real data", async () => {
+    const parcels = [
+      mockParcel({ id: 1, trackingNumber: "SD1111111111", status: "CREATED", fee: 500 }),
+      mockParcel({ id: 2, trackingNumber: "SD2222222222", status: "IN_TRANSIT", fee: 700 }),
+      mockParcel({ id: 3, trackingNumber: "SD3333333333", status: "DELIVERED", fee: 1200 }),
+    ];
+    vi.mocked(listParcels).mockResolvedValue(mockPage(parcels));
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByText("Hello, Kasun.")).toBeInTheDocument();
+    expect(screen.getByText("Total parcels")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+
+    // 2 active deliveries (CREATED + IN_TRANSIT)
+    expect(screen.getByText("Active deliveries")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+
+    // 1 delivered (found in metric cards and status badge)
+    expect(screen.getAllByText("Delivered").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("1")).toBeInTheDocument();
+
+    // Total spent: 500 + 700 + 1200 = 2400
+    expect(screen.getByText("Total spent")).toBeInTheDocument();
+    expect(screen.getByText("LKR 2,400")).toBeInTheDocument();
+
+    // Recent shipments list
+    expect(screen.getByText("SD1111111111")).toBeInTheDocument();
+    expect(screen.getByText("SD2222222222")).toBeInTheDocument();
+    expect(screen.getByText("SD3333333333")).toBeInTheDocument();
+    expect(screen.getByText("Send a parcel")).toBeInTheDocument();
+  });
+
+  it("renders empty state when customer has no parcels", async () => {
+    vi.mocked(listParcels).mockResolvedValue(mockPage([]));
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByText("Hello, Kasun.")).toBeInTheDocument();
+    expect(screen.getByText("No parcels booked yet")).toBeInTheDocument();
+    expect(screen.getByText("Book your first delivery")).toBeInTheDocument();
+  });
+
+  it("handles fetch error gracefully", async () => {
+    vi.mocked(listParcels).mockRejectedValue(new Error("Network disconnect"));
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Network disconnect");
   });
 });
