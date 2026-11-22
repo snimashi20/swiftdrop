@@ -8,6 +8,7 @@ import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.dto.MerchantMapper;
 import com.swiftdrop.merchant.dto.MerchantResponseDto;
 import com.swiftdrop.merchant.dto.RegisterMerchantRequest;
+import com.swiftdrop.merchant.dto.UpdateMerchantProfileRequest;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import com.swiftdrop.merchant.security.CurrentMerchantProvider;
 import com.swiftdrop.service.AuthService;
@@ -56,7 +57,11 @@ public class MerchantService {
         Merchant merchant = Merchant.builder()
                 .userId(savedUser.getId())
                 .businessName(request.getBusinessName().trim())
+                .businessType(request.getBusinessType())
                 .registrationNumber(normalizedRegNo)
+                .businessAddress(request.getBusinessAddress().trim())
+                .businessDescription(request.getBusinessDescription().trim())
+                .verificationDeclarationAccepted(request.isVerificationDeclarationAccepted())
                 .contactName(request.getContactName().trim())
                 .contactEmail(normalizedEmail)
                 .contactPhone(request.getContactPhone().trim())
@@ -73,6 +78,42 @@ public class MerchantService {
     public MerchantResponseDto getMyProfile(Authentication authentication) {
         Merchant merchant = currentMerchantProvider.getCurrentMerchant(authentication);
         return merchantMapper.toDto(merchant);
+    }
+
+    @Transactional
+    public MerchantResponseDto updateMyProfile(UpdateMerchantProfileRequest request, Authentication authentication) {
+        Merchant merchant = currentMerchantProvider.getCurrentMerchant(authentication);
+        String registrationNumber = request.getRegistrationNumber().trim();
+        if (merchantRepository.existsByRegistrationNumberAndIdNot(registrationNumber, merchant.getId())) {
+            throw new ConflictException("Business registration number already registered");
+        }
+
+        merchant.setBusinessName(request.getBusinessName().trim());
+        merchant.setBusinessType(request.getBusinessType());
+        merchant.setRegistrationNumber(registrationNumber);
+        merchant.setBusinessAddress(request.getBusinessAddress().trim());
+        merchant.setBusinessDescription(request.getBusinessDescription().trim());
+        merchant.setContactName(request.getContactName().trim());
+        merchant.setContactPhone(request.getContactPhone().trim());
+        merchant.setVerificationDeclarationAccepted(request.isVerificationDeclarationAccepted());
+
+        // Any change to submitted verification details must be reviewed again.
+        merchant.setStatus(MerchantStatus.PENDING);
+        merchant.setRejectionReason(null);
+        merchant.setReviewedAt(null);
+        merchant.setReviewedBy(null);
+
+        if (merchant.getUserId() != null) {
+            User user = userRepository.findById(merchant.getUserId())
+                    .orElseThrow(() -> new com.swiftdrop.common.exception.NotFoundException("Merchant user not found"));
+            user.setFullName(merchant.getContactName());
+            user.setPhoneNumber(merchant.getContactPhone());
+            user.setStatus("PENDING_APPROVAL");
+            user.setEnabled(false);
+            userRepository.save(user);
+        }
+
+        return merchantMapper.toDto(merchantRepository.save(merchant));
     }
 
     @Transactional(readOnly = true)

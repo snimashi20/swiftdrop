@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, ShieldAlert, Sparkles, Truck } from "lucide-react";
+import { ArrowRight, Building2, ShieldAlert, Sparkles, Store, Truck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -136,6 +136,42 @@ export function SignupPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-coral px-4 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-coral/90"
               >
                 Continue to Courier Registration Form
+                <ArrowRight size={18} />
+              </Link>
+            </div>
+          ) : selectedRole === "MERCHANT" ? (
+            <div className="rounded-2xl border border-coral/25 bg-white p-6 shadow-sm">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-coral/10 text-coral">
+                  <Building2 size={22} />
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-bold text-ink">
+                    Merchant Verification Application Required
+                  </h2>
+                  <p className="text-xs text-ink/60">
+                    Submit your business details so an admin can review your application.
+                  </p>
+                </div>
+              </div>
+
+              <ul className="mb-5 list-disc space-y-1.5 pl-5 text-xs text-ink/70">
+                <li>Registered business name, structure, and registration number</li>
+                <li>Business address and a short description of your products or services</li>
+                <li>Primary contact name, business email, and mobile number</li>
+                <li>Confirm that you are authorized to represent the business</li>
+              </ul>
+
+              <p className="mb-5 rounded-xl border border-amber-200/80 bg-amber-50 p-3 text-xs text-amber-900">
+                <strong>Admin review required:</strong> Your merchant account stays pending until your business application is approved. No document uploads are required.
+              </p>
+
+              <Link
+                to="/merchant/register"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-coral px-4 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-coral/90"
+              >
+                Continue to Merchant Registration Form
+                <Store size={18} />
                 <ArrowRight size={18} />
               </Link>
             </div>

@@ -2,6 +2,7 @@ package com.swiftdrop.merchant.api;
 
 import com.swiftdrop.merchant.dto.MerchantResponseDto;
 import com.swiftdrop.merchant.dto.RegisterMerchantRequest;
+import com.swiftdrop.merchant.dto.UpdateMerchantProfileRequest;
 import com.swiftdrop.merchant.service.MerchantService;
 import com.swiftdrop.merchant.service.MerchantOrderService;
 import com.swiftdrop.merchant.security.CurrentMerchantProvider;
@@ -44,7 +45,7 @@ public class MerchantController {
                     required = true,
                     content = @Content(
                             schema = @Schema(implementation = RegisterMerchantRequest.class),
-                            examples = @ExampleObject(value = "{\"email\":\"shop@example.com\",\"password\":\"strong-password\",\"businessName\":\"Apex Store\",\"registrationNumber\":\"BR-1001\",\"contactName\":\"Shop Owner\",\"contactPhone\":\"0712345678\"}"))))
+                            examples = @ExampleObject(value = "{\"email\":\"shop@example.com\",\"password\":\"strong-password\",\"businessName\":\"Apex Store\",\"businessType\":\"PRIVATE_LIMITED_COMPANY\",\"registrationNumber\":\"BR-1001\",\"businessAddress\":\"12 Main Street, Colombo 03\",\"businessDescription\":\"Retail sale of household goods and gifts.\",\"contactName\":\"Shop Owner\",\"contactPhone\":\"0712345678\",\"verificationDeclarationAccepted\":true}"))))
     public ResponseEntity<MerchantResponseDto> register(@Valid @RequestBody RegisterMerchantRequest request) {
         MerchantResponseDto created = merchantService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -56,6 +57,15 @@ public class MerchantController {
     public ResponseEntity<MerchantResponseDto> getMyProfile(Authentication authentication) {
         MerchantResponseDto profile = merchantService.getMyProfile(authentication);
         return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("hasRole('MERCHANT')")
+    @Operation(summary = "Update the current merchant profile and resubmit it for admin review")
+    public ResponseEntity<MerchantResponseDto> updateMyProfile(
+            @Valid @RequestBody UpdateMerchantProfileRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(merchantService.updateMyProfile(request, authentication));
     }
 
     @GetMapping("/me/orders")
