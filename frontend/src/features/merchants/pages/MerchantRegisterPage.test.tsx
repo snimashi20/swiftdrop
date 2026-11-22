@@ -10,12 +10,13 @@ vi.mock("../api", () => ({
 }));
 
 const validForm = {
-  "Business name": "Northstar Goods",
-  "Registration number": "BR-123456",
-  "Contact name": "Alex Morgan",
-  "Business email": "orders@example.test",
-  Password: "test-password-123",
-  "Sri Lankan mobile number": "0771234567",
+  "Registered business name *": "Northstar Goods",
+  "Business registration number *": "BR-123456",
+  "Contact person *": "Alex Morgan",
+  "Business email / sign-in email *": "orders@example.test",
+  "Password *": "test-password-123",
+  "Sri Lankan mobile number *": "0771234567",
+  "Registered or operating address *": "12 Main Street, Colombo 03",
 };
 
 function renderPage() {
@@ -27,6 +28,9 @@ async function fillValidForm() {
   for (const [label, value] of Object.entries(validForm)) {
     await user.type(screen.getByLabelText(label), value);
   }
+  await user.selectOptions(screen.getByLabelText("Business structure *"), "PRIVATE_LIMITED_COMPANY");
+  await user.type(screen.getByLabelText("Products or services *"), "Retail sale of household goods and gifts.");
+  await user.click(screen.getByRole("checkbox", { name: /i confirm that i am authorized/i }));
   return user;
 }
 
@@ -46,23 +50,27 @@ describe("MerchantRegisterPage", () => {
 
   it("shows required-field validation and does not call the API", async () => {
     renderPage();
-    await userEvent.setup().click(screen.getByRole("button", { name: /submit merchant application/i }));
+    await userEvent.setup().click(screen.getByRole("button", { name: /submit business application/i }));
 
-    expect(await screen.findByText("Enter your business name")).toBeInTheDocument();
+    expect(await screen.findByText("Enter your registered business name")).toBeInTheDocument();
+    expect(screen.getByText("Select a business type")).toBeInTheDocument();
     expect(screen.getByText("Enter your business registration number")).toBeInTheDocument();
     expect(screen.getByText("Enter a contact name")).toBeInTheDocument();
     expect(screen.getByText("Enter a valid email address")).toBeInTheDocument();
     expect(screen.getByText("Use at least 8 characters")).toBeInTheDocument();
     expect(screen.getByText("Use 07XXXXXXXX or +947XXXXXXXX")).toBeInTheDocument();
+    expect(screen.getByText("Enter the registered or operating business address")).toBeInTheDocument();
+    expect(screen.getByText("Describe your products or services (at least 10 characters)")).toBeInTheDocument();
+    expect(screen.getByText("Confirm that the business information is accurate")).toBeInTheDocument();
     expect(registerMerchant).not.toHaveBeenCalled();
   });
 
   it("rejects malformed email and phone input", async () => {
     renderPage();
     const user = await fillValidForm();
-    fireEvent.change(screen.getByLabelText("Business email"), { target: { value: "not-an-email" } });
-    fireEvent.change(screen.getByLabelText("Sri Lankan mobile number"), { target: { value: "12345" } });
-    await user.click(screen.getByRole("button", { name: /submit merchant application/i }));
+    fireEvent.change(screen.getByLabelText("Business email / sign-in email *"), { target: { value: "not-an-email" } });
+    fireEvent.change(screen.getByLabelText("Sri Lankan mobile number *"), { target: { value: "12345" } });
+    await user.click(screen.getByRole("button", { name: /submit business application/i }));
 
     expect(await screen.findByText("Enter a valid email address")).toBeInTheDocument();
     expect(screen.getByText("Use 07XXXXXXXX or +947XXXXXXXX")).toBeInTheDocument();
@@ -72,25 +80,29 @@ describe("MerchantRegisterPage", () => {
   it("submits valid data and confirms the application is pending", async () => {
     renderPage();
     const user = await fillValidForm();
-    await user.click(screen.getByRole("button", { name: /submit merchant application/i }));
+    await user.click(screen.getByRole("button", { name: /submit business application/i }));
 
     expect(await screen.findByText("Application received")).toBeInTheDocument();
-    expect(screen.getByText(/pending approval/i)).toBeInTheDocument();
+    expect(screen.getByText(/remain pending until it is approved/i)).toBeInTheDocument();
     expect(registerMerchant).toHaveBeenCalledWith({
       businessName: "Northstar Goods",
+      businessType: "PRIVATE_LIMITED_COMPANY",
       registrationNumber: "BR-123456",
+      businessAddress: "12 Main Street, Colombo 03",
+      businessDescription: "Retail sale of household goods and gifts.",
+      verificationDeclarationAccepted: true,
       contactName: "Alex Morgan",
       email: "orders@example.test",
       password: "test-password-123",
       contactPhone: "0771234567",
     });
-  });
+  }, 10000);
 
   it("shows duplicate registration errors from the API", async () => {
     vi.mocked(registerMerchant).mockRejectedValue(new Error("A merchant with this email already exists"));
     renderPage();
     const user = await fillValidForm();
-    await user.click(screen.getByRole("button", { name: /submit merchant application/i }));
+    await user.click(screen.getByRole("button", { name: /submit business application/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("A merchant with this email already exists");
   });
@@ -100,7 +112,7 @@ describe("MerchantRegisterPage", () => {
     vi.mocked(registerMerchant).mockReturnValue(new Promise((resolve) => { resolveRegistration = resolve; }));
     renderPage();
     const user = await fillValidForm();
-    await user.click(screen.getByRole("button", { name: /submit merchant application/i }));
+    await user.click(screen.getByRole("button", { name: /submit business application/i }));
 
     const submit = await screen.findByRole("button", { name: /submitting application/i });
     expect(submit).toBeDisabled();

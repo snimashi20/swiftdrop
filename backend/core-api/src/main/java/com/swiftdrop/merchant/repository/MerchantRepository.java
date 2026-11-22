@@ -18,6 +18,8 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
 
     boolean existsByRegistrationNumber(String registrationNumber);
 
+    boolean existsByRegistrationNumberAndIdNot(String registrationNumber, Long id);
+
     boolean existsByContactEmail(String contactEmail);
 
     Page<Merchant> findByStatus(MerchantStatus status, Pageable pageable);

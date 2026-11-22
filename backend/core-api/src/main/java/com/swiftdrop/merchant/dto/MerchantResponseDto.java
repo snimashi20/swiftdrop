@@ -16,7 +16,11 @@ public class MerchantResponseDto {
     private Long id;
     private Long userId;
     private String businessName;
+    private String businessType;
     private String registrationNumber;
+    private String businessAddress;
+    private String businessDescription;
+    private Boolean verificationDeclarationAccepted;
     private String contactName;
     private String contactEmail;
     private String contactPhone;

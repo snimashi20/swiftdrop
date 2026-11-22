@@ -148,7 +148,7 @@
             "url": "{{baseUrl}}/merchants/register",
             "body": {
               "mode": "raw",
-              "raw": "{\"email\":\"{{newMerchantEmail}}\",\"password\":\"{{demoPassword}}\",\"businessName\":\"Postman Approval {{newRegistrationNumber}}\",\"registrationNumber\":\"{{newRegistrationNumber}}\",\"contactName\":\"Postman Owner\",\"contactPhone\":\"0712345678\"}",
+              "raw": "{\"email\":\"{{newMerchantEmail}}\",\"password\":\"{{demoPassword}}\",\"businessName\":\"Postman Approval {{newRegistrationNumber}}\",\"businessType\":\"PRIVATE_LIMITED_COMPANY\",\"registrationNumber\":\"{{newRegistrationNumber}}\",\"businessAddress\":\"12 Main Street, Colombo 03\",\"businessDescription\":\"Postman test merchant for household goods.\",\"verificationDeclarationAccepted\":true,\"contactName\":\"Postman Owner\",\"contactPhone\":\"0712345678\"}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -946,7 +946,7 @@
             "url": "{{baseUrl}}/merchants/register",
             "body": {
               "mode": "raw",
-              "raw": "{\"email\":\"{{rejectedMerchantEmail}}\",\"password\":\"{{demoPassword}}\",\"businessName\":\"Postman Rejection {{rejectedRegistrationNumber}}\",\"registrationNumber\":\"{{rejectedRegistrationNumber}}\",\"contactName\":\"Postman Rejection Owner\",\"contactPhone\":\"0712345679\"}",
+              "raw": "{\"email\":\"{{rejectedMerchantEmail}}\",\"password\":\"{{demoPassword}}\",\"businessName\":\"Postman Rejection {{rejectedRegistrationNumber}}\",\"businessType\":\"SOLE_PROPRIETORSHIP\",\"registrationNumber\":\"{{rejectedRegistrationNumber}}\",\"businessAddress\":\"14 Lake Road, Kandy\",\"businessDescription\":\"Postman test merchant selling locally made gifts.\",\"verificationDeclarationAccepted\":true,\"contactName\":\"Postman Rejection Owner\",\"contactPhone\":\"0712345679\"}",
               "options": {
                 "raw": {
                   "language": "json"

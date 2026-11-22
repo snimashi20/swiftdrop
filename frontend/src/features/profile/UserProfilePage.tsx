@@ -6,14 +6,6 @@ import { fetchUserProfile, updateUserProfile, UserProfile } from "./profile.api"
 export const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
 
-  // Strict Rule: Customers and Admins have their own dedicated profile pages
-  if (user?.role === "CUSTOMER") {
-    return <Navigate to="/customer/profile" replace />;
-  }
-  if (user?.role === "ADMIN") {
-    return <Navigate to="/admin/profile" replace />;
-  }
-
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -22,6 +14,10 @@ export const UserProfilePage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    if (["CUSTOMER", "ADMIN", "MERCHANT"].includes(user?.role ?? "")) {
+      return;
+    }
+
     fetchUserProfile()
       .then((data) => {
         setProfile(data);
@@ -34,7 +30,18 @@ export const UserProfilePage: React.FC = () => {
         setErrorMessage("Failed to load user profile.");
         setLoading(false);
       });
-  }, []);
+  }, [user?.role]);
+
+  // Each supported role uses its own dedicated profile page.
+  if (user?.role === "CUSTOMER") {
+    return <Navigate to="/customer/profile" replace />;
+  }
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin/profile" replace />;
+  }
+  if (user?.role === "MERCHANT") {
+    return <Navigate to="/merchant/profile" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

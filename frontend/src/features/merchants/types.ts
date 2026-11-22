@@ -4,7 +4,11 @@ export type ParcelStatus = "CREATED" | "PICKED_UP" | "IN_TRANSIT" | "OUT_FOR_DEL
 export interface Merchant {
   id: number;
   businessName: string;
+  businessType?: "SOLE_PROPRIETORSHIP" | "PARTNERSHIP" | "PRIVATE_LIMITED_COMPANY" | "OTHER" | null;
   registrationNumber: string;
+  businessAddress?: string | null;
+  businessDescription?: string | null;
+  verificationDeclarationAccepted?: boolean | null;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -17,10 +21,18 @@ export interface RegisterMerchantRequest {
   email: string;
   password: string;
   businessName: string;
+  businessType: "SOLE_PROPRIETORSHIP" | "PARTNERSHIP" | "PRIVATE_LIMITED_COMPANY" | "OTHER";
   registrationNumber: string;
+  businessAddress: string;
+  businessDescription: string;
   contactName: string;
   contactPhone: string;
+  verificationDeclarationAccepted: true;
 }
+
+export type UpdateMerchantProfileRequest = Omit<RegisterMerchantRequest, "email" | "password" | "verificationDeclarationAccepted"> & {
+  verificationDeclarationAccepted: boolean;
+};
 
 export interface ApiKey {
   id: number;
