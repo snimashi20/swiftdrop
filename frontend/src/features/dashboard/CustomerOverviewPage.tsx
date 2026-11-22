@@ -49,7 +49,7 @@ export const CustomerOverviewPage: React.FC = () => {
     setError(null);
 
     try {
-      // Fetch latest page (up to 50 for accurate customer metrics)
+      // Fetch latest page (defaults to 10 parcels per page)
       const res = await listParcels(0);
       const items = res?.content ?? [];
       const total = res?.totalElements ?? items.length;
@@ -88,21 +88,21 @@ export const CustomerOverviewPage: React.FC = () => {
       icon: Package,
     },
     {
-      label: "Active deliveries",
+      label: "Active now",
       value: isLoading ? "—" : activeCount.toString(),
-      hint: activeCount > 0 ? "Currently on their way" : "No parcels in transit",
+      hint: activeCount > 0 ? "In transit (latest 10)" : "No parcels in transit",
       icon: Clock3,
     },
     {
-      label: "Delivered",
+      label: "Recently delivered",
       value: isLoading ? "—" : deliveredCount.toString(),
-      hint: "Successfully completed",
+      hint: "Completed in last 10",
       icon: CheckCircle2,
     },
     {
-      label: "Total spent",
+      label: "Spent on recent shipments",
       value: isLoading ? "—" : `LKR ${totalSpent.toLocaleString()}`,
-      hint: "Across recent shipments",
+      hint: "Across latest 10 parcels",
       icon: DollarSign,
     },
   ];
@@ -159,7 +159,7 @@ export const CustomerOverviewPage: React.FC = () => {
       {/* 2. KPI Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metricCards.map(({ label, value, hint, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-ink/10 bg-white p-5 shadow-xs">
+          <div key={label} className="rounded-2xl border border-ink/10 bg-white p-5 shadow-sm">
             <div className="mb-5 flex items-center justify-between text-ink/45">
               <span className="text-sm font-medium">{label}</span>
               <Icon size={18} className="text-coral" />
@@ -179,7 +179,7 @@ export const CustomerOverviewPage: React.FC = () => {
       {/* 3. Main Content: Recent Deliveries & Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr]">
         {/* Recent Parcels Section */}
-        <section className="rounded-2xl border border-ink/10 bg-white p-5 sm:p-6 shadow-xs">
+        <section className="rounded-2xl border border-ink/10 bg-white p-5 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between border-b border-ink/10 pb-4">
             <div>
               <h2 className="font-display text-2xl font-bold">Recent shipments</h2>
@@ -293,7 +293,7 @@ export const CustomerOverviewPage: React.FC = () => {
         {/* Quick Actions & Help Aside */}
         <aside className="space-y-6">
           {/* Quick Track Card */}
-          <div className="rounded-2xl border border-ink/10 bg-ink p-6 text-white shadow-xs">
+          <div className="rounded-2xl border border-ink/10 bg-ink p-6 text-white shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-coral">Direct lookup</p>
@@ -318,7 +318,7 @@ export const CustomerOverviewPage: React.FC = () => {
           </div>
 
           {/* Customer Helpful Shortcuts */}
-          <div className="rounded-2xl border border-ink/10 bg-white p-6 shadow-xs">
+          <div className="rounded-2xl border border-ink/10 bg-white p-6 shadow-sm">
             <h3 className="font-display text-lg font-bold">Quick actions</h3>
             <p className="mt-1 text-xs text-ink/50">Manage your address preferences and parcel bookings</p>
 

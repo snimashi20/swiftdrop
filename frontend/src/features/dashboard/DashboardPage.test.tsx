@@ -43,11 +43,11 @@ const mockParcel = (over: Partial<ParcelDetail> = {}): ParcelDetail => ({
   ...over,
 });
 
-const mockPage = (items: ParcelDetail[]): ParcelPage => ({
+const mockPage = (items: ParcelDetail[], totalElements = items.length): ParcelPage => ({
   content: items,
   number: 0,
-  totalPages: 1,
-  totalElements: items.length,
+  totalPages: Math.ceil(totalElements / 10) || 1,
+  totalElements,
 });
 
 describe("MerchantOverview", () => {
@@ -136,15 +136,18 @@ describe("CustomerOverviewPage", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
 
     // 2 active deliveries (CREATED + IN_TRANSIT)
-    expect(screen.getByText("Active deliveries")).toBeInTheDocument();
+    expect(screen.getByText("Active now")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("In transit (latest 10)")).toBeInTheDocument();
 
-    // 1 delivered (found in metric cards and status badge)
-    expect(screen.getAllByText("Delivered").length).toBeGreaterThanOrEqual(1);
+    // 1 delivered
+    expect(screen.getByText("Recently delivered")).toBeInTheDocument();
+    expect(screen.getByText("Completed in last 10")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
 
     // Total spent: 500 + 700 + 1200 = 2400
-    expect(screen.getByText("Total spent")).toBeInTheDocument();
+    expect(screen.getByText("Spent on recent shipments")).toBeInTheDocument();
+    expect(screen.getByText("Across latest 10 parcels")).toBeInTheDocument();
     expect(screen.getByText("LKR 2,400")).toBeInTheDocument();
 
     // Recent shipments list
@@ -152,6 +155,47 @@ describe("CustomerOverviewPage", () => {
     expect(screen.getByText("SD2222222222")).toBeInTheDocument();
     expect(screen.getByText("SD3333333333")).toBeInTheDocument();
     expect(screen.getByText("Send a parcel")).toBeInTheDocument();
+  });
+
+  it("handles pagination scope mismatch accurately when totalElements exceeds page size", async () => {
+    // 10 items in content, but 30 total in database
+    const tenParcels: ParcelDetail[] = [
+      mockParcel({ id: 1, status: "CREATED", fee: 100 }),
+      mockParcel({ id: 2, status: "PICKED_UP", fee: 100 }),
+      mockParcel({ id: 3, status: "IN_TRANSIT", fee: 100 }),
+      mockParcel({ id: 4, status: "OUT_FOR_DELIVERY", fee: 100 }),
+      mockParcel({ id: 5, status: "DELIVERED", fee: 200 }),
+      mockParcel({ id: 6, status: "DELIVERED", fee: 200 }),
+      mockParcel({ id: 7, status: "DELIVERED", fee: 200 }),
+      mockParcel({ id: 8, status: "FAILED", fee: 100 }),
+      mockParcel({ id: 9, status: "CANCELLED", fee: 0 }),
+      mockParcel({ id: 10, status: "FAILED", fee: 100 }),
+    ];
+    vi.mocked(listParcels).mockResolvedValue(mockPage(tenParcels, 30));
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByText("Hello, Kasun.")).toBeInTheDocument();
+    // All-time total elements displayed in "Total parcels"
+    expect(screen.getByText("Total parcels")).toBeInTheDocument();
+    expect(screen.getByText("30")).toBeInTheDocument();
+    expect(screen.getByText("30 shipments recorded")).toBeInTheDocument();
+
+    // Derived from the 10 fetched shipments
+    // Active now: 4 (CREATED, PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY)
+    expect(screen.getByText("Active now")).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("In transit (latest 10)")).toBeInTheDocument();
+
+    // Recently delivered: 3 DELIVERED
+    expect(screen.getByText("Recently delivered")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("Completed in last 10")).toBeInTheDocument();
+
+    // Spent on recent shipments: sum of 10 items = 1200
+    expect(screen.getByText("Spent on recent shipments")).toBeInTheDocument();
+    expect(screen.getByText("Across latest 10 parcels")).toBeInTheDocument();
+    expect(screen.getByText("LKR 1,200")).toBeInTheDocument();
   });
 
   it("renders empty state when customer has no parcels", async () => {
