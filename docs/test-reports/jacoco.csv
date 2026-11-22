@@ -5,7 +5,7 @@ core-api,com.swiftdrop.auth.api,AdminUserController,115,539,22,28,20,131,30,21,9
 core-api,com.swiftdrop.auth.api,AuthController,116,9,4,0,28,4,8,1,6,1
 core-api,com.swiftdrop.service,AuthService,286,255,47,23,54,50,36,13,6,8
 core-api,com.swiftdrop.notification.domain,NotificationStatus,0,21,0,0,0,4,0,1,0,1
-core-api,com.swiftdrop.notification.domain,NotificationLog,7,0,2,0,3,0,2,0,1,0
+core-api,com.swiftdrop.notification.domain,NotificationLog,0,7,0,2,0,3,0,2,0,1
 core-api,com.swiftdrop.notification.domain,NotificationType,0,21,0,0,0,4,0,1,0,1
 core-api,com.swiftdrop.merchant.service,MerchantOrderService,138,148,4,4,19,26,10,10,8,8
 core-api,com.swiftdrop.merchant.service,MerchantOrderService.CreationResult,0,9,0,0,0,1,0,1,0,1
