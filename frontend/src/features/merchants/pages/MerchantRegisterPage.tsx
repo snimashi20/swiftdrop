@@ -1,3 +1,4 @@
+import { BrandMark } from "../../../components/BrandMark";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Building2, MapPin, ShieldCheck, Store } from "lucide-react";
 import { useState } from "react";
@@ -57,7 +58,7 @@ export function MerchantRegisterPage() {
     <main className="min-h-screen bg-ink px-4 py-8 font-sans text-ink sm:px-6 sm:py-12">
       <div className="mx-auto max-w-4xl rounded-3xl bg-mist p-6 shadow-xl sm:p-10">
         <Link to="/login" className="font-display text-2xl font-bold">
-          swift<span className="text-coral">drop</span>
+          <BrandMark />swift<span className="text-coral">drop</span>
         </Link>
 
         {submitted ? (

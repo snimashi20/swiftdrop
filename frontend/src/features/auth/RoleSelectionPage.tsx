@@ -1,3 +1,4 @@
+import { BrandMark } from "../../components/BrandMark";
 import React, { useState } from "react";
 import { Check, ArrowRight, Package, Building2, Truck, Sparkles, Clock, AlertCircle, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -73,7 +74,7 @@ export const RoleSelectionPage: React.FC = () => {
       {/* Header */}
       <header className="max-w-4xl mx-auto w-full py-4">
         <Link to="/" className="font-display text-2xl font-bold text-ink">
-          swift<span className="text-coral">drop</span>
+          <BrandMark />swift<span className="text-coral">drop</span>
         </Link>
       </header>
 

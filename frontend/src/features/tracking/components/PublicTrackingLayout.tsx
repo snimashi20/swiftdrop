@@ -1,3 +1,4 @@
+import { BrandMark } from "../../../components/BrandMark";
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 
@@ -8,7 +9,7 @@ export default function PublicTrackingLayout() {
     <div className="min-h-screen bg-mist text-ink">
       <header className="flex h-16 items-center justify-between border-b border-ink/10 px-4 md:px-8">
         <Link to="/track" className="font-display text-2xl font-bold tracking-tight">
-          swift<span className="text-coral">drop</span>
+          <BrandMark />swift<span className="text-coral">drop</span>
         </Link>
         <Link
           to={user ? '/dashboard' : '/login'}

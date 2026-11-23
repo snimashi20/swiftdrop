@@ -1,3 +1,4 @@
+import { BrandMark } from "../../components/BrandMark";
 import React, { useState } from "react";
 import { Clock, ShieldCheck, RefreshCw, LogOut, ArrowRight, Building2, Truck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -46,7 +47,7 @@ export const WaitingApprovalPage: React.FC = () => {
       {/* Top Navbar */}
       <header className="max-w-4xl mx-auto w-full flex items-center justify-between py-4">
         <Link to="/" className="font-display text-2xl font-bold text-ink">
-          swift<span className="text-coral">drop</span>
+          <BrandMark />swift<span className="text-coral">drop</span>
         </Link>
         <button
           onClick={handleLogout}

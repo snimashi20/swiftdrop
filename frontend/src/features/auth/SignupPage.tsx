@@ -1,3 +1,4 @@
+import { BrandMark } from "../../components/BrandMark";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Building2, ShieldAlert, Sparkles, Store, Truck } from "lucide-react";
 import { useState } from "react";
@@ -52,7 +53,7 @@ export function SignupPage() {
     <div className="min-h-screen bg-ink p-4 sm:p-8 flex items-center justify-center">
       <div className="mx-auto max-w-2xl w-full rounded-3xl bg-mist p-6 sm:p-12 shadow-2xl">
         <Link to="/login" className="font-display text-2xl font-bold">
-          swift<span className="text-coral">drop</span>
+          <BrandMark />swift<span className="text-coral">drop</span>
         </Link>
 
         <div className="my-8">
