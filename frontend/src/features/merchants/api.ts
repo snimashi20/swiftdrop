@@ -1,5 +1,5 @@
 import { api } from "../../lib/api";
-import type { ApiKey, GeneratedApiKey, Merchant, MerchantOrder, MerchantOrderTrendPoint, MerchantStatus, Page, RegisterMerchantRequest, ParcelStatus } from "./types";
+import type { ApiKey, GeneratedApiKey, Merchant, MerchantOrder, MerchantOrderTrendPoint, MerchantStatus, Page, RegisterMerchantRequest, UpdateMerchantProfileRequest, ParcelStatus } from "./types";
 
 export async function registerMerchant(data: RegisterMerchantRequest): Promise<Merchant> {
   return (await api.post<Merchant>("/merchants/register", data)).data;
@@ -7,6 +7,10 @@ export async function registerMerchant(data: RegisterMerchantRequest): Promise<M
 
 export async function fetchMyMerchant(): Promise<Merchant> {
   return (await api.get<Merchant>("/merchants/me")).data;
+}
+
+export async function updateMyMerchantProfile(data: UpdateMerchantProfileRequest): Promise<Merchant> {
+  return (await api.put<Merchant>("/merchants/me", data)).data;
 }
 
 export async function fetchMerchants(status?: MerchantStatus, page = 0): Promise<Page<Merchant>> {
@@ -33,8 +37,15 @@ export async function revokeApiKey(id: number): Promise<ApiKey> {
   return (await api.post<ApiKey>(`/merchants/me/api-keys/${id}/revoke`)).data;
 }
 
-export async function fetchDashboardOrders(status?: ParcelStatus, page = 0): Promise<Page<MerchantOrder>> {
-  return (await api.get<Page<MerchantOrder>>("/merchants/me/orders", { params: { status: status || undefined, page, size: 20 } })).data;
+export async function fetchDashboardOrders(
+  status?: ParcelStatus,
+  page = 0,
+  search?: string,
+  sortDirection: "ASC" | "DESC" = "DESC",
+): Promise<Page<MerchantOrder>> {
+  return (await api.get<Page<MerchantOrder>>("/merchants/me/orders", {
+    params: { status: status || undefined, page, size: 20, search: search || undefined, sortDirection },
+  })).data;
 }
 
 export async function fetchDashboardOrderSummary(): Promise<Record<string, number>> {

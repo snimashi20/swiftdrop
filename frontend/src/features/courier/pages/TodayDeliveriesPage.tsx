@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Navigation, Route } from 'lucide-react';
 import type { CourierDelivery } from '../types';
 import { getTodayDeliveries, updateDeliveryStatus } from '../api';
 import { DeliveryProofModal } from '../components/DeliveryProofModal';
 import { FailDeliveryModal } from '../components/FailDeliveryModal';
+import { CourierRouteModal, getGoogleMapsNavigationUrl } from '../components/CourierRouteModal';
 
 type FilterTab = 'ALL' | 'ACTIVE' | 'DELIVERED' | 'FAILED';
 
@@ -31,6 +33,7 @@ export const TodayDeliveriesPage: React.FC = () => {
   const [selectedParcel, setSelectedParcel] = useState<CourierDelivery | null>(null);
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [failModalOpen, setFailModalOpen] = useState(false);
+  const [routeModalOpen, setRouteModalOpen] = useState(false);
 
   const fetchDeliveries = async () => {
     try {
@@ -91,12 +94,20 @@ export const TodayDeliveriesPage: React.FC = () => {
             <h1 className="text-xl font-bold">Today&apos;s Deliveries</h1>
             <p className="text-xs text-blue-100">{deliveries.length} total parcels assigned</p>
           </div>
-          <button
-            onClick={fetchDeliveries}
-            className="text-xs bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-500"
-          >
-            ↻ Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRouteModalOpen(true)}
+              className="text-xs bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-500 font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Route size={14} /> Route Map
+            </button>
+            <button
+              onClick={fetchDeliveries}
+              className="text-xs bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-500 transition cursor-pointer"
+            >
+              ↻ Refresh
+            </button>
+          </div>
         </div>
 
         {/* Filter Pills (Synced with URL ?filter=...) */}
@@ -150,14 +161,24 @@ export const TodayDeliveriesPage: React.FC = () => {
             <div>
               <div className="flex justify-between items-start">
                 <h3 className="font-semibold text-slate-900 text-base">{item.recipientName}</h3>
-                {item.recipientPhone && (
+                <div className="flex items-center gap-1.5">
+                  {item.recipientPhone && (
+                    <a
+                      href={`tel:${item.recipientPhone}`}
+                      className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded flex items-center gap-1 font-medium transition"
+                    >
+                      📞 Call
+                    </a>
+                  )}
                   <a
-                    href={`tel:${item.recipientPhone}`}
-                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded flex items-center gap-1 font-medium"
+                    href={getGoogleMapsNavigationUrl(item.deliveryAddress)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded flex items-center gap-1 font-semibold transition"
                   >
-                    📞 Call
+                    <Navigation size={11} /> GPS
                   </a>
-                )}
+                </div>
               </div>
               <p className="text-xs text-slate-600 mt-1 flex items-start gap-1">
                 📍 <span>{item.deliveryAddress}</span>
@@ -245,6 +266,13 @@ export const TodayDeliveriesPage: React.FC = () => {
         parcel={selectedParcel}
         onClose={() => { setFailModalOpen(false); setSelectedParcel(null); }}
         onSuccess={fetchDeliveries}
+      />
+
+      {/* Interactive Delivery Route & Multi-Stop GPS Map Modal */}
+      <CourierRouteModal
+        isOpen={routeModalOpen}
+        onClose={() => setRouteModalOpen(false)}
+        deliveries={deliveries}
       />
     </div>
   );

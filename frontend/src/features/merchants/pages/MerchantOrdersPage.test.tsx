@@ -53,7 +53,27 @@ describe("MerchantOrdersPage", () => {
     await screen.findByRole("link", { name: "SD-TEST-1001" });
     await userEvent.setup().click(screen.getByRole("button", { name: "DELIVERED" }));
 
-    await waitFor(() => expect(fetchDashboardOrders).toHaveBeenLastCalledWith("DELIVERED", 0));
+    await waitFor(() => expect(fetchDashboardOrders).toHaveBeenLastCalledWith("DELIVERED", 0, undefined, "DESC"));
+  });
+
+  it("searches by order ID and sorts from oldest to newest", async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><MerchantOrdersPage /></MemoryRouter>);
+    await screen.findByRole("link", { name: "SD-TEST-1001" });
+
+    await user.type(screen.getByRole("searchbox", { name: "Search by order ID" }), "SHOP-44");
+    await waitFor(() => expect(fetchDashboardOrders).toHaveBeenLastCalledWith(undefined, 0, "SHOP-44", "DESC"));
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Sort orders by date" }), "ASC");
+    await waitFor(() => expect(fetchDashboardOrders).toHaveBeenLastCalledWith(undefined, 0, "SHOP-44", "ASC"));
+  });
+
+  it("allows filtering cancelled merchant orders", async () => {
+    render(<MemoryRouter><MerchantOrdersPage /></MemoryRouter>);
+    await screen.findByRole("link", { name: "SD-TEST-1001" });
+    await userEvent.setup().click(screen.getByRole("button", { name: "CANCELLED" }));
+
+    await waitFor(() => expect(fetchDashboardOrders).toHaveBeenLastCalledWith("CANCELLED", 0, undefined, "DESC"));
   });
 
   it("shows errors from the dashboard API", async () => {

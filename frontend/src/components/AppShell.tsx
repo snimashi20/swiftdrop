@@ -1,4 +1,5 @@
-import { Bell, ChevronDown, DollarSign, KeyRound, LayoutDashboard, LogOut, Menu, Package, Settings, ShieldCheck, Truck, Users, X } from "lucide-react";
+import { BrandMark } from "./BrandMark";
+import { Bell, ChevronDown, DollarSign, KeyRound, LayoutDashboard, LogOut, Menu, Package, Settings, ShieldCheck, Truck, Users, Webhook, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
@@ -8,14 +9,16 @@ import { NotificationBell } from "./NotificationBell";
 const links: { label: string; to: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
   { label: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
   { label: "Today's Deliveries", to: "/courier/today", icon: Truck, roles: ["COURIER"] },
-  { label: "Notifications", to: "/notifications", icon: Bell, roles: ["CUSTOMER"] },
+  { label: "Notifications", to: "/notifications", icon: Bell, roles: ["CUSTOMER", "MERCHANT", "COURIER", "DISPATCHER", "ADMIN"] },
   { label: "Parcels", to: "/parcels", icon: Package, roles: ["CUSTOMER", "ADMIN"] },
   { label: "Fleet & dispatch", to: "/fleet", icon: Truck, roles: ["DISPATCHER", "ADMIN"] },
   { label: "Manage users", to: "/admin/users", icon: Users, roles: ["ADMIN"] },
   { label: "Zones & Pricing", to: "/admin/pricing", icon: DollarSign, roles: ["ADMIN"] },
   { label: "Merchant approvals", to: "/admin/merchants", icon: ShieldCheck, roles: ["ADMIN"] },
+  { label: "Courier approvals", to: "/admin/couriers", icon: ShieldCheck, roles: ["ADMIN"] },
   { label: "Merchant orders", to: "/merchant/orders", icon: Package, roles: ["MERCHANT"] },
   { label: "API keys", to: "/merchant/api-keys", icon: KeyRound, roles: ["MERCHANT"] },
+  { label: "Webhooks", to: "/webhooks", icon: Webhook, roles: ["MERCHANT"] },
 ];
 
 export function AppShell() {
@@ -47,6 +50,8 @@ export function AppShell() {
       ? "/admin/profile"
       : user?.role === "CUSTOMER"
       ? "/customer/profile"
+      : user?.role === "MERCHANT"
+      ? "/merchant/profile"
       : "/profile";
   const visibleLinks = links
     .filter((link) => user && link.roles.includes(user.role))
@@ -56,7 +61,7 @@ export function AppShell() {
     <div className="min-h-screen bg-mist text-ink">
       <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-ink/10 bg-mist/95 px-4 backdrop-blur md:px-8">
         <button className="rounded-lg p-2 md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
-        <NavLink to={overviewTarget} className="font-display text-2xl font-bold tracking-tight">swift<span className="text-coral">drop</span><span className="ml-1 align-top font-sans text-xs text-ink/50">/ OS</span></NavLink>
+        <NavLink to={overviewTarget} className="font-display text-2xl font-bold tracking-tight"><BrandMark />swift<span className="text-coral">drop</span><span className="ml-1 align-top font-sans text-xs text-ink/50">/ OS</span></NavLink>
         <div className="flex items-center gap-3">
           <NotificationBell />
           <NavLink
@@ -91,7 +96,7 @@ export function AppShell() {
         </nav>
         <div className="absolute bottom-5 inset-x-4 space-y-1 border-t border-ink/10 pt-4">
           <NavLink
-            to={profileTarget}
+            to="/settings"
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${

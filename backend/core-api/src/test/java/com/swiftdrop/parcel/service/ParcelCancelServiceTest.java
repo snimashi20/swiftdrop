@@ -1,5 +1,7 @@
 package com.swiftdrop.parcel.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -9,10 +11,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
+import com.swiftdrop.parcel.domain.CancelReason;
 import com.swiftdrop.parcel.domain.Parcel;
 import com.swiftdrop.parcel.domain.ParcelStatus;
+import com.swiftdrop.parcel.dto.CancelParcelRequest;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import com.swiftdrop.tracking.service.ParcelStatusService;
 import java.util.Optional;
@@ -40,21 +45,54 @@ class ParcelCancelServiceTest {
         return parcel;
     }
 
+    private CancelParcelRequest request(CancelReason reason, String comment) {
+        CancelParcelRequest request = new CancelParcelRequest();
+        request.setReason(reason);
+        request.setComment(comment);
+        return request;
+    }
+
     @Test
     void cancel_ownCreatedParcel_changesStatusToCancelled() {
+        Parcel parcel = parcel(7L, ParcelStatus.CREATED);
+        when(parcelRepository.findById(1L)).thenReturn(Optional.of(parcel));
+
+        cancelService.cancelForCustomer(7L, 1L, request(CancelReason.WRONG_DETAILS, null));
+
+        assertEquals(CancelReason.WRONG_DETAILS, parcel.getCancelReason());
+        assertNull(parcel.getCancelComment());
+        verify(parcelStatusService).changeStatus(1L, ParcelStatus.CANCELLED, "CUSTOMER", 7L,
+                "Cancelled by customer: Wrong address or receiver details");
+    }
+
+    @Test
+    void cancel_otherReasonWithComment_savesTheComment() {
+        Parcel parcel = parcel(7L, ParcelStatus.CREATED);
+        when(parcelRepository.findById(1L)).thenReturn(Optional.of(parcel));
+
+        cancelService.cancelForCustomer(7L, 1L, request(CancelReason.OTHER, "  Receiver travelling  "));
+
+        assertEquals("Receiver travelling", parcel.getCancelComment());
+        verify(parcelStatusService).changeStatus(1L, ParcelStatus.CANCELLED, "CUSTOMER", 7L,
+                "Cancelled by customer: Other - Receiver travelling");
+    }
+
+    @Test
+    void cancel_otherReasonWithoutComment_isBadRequest() {
         when(parcelRepository.findById(1L)).thenReturn(Optional.of(parcel(7L, ParcelStatus.CREATED)));
 
-        cancelService.cancelForCustomer(7L, 1L);
+        assertThrows(BadRequestException.class,
+                () -> cancelService.cancelForCustomer(7L, 1L, request(CancelReason.OTHER, "   ")));
 
-        verify(parcelStatusService).changeStatus(1L, ParcelStatus.CANCELLED, "CUSTOMER", 7L,
-                "Cancelled by customer");
+        verify(parcelStatusService, never())
+                .changeStatus(anyLong(), any(ParcelStatus.class), anyString(), anyLong(), anyString());
     }
 
     @Test
     void cancel_anotherCustomersParcel_isNotFound() {
         when(parcelRepository.findById(1L)).thenReturn(Optional.of(parcel(7L, ParcelStatus.CREATED)));
 
-        assertThrows(NotFoundException.class, () -> cancelService.cancelForCustomer(8L, 1L));
+        assertThrows(NotFoundException.class, () -> cancelService.cancelForCustomer(8L, 1L, request(CancelReason.OTHER, "x")));
 
         verify(parcelStatusService, never())
                 .changeStatus(anyLong(), any(ParcelStatus.class), anyString(), anyLong(), anyString());
@@ -64,7 +102,7 @@ class ParcelCancelServiceTest {
     void cancel_parcelAlreadyPickedUp_isConflict() {
         when(parcelRepository.findById(1L)).thenReturn(Optional.of(parcel(7L, ParcelStatus.PICKED_UP)));
 
-        assertThrows(ConflictException.class, () -> cancelService.cancelForCustomer(7L, 1L));
+        assertThrows(ConflictException.class, () -> cancelService.cancelForCustomer(7L, 1L, request(CancelReason.OTHER, "x")));
 
         verify(parcelStatusService, never())
                 .changeStatus(anyLong(), any(ParcelStatus.class), anyString(), anyLong(), anyString());
@@ -74,6 +112,6 @@ class ParcelCancelServiceTest {
     void cancel_unknownParcel_isNotFound() {
         when(parcelRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> cancelService.cancelForCustomer(7L, 99L));
+        assertThrows(NotFoundException.class, () -> cancelService.cancelForCustomer(7L, 99L, request(CancelReason.OTHER, "x")));
     }
 }

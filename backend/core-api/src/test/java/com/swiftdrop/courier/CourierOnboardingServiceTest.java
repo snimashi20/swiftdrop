@@ -4,8 +4,11 @@ import com.swiftdrop.auth.domain.User;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.common.exception.BadRequestException;
 import com.swiftdrop.common.exception.ConflictException;
+import com.swiftdrop.courier.domain.CourierApplication;
+import com.swiftdrop.courier.domain.CourierApplicationStatus;
 import com.swiftdrop.courier.dto.CourierRegistrationResponse;
 import com.swiftdrop.courier.dto.RegisterCourierRequest;
+import com.swiftdrop.courier.repository.CourierApplicationRepository;
 import com.swiftdrop.courier.service.CourierOnboardingService;
 import com.swiftdrop.courier.service.FileStorageService;
 import com.swiftdrop.dispatch.domain.CourierProfile;
@@ -16,12 +19,14 @@ import com.swiftdrop.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -33,6 +38,7 @@ class CourierOnboardingServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private AuthService authService;
     @Mock private CourierProfileRepository courierProfileRepository;
+    @Mock private CourierApplicationRepository courierApplicationRepository;
     @Mock private ZoneLookup zoneLookup;
     @Mock private FileStorageService fileStorageService;
 
@@ -96,6 +102,42 @@ class CourierOnboardingServiceTest {
         assertEquals("/api/v1/courier/documents/nic/front.jpg", res.nicFrontPhotoUrl());
         assertEquals("/api/v1/courier/documents/nic/back.png", res.nicBackPhotoUrl());
         verify(courierProfileRepository).save(argThat(p -> !p.isActive() && "200112345678".equals(p.getNicNumber())));
+    }
+
+    @Test
+    void register_validApplicant_queuesPendingCourierApplicationForAdminReview() {
+        when(userRepository.existsByEmailIgnoreCase("kamal.rider@swiftdrop.lk")).thenReturn(false);
+        when(zoneLookup.exists(5L)).thenReturn(true);
+        when(zoneLookup.districtOf(5L)).thenReturn(Optional.of("Colombo"));
+        when(fileStorageService.storeDocument(nicFront, "nic")).thenReturn("/front.jpg");
+        when(fileStorageService.storeDocument(nicBack, "nic")).thenReturn("/back.png");
+
+        User savedUser = User.builder()
+                .id(42L)
+                .email("kamal.rider@swiftdrop.lk")
+                .fullName("Kamal Perera")
+                .phoneNumber("0771234567")
+                .role("COURIER")
+                .status("PENDING_APPROVAL")
+                .enabled(false)
+                .build();
+        when(authService.createLocalUser(anyString(), anyString(), anyString(), anyString(), eq("COURIER")))
+                .thenReturn(savedUser);
+        when(courierProfileRepository.save(any(CourierProfile.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.register(validRequest, nicFront, nicBack);
+
+        ArgumentCaptor<CourierApplication> captor = ArgumentCaptor.forClass(CourierApplication.class);
+        verify(courierApplicationRepository).save(captor.capture());
+        CourierApplication application = captor.getValue();
+        assertEquals(42L, application.getUserId());
+        assertEquals(CourierApplicationStatus.PENDING, application.getStatus());
+        assertEquals("Kamal Perera", application.getFullName());
+        assertEquals("kamal.rider@swiftdrop.lk", application.getContactEmail());
+        assertEquals("0771234567", application.getContactPhone());
+        assertEquals("B-9988776", application.getLicenseNumber());
+        assertEquals(VehicleType.MOTORBIKE, application.getVehicleType());
+        assertEquals("Colombo", application.getPreferredZone());
     }
 
     @Test

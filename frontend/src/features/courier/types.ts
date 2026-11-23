@@ -77,3 +77,30 @@ export interface CourierRegistrationResponse {
   nicFrontPhotoUrl: string;
   nicBackPhotoUrl: string;
 }
+
+export type CourierApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface CourierApplication {
+  id: number;
+  userId?: number | null;
+  fullName: string;
+  contactEmail: string;
+  contactPhone?: string | null;
+  licenseNumber?: string | null;
+  vehicleType?: VehicleType | null;
+  preferredZone?: string | null;
+  status: CourierApplicationStatus;
+  rejectionReason?: string | null;
+  createdAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: number | null;
+}
+
+export interface Page<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}

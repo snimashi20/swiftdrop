@@ -16,6 +16,11 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.swiftdrop.merchant.domain.Merchant;
+import com.swiftdrop.merchant.domain.MerchantStatus;
+import com.swiftdrop.merchant.repository.MerchantRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.io.IOException;
 import java.util.Optional;
 
@@ -26,14 +31,25 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final String frontendBaseUrl;
+    private final MerchantRepository merchantRepository;
 
     public OAuth2AuthenticationSuccessHandler(
             UserRepository userRepository,
             JwtService jwtService,
             @Value("${app.frontend-base-url}") String frontendBaseUrl) {
+        this(userRepository, jwtService, frontendBaseUrl, null);
+    }
+
+    @Autowired
+    public OAuth2AuthenticationSuccessHandler(
+            UserRepository userRepository,
+            JwtService jwtService,
+            @Value("${app.frontend-base-url}") String frontendBaseUrl,
+            @Autowired(required = false) MerchantRepository merchantRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.merchantRepository = merchantRepository;
     }
 
     @Override
@@ -85,6 +101,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 user = userRepository.save(user);
 
                 if (requiresApproval) {
+                    createPendingMerchantIfNeeded(user);
                     getRedirectStrategy().sendRedirect(request, response, pendingApprovalUrl());
                     return;
                 }
@@ -103,6 +120,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
             // Handle pending approval
             if ("PENDING_APPROVAL".equalsIgnoreCase(user.getStatus()) || (!user.isEnabled() && "PENDING_APPROVAL".equalsIgnoreCase(user.getStatus()))) {
+                createPendingMerchantIfNeeded(user);
                 getRedirectStrategy().sendRedirect(request, response, pendingApprovalUrl());
                 return;
             }
@@ -141,6 +159,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         User savedUser = userRepository.save(newUser);
 
         if (requiresApproval) {
+            createPendingMerchantIfNeeded(savedUser);
             log.info("New OAuth2 user created with role {} pending admin approval: {}", requestedRole, email);
             getRedirectStrategy().sendRedirect(request, response, pendingApprovalUrl());
             return;
@@ -214,5 +233,46 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .path("/login")
                 .queryParam("error", error)
                 .build().toUriString();
+    }
+
+    private void createPendingMerchantIfNeeded(User user) {
+        if (merchantRepository == null || user == null) {
+            return;
+        }
+
+        String role = user.getRole();
+        if (!"ROLE_MERCHANT".equalsIgnoreCase(role) && !"MERCHANT".equalsIgnoreCase(role)) {
+            return;
+        }
+
+        if (user.getId() != null && merchantRepository.findByUserId(user.getId()).isPresent()) {
+            return;
+        }
+
+        String regNumber = "GOOG-" + user.getId();
+        if (merchantRepository.existsByRegistrationNumber(regNumber)) {
+            regNumber = "GOOG-" + user.getId() + "-" + (System.currentTimeMillis() % 10000);
+        }
+
+        String contactPhone = user.getPhoneNumber() != null && !user.getPhoneNumber().isBlank()
+                ? user.getPhoneNumber().trim()
+                : "0700000000";
+
+        String businessName = user.getFullName() != null && !user.getFullName().isBlank()
+                ? user.getFullName() + " Store"
+                : "Google Merchant Store";
+
+        Merchant merchant = Merchant.builder()
+                .userId(user.getId())
+                .businessName(businessName)
+                .registrationNumber(regNumber)
+                .contactName(user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : "Google Merchant")
+                .contactEmail(user.getEmail())
+                .contactPhone(contactPhone)
+                .status(MerchantStatus.PENDING)
+                .build();
+
+        merchantRepository.save(merchant);
+        log.info("Created pending M9 merchant profile for Google signup user id: {}", user.getId());
     }
 }
