@@ -19,6 +19,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -70,9 +71,11 @@ public class MerchantController {
 
     @GetMapping("/me/orders")
     @PreAuthorize("hasRole('MERCHANT')")
-    @Operation(summary = "List the current merchant's dashboard orders", description = "Results are restricted to the authenticated merchant and can be filtered by parcel status.")
+    @Operation(summary = "List the current merchant's dashboard orders", description = "Results are restricted to the authenticated merchant and can be searched by store order ID or tracking number, filtered by parcel status, and sorted by creation time.")
     public Page<MerchantOrderResponse> getMyOrders(
             @RequestParam(required = false) ParcelStatus status,
+            @RequestParam(required = false) @jakarta.validation.constraints.Size(max = 100) String search,
+            @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             Authentication authentication) {
@@ -80,7 +83,10 @@ public class MerchantController {
             throw new com.swiftdrop.common.exception.BadRequestException("Invalid page or size");
         }
         Long merchantId = currentMerchantProvider.getCurrentMerchant(authentication).getId();
-        return merchantOrderService.listDashboard(merchantId, status, PageRequest.of(page, size));
+        String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+        Sort sort = Sort.by(sortDirection, "createdAt").and(Sort.by(sortDirection, "id"));
+        return merchantOrderService.listDashboard(merchantId, status, normalizedSearch,
+                PageRequest.of(page, size, sort));
     }
 
     @GetMapping("/me/orders/summary")

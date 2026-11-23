@@ -66,8 +66,12 @@ public class MerchantOrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<MerchantOrderResponse> listDashboard(Long merchantId, ParcelStatus status, Pageable pageable) {
-        return orderRepository.findDashboardOrders(merchantId, status, pageable)
+    public Page<MerchantOrderResponse> listDashboard(Long merchantId, ParcelStatus status, String search,
+                                                      Pageable pageable) {
+        var orders = search == null || search.isBlank()
+                ? orderRepository.findDashboardOrders(merchantId, status, pageable)
+                : orderRepository.searchDashboardOrders(merchantId, status, search, pageable);
+        return orders
                 .map(this::toResponse);
     }
 

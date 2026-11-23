@@ -1,5 +1,5 @@
 export type MerchantStatus = "PENDING" | "APPROVED" | "REJECTED";
-export type ParcelStatus = "CREATED" | "PICKED_UP" | "IN_TRANSIT" | "OUT_FOR_DELIVERY" | "DELIVERED" | "FAILED";
+export type ParcelStatus = "CREATED" | "PICKED_UP" | "IN_TRANSIT" | "OUT_FOR_DELIVERY" | "DELIVERED" | "FAILED" | "CANCELLED";
 
 export interface Merchant {
   id: number;
