@@ -4,7 +4,10 @@ import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.pricing.domain.PricingRule;
 import com.swiftdrop.pricing.domain.Zone;
-import com.swiftdrop.pricing.dto.*;
+import com.swiftdrop.pricing.dto.PricingRuleRequest;
+import com.swiftdrop.pricing.dto.PricingRuleResponse;
+import com.swiftdrop.pricing.dto.ZoneRequest;
+import com.swiftdrop.pricing.dto.ZoneResponse;
 import com.swiftdrop.pricing.repository.PricingRuleRepository;
 import com.swiftdrop.pricing.repository.ZoneRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,63 +16,63 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminPricingService {
 
-    private final ZoneRepository zoneRepository;
     private final PricingRuleRepository pricingRuleRepository;
+    private final ZoneRepository zoneRepository;
 
-    // Zones
-    @Transactional(readOnly = true)
     public List<ZoneResponse> getAllZones() {
         return zoneRepository.findAll().stream()
-                .map(this::mapToZoneResponse)
-                .toList();
+                .map(z -> ZoneResponse.builder()
+                        .id(z.getId())
+                        .name(z.getName())
+                        .district(z.getDistrict())
+                        .isActive(z.isActive())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public ZoneResponse createZone(ZoneRequest request) {
-        // Check for duplicates
-        if (zoneRepository.findByDistrict(request.getDistrict()).isPresent()) {
-            throw new ConflictException("Zone already exists for district: " + request.getDistrict());
-        }
-        
+        zoneRepository.findByDistrict(request.getDistrict()).ifPresent(existing -> {
+            throw new ConflictException("Zone with district '" + request.getDistrict() + "' already exists");
+        });
+
         Zone zone = Zone.builder()
                 .name(request.getName())
                 .district(request.getDistrict())
+                .isActive(true)
                 .build();
-        Zone savedZone = zoneRepository.save(zone);
-        
-        // Create a default pricing rule so new zones can be quoted immediately
+        Zone saved = zoneRepository.save(zone);
+
+        // Use the same size factors as the DB seed data
         PricingRule defaultRule = PricingRule.builder()
-                .zone(savedZone)
-                .baseFee(new BigDecimal("300.00"))
-                .perKgFee(new BigDecimal("100.00"))
-                .interZoneSurcharge(new BigDecimal("250.00"))
+                .zone(saved)
+                .baseFee(new BigDecimal("200.00"))
+                .perKgFee(new BigDecimal("20.00"))
+                .interZoneSurcharge(new BigDecimal("10.00"))
+                .sizeFactorS(new BigDecimal("1.00"))
+                .sizeFactorM(new BigDecimal("1.50"))
+                .sizeFactorL(new BigDecimal("2.00"))
                 .build();
         pricingRuleRepository.save(defaultRule);
-        
-        return mapToZoneResponse(savedZone);
-    }
 
-    private ZoneResponse mapToZoneResponse(Zone zone) {
         return ZoneResponse.builder()
-                .id(zone.getId())
-                .name(zone.getName())
-                .district(zone.getDistrict())
-                .isActive(zone.isActive())
+                .id(saved.getId())
+                .name(saved.getName())
+                .district(saved.getDistrict())
+                .isActive(saved.isActive())
                 .build();
     }
 
-    // Pricing Rules
-
-    @Transactional(readOnly = true)
     public List<PricingRuleResponse> getAllRules() {
-        return pricingRuleRepository.findAll().stream()
+        return pricingRuleRepository.findAllOrderedByZoneName().stream()
                 .map(this::mapToRuleResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -77,7 +80,6 @@ public class AdminPricingService {
         PricingRule rule = pricingRuleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Pricing rule not found with id: " + id));
 
-        // Do NOT change the zone associated with the rule (prevents UNIQUE constraint violation)
         rule.setBaseFee(request.getBaseFee());
         rule.setPerKgFee(request.getPerKgFee());
         rule.setInterZoneSurcharge(request.getInterZoneSurcharge());
