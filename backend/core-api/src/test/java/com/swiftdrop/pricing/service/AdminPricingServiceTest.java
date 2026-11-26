@@ -29,7 +29,7 @@ class AdminPricingServiceTest {
     void setUp() {
         zoneRepository = Mockito.mock(ZoneRepository.class);
         ruleRepository = Mockito.mock(PricingRuleRepository.class);
-        service = new AdminPricingService(zoneRepository, ruleRepository);
+        service = new AdminPricingService(ruleRepository, zoneRepository);
     }
 
     @Test
