@@ -110,7 +110,7 @@ export function MerchantApprovalsPage() {
       <button onClick={() => void load()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/10 bg-white px-4 py-2.5 text-sm font-semibold"><RefreshCw size={16} />Refresh</button>
     </header>
     <div className="flex flex-wrap gap-2">
-      {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((item) => <button key={item} onClick={() => setStatus(item)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${status === item ? "bg-ink text-white" : "bg-white text-ink/60 hover:bg-ink/5"}`}>{item === "ALL" ? "All merchants" : item}</button>)}
+      {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((item) => <button key={item} onClick={() => { setPage(0); setStatus(item); }} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${status === item ? "bg-ink text-white" : "bg-white text-ink/60 hover:bg-ink/5"}`}>{item === "ALL" ? "All merchants" : item}</button>)}
     </div>
     {notice && <p role="status" className="rounded-xl bg-mint px-4 py-3 text-sm text-ink">{notice}</p>}
     {error && <p role="alert" className="rounded-xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</p>}
