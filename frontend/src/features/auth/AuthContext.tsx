@@ -89,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             navigate("/select-role", { replace: true });
           } else if (latest.user.status === "PENDING_APPROVAL") {
             navigate("/waiting-approval", { replace: true });
+          } else if (latest.user.status === "REJECTED" && latest.user.role === "MERCHANT") {
+            navigate("/merchant/profile", { replace: true });
           } else if (latest.user.role === "ADMIN") {
             navigate("/admin/overview", { replace: true });
           } else if (latest.user.role === "COURIER") {
