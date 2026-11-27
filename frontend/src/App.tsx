@@ -52,6 +52,7 @@ function PublicRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.status === "PENDING_ROLE") return <Navigate to="/select-role" replace />;
   if (user.status === "PENDING_APPROVAL") return <Navigate to="/waiting-approval" replace />;
+  if (user.status === "REJECTED" && user.role === "MERCHANT") return <Navigate to="/merchant/profile" replace />;
   if (user.role === "ADMIN") return <Navigate to="/admin/overview" replace />;
   return <Navigate to="/dashboard" replace />;
 }

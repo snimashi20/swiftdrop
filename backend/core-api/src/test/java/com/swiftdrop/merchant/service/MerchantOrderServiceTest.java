@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.common.exception.ValidationException;
 import com.swiftdrop.merchant.domain.Merchant;
@@ -148,6 +149,33 @@ class MerchantOrderServiceTest {
         assertEquals(0L, result.get(2).count());
         assertEquals(3L, result.get(4).count());
         assertEquals(today, result.get(6).date());
+    }
+
+    @Test
+    void duplicateBulkKeyWithDifferentBatchSizeThrowsConflict() {
+        when(merchantRepository.findById(7L)).thenReturn(Optional.of(merchant));
+        when(parcelService.createForMerchant(eq(7L), any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(orderRepository.findByMerchantIdAndIdempotencyKeyStartingWithOrderByIdAsc(
+                7L, MerchantOrderService.bulkPrefix("batch")))
+                .thenReturn(List.of(order));
+
+        assertThrows(ConflictException.class,
+                () -> service.createBulk(7L, "batch", List.of(request(), request())));
+    }
+
+    @Test
+    void listDashboardBatchLoadsParcelsAndEscapesLikeWildcards() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 20);
+        when(orderRepository.searchDashboardOrders(eq(7L), eq(null), eq("100!%order!_1"), eq(pageable)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(order), pageable, 1));
+        when(parcelRepository.findAllById(List.of(11L))).thenReturn(List.of(parcel));
+        when(mapper.toResponse(order, parcel)).thenReturn(response);
+
+        var page = service.listDashboard(7L, null, "100%order_1", pageable);
+
+        assertEquals(1, page.getTotalElements());
+        verify(parcelRepository).findAllById(List.of(11L));
+        verify(parcelRepository, never()).findById(any());
     }
 
     private MerchantOrderRequest request() {

@@ -72,6 +72,18 @@ describe("MerchantApprovalsPage", () => {
     expect(fetchMerchants).toHaveBeenLastCalledWith("APPROVED", 0);
   });
 
+  it("resets pagination to page 0 when changing the status filter", async () => {
+    vi.mocked(fetchMerchants).mockResolvedValue({ ...merchantPage([pendingMerchant]), totalPages: 2, last: false });
+    render(<MerchantApprovalsPage />);
+    await screen.findByRole("heading", { name: "Northstar Goods" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await waitFor(() => expect(fetchMerchants).toHaveBeenLastCalledWith("PENDING", 1));
+
+    await user.click(screen.getByRole("button", { name: "REJECTED" }));
+    await waitFor(() => expect(fetchMerchants).toHaveBeenLastCalledWith("REJECTED", 0));
+  });
+
   it("approves a merchant and displays the successful status notice", async () => {
     vi.mocked(fetchMerchants)
       .mockResolvedValueOnce(merchantPage([pendingMerchant]))

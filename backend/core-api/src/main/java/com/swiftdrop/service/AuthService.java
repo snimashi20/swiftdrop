@@ -122,9 +122,12 @@ public class AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        if ("PENDING_APPROVAL".equalsIgnoreCase(user.getStatus())) {
+        if ("PENDING_APPROVAL".equalsIgnoreCase(user.getStatus())
+                || (user.isEnabled()
+                        && "REJECTED".equalsIgnoreCase(user.getStatus())
+                        && "MERCHANT".equalsIgnoreCase(user.getRole()))) {
             String token = tokenProvider.generateToken(user.getId(), user.getEmail(), Set.of(user.getRole()), user.getStatus());
-            return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(), user.getFullName(), Set.of(user.getRole()), "PENDING_APPROVAL");
+            return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(), user.getFullName(), Set.of(user.getRole()), user.getStatus());
         }
 
         if (!user.isEnabled() || "REJECTED".equalsIgnoreCase(user.getStatus()) || "INACTIVE".equalsIgnoreCase(user.getStatus())) {

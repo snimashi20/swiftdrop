@@ -176,7 +176,8 @@ public class MerchantService {
         if (merchant.getUserId() != null) {
             userRepository.findById(merchant.getUserId()).ifPresent(user -> {
                 user.setStatus("REJECTED");
-                user.setEnabled(false);
+                // Keep the merchant user enabled so they can sign in to view feedback and resubmit.
+                user.setEnabled(true);
                 userRepository.save(user);
             });
         }

@@ -1,5 +1,6 @@
 package com.swiftdrop.merchant.service;
 
+import com.swiftdrop.common.exception.ConflictException;
 import com.swiftdrop.common.exception.NotFoundException;
 import com.swiftdrop.merchant.domain.MerchantOrder;
 import com.swiftdrop.merchant.dto.MerchantOrderMapper;
@@ -10,12 +11,14 @@ import com.swiftdrop.parcel.domain.Parcel;
 import com.swiftdrop.parcel.domain.ParcelStatus;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import java.util.List;
+import java.util.Objects;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.stream.IntStream;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -61,8 +64,7 @@ public class MerchantOrderService {
 
     @Transactional(readOnly = true)
     public Page<MerchantOrderResponse> list(Long merchantId, Pageable pageable) {
-        return orderRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId, pageable)
-                .map(this::toResponse);
+        return toResponsePage(orderRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId, pageable));
     }
 
     @Transactional(readOnly = true)
@@ -70,9 +72,8 @@ public class MerchantOrderService {
                                                       Pageable pageable) {
         var orders = search == null || search.isBlank()
                 ? orderRepository.findDashboardOrders(merchantId, status, pageable)
-                : orderRepository.searchDashboardOrders(merchantId, status, search, pageable);
-        return orders
-                .map(this::toResponse);
+                : orderRepository.searchDashboardOrders(merchantId, status, escapeLikePattern(search), pageable);
+        return toResponsePage(orders);
     }
 
     @Transactional(readOnly = true)
@@ -108,9 +109,46 @@ public class MerchantOrderService {
     }
 
     private List<MerchantOrderResponse> findBulk(Long merchantId, String key, int size) {
-        return IntStream.range(0, size)
-                .mapToObj(index -> findByKey(merchantId, bulkKey(key, index)))
+        List<MerchantOrder> existing = orderRepository
+                .findByMerchantIdAndIdempotencyKeyStartingWithOrderByIdAsc(merchantId, bulkPrefix(key));
+        if (existing.isEmpty()) {
+            throw new NotFoundException("Order not found");
+        }
+        if (existing.size() != size) {
+            throw new ConflictException("Idempotency-Key already used with a different batch size");
+        }
+        return toResponses(existing);
+    }
+
+    private Page<MerchantOrderResponse> toResponsePage(Page<MerchantOrder> orders) {
+        Map<Long, Parcel> parcelsById = loadParcelsById(orders.getContent());
+        return orders.map(order -> toResponse(order, parcelsById));
+    }
+
+    private List<MerchantOrderResponse> toResponses(List<MerchantOrder> orders) {
+        Map<Long, Parcel> parcelsById = loadParcelsById(orders);
+        return orders.stream().map(order -> toResponse(order, parcelsById)).toList();
+    }
+
+    private Map<Long, Parcel> loadParcelsById(List<MerchantOrder> orders) {
+        List<Long> parcelIds = orders.stream()
+                .map(MerchantOrder::getParcelId)
+                .filter(Objects::nonNull)
+                .distinct()
                 .toList();
+        if (parcelIds.isEmpty()) {
+            return Map.of();
+        }
+        return parcelRepository.findAllById(parcelIds).stream()
+                .collect(Collectors.toMap(Parcel::getId, Function.identity()));
+    }
+
+    private MerchantOrderResponse toResponse(MerchantOrder order, Map<Long, Parcel> parcelsById) {
+        Parcel parcel = parcelsById.get(order.getParcelId());
+        if (parcel == null) {
+            throw new NotFoundException("Order parcel not found");
+        }
+        return mapper.toResponse(order, parcel);
     }
 
     private MerchantOrderResponse toResponse(MerchantOrder order) {
@@ -119,8 +157,19 @@ public class MerchantOrderService {
         return mapper.toResponse(order, parcel);
     }
 
+    private static String escapeLikePattern(String value) {
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+    }
+
+    static String bulkPrefix(String key) {
+        return "bulk:" + key.length() + ":" + key + ":";
+    }
+
     static String bulkKey(String key, int index) {
-        return key + ":" + index;
+        return bulkPrefix(key) + index;
     }
 
     public record CreationResult(MerchantOrderResponse response, boolean created) {}
