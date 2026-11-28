@@ -8,3 +8,4 @@ public record RejectCourierRequest(
         @Size(max = 500, message = "Rejection reason is too long")
         String reason
 ) {}
+

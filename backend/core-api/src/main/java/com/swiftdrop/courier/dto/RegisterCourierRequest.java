@@ -9,8 +9,9 @@ import java.time.LocalDate;
 @Data
 public class RegisterCourierRequest {
 
-    @NotBlank(message = "Full legal name is required")
+    @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
+    @Pattern(regexp = "^[A-Za-z\\s.'-]+$", message = "Full name must contain letters only")
     private String fullName;
 
     @NotBlank(message = "Email address is required")
@@ -57,6 +58,7 @@ public class RegisterCourierRequest {
 
     @NotBlank(message = "Emergency contact name is required")
     @Size(min = 2, max = 100, message = "Emergency contact name must be between 2 and 100 characters")
+    @Pattern(regexp = "^[A-Za-z\\s.'-]+$", message = "Emergency contact name must contain letters only")
     private String emergencyContactName;
 
     @NotBlank(message = "Emergency contact phone is required")

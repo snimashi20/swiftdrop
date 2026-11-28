@@ -81,10 +81,13 @@ services:
       DB_MIGRATION_URL: ${DB_MIGRATION_URL:-jdbc:postgresql://postgres:5432/swiftdrop}
       DB_POOL_SIZE: ${CORE_API_DB_POOL_SIZE:-3}
       SPRING_PROFILES_ACTIVE: docker
+      SWIFTDROP_UPLOAD_DIR: /app/uploads/proofs
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
     ports:
       - "8080:8080"
+    volumes:
+      - courier_uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
       interval: 15s
@@ -157,3 +160,4 @@ services:
 
 volumes:
   postgres_data:
+  courier_uploads:
