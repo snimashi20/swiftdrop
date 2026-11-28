@@ -106,6 +106,10 @@ public class ApiKeyService {
         ApiKey apiKey = apiKeyRepository.findByIdAndMerchantId(apiKeyId, merchantId)
                 .orElseThrow(() -> new NotFoundException("API key not found"));
 
+        if (!apiKey.isActive()) {
+            return apiKeyMapper.toResponse(apiKey);
+        }
+
         apiKey.setActive(false);
         apiKey.setRevokedAt(Instant.now());
         ApiKey saved = apiKeyRepository.save(apiKey);
@@ -142,9 +146,7 @@ public class ApiKeyService {
      */
     @Transactional
     public void recordKeyUsage(Long apiKeyId) {
-        apiKeyRepository.findById(apiKeyId).ifPresent(key -> {
-            key.setLastUsedAt(Instant.now());
-            apiKeyRepository.save(key);
-        });
+        Instant now = Instant.now();
+        apiKeyRepository.touchLastUsedAt(apiKeyId, now, now.minusSeconds(60));
     }
 }

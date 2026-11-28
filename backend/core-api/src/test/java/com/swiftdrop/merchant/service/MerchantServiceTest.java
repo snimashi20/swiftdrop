@@ -376,14 +376,20 @@ class MerchantServiceTest {
     }
 
     @Test
-    @DisplayName("Rejects a pending merchant and records the reason")
+    @DisplayName("Rejects a pending merchant, records the reason, and keeps user enabled for resubmission")
     void reject_pendingMerchant_success() {
-        Merchant merchant = Merchant.builder().id(55L).status(MerchantStatus.PENDING).build();
+        Merchant merchant = Merchant.builder().id(55L).userId(9L).status(MerchantStatus.PENDING).build();
         User admin = new User();
         admin.setId(7L);
+        User merchantUser = new User();
+        merchantUser.setId(9L);
+        merchantUser.setRole("MERCHANT");
+        merchantUser.setStatus("PENDING_APPROVAL");
+        merchantUser.setEnabled(false);
         when(merchantRepository.findById(55L)).thenReturn(Optional.of(merchant));
         when(authentication.getName()).thenReturn("admin@example.com");
         when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(9L)).thenReturn(Optional.of(merchantUser));
         when(merchantRepository.save(merchant)).thenReturn(merchant);
         when(merchantMapper.toDto(merchant)).thenReturn(MerchantResponseDto.builder()
                 .id(55L).status(MerchantStatus.REJECTED).rejectionReason("Incomplete documents").build());
@@ -392,6 +398,9 @@ class MerchantServiceTest {
 
         assertEquals(MerchantStatus.REJECTED, merchant.getStatus());
         assertEquals("Incomplete documents", merchant.getRejectionReason());
+        assertEquals("REJECTED", merchantUser.getStatus());
+        assertTrue(merchantUser.isEnabled());
+        verify(userRepository).save(merchantUser);
         assertEquals(MerchantStatus.REJECTED, result.getStatus());
     }
 
