@@ -133,7 +133,7 @@ describe("CustomerOverviewPage", () => {
 
     expect(await screen.findByText("Hello, Kasun.")).toBeInTheDocument();
     expect(screen.getByText("Total parcels")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(await screen.findByText("3")).toBeInTheDocument();
 
     // 2 active deliveries (CREATED + IN_TRANSIT)
     expect(screen.getByText("Active now")).toBeInTheDocument();
