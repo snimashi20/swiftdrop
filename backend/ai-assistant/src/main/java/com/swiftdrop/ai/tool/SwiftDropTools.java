@@ -1,6 +1,7 @@
 package com.swiftdrop.ai.tool;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -9,9 +10,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Component
 public class SwiftDropTools {
+
+    // Standard SLF4J Logger instead of Lombok
+    private static final Logger log = LoggerFactory.getLogger(SwiftDropTools.class);
 
     private final RestClient restClient;
     private final String coreApiUrl;
