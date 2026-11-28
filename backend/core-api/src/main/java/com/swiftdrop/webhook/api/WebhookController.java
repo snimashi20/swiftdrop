@@ -20,7 +20,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/webhooks")
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasRole('MERCHANT')")
 @RequiredArgsConstructor
 public class WebhookController {
 

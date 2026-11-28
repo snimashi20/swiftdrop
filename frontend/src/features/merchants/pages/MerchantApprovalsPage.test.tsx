@@ -15,7 +15,11 @@ vi.mock("../api", () => ({
 const pendingMerchant: Merchant = {
   id: 12,
   businessName: "Northstar Goods",
+  businessType: "PRIVATE_LIMITED_COMPANY",
   registrationNumber: "BR-123456",
+  businessAddress: "12 Main Street, Colombo 03",
+  businessDescription: "Retail sale of household goods and gifts.",
+  verificationDeclarationAccepted: true,
   contactName: "Alex Morgan",
   contactEmail: "orders@example.test",
   contactPhone: "0771234567",
@@ -49,6 +53,10 @@ describe("MerchantApprovalsPage", () => {
     expect(await screen.findByRole("heading", { name: "Northstar Goods" })).toBeInTheDocument();
     expect(screen.getAllByText("PENDING").length).toBeGreaterThan(1);
     expect(screen.getByText(/orders@example\.test/)).toBeInTheDocument();
+    expect(screen.getByText(/Private limited company/)).toBeInTheDocument();
+    expect(screen.getByText(/12 Main Street, Colombo 03/)).toBeInTheDocument();
+    expect(screen.getByText(/Retail sale of household goods and gifts/)).toBeInTheDocument();
+    expect(screen.getByText(/Applicant confirmation:/).closest("p")).toHaveTextContent("Confirmed");
     expect(screen.getByRole("button", { name: /^Approve$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Reject$/i })).toBeInTheDocument();
     expect(fetchMerchants).toHaveBeenCalledWith("PENDING", 0);
@@ -62,6 +70,18 @@ describe("MerchantApprovalsPage", () => {
 
     expect(await screen.findByRole("heading", { name: "Approved Shop" })).toBeInTheDocument();
     expect(fetchMerchants).toHaveBeenLastCalledWith("APPROVED", 0);
+  });
+
+  it("resets pagination to page 0 when changing the status filter", async () => {
+    vi.mocked(fetchMerchants).mockResolvedValue({ ...merchantPage([pendingMerchant]), totalPages: 2, last: false });
+    render(<MerchantApprovalsPage />);
+    await screen.findByRole("heading", { name: "Northstar Goods" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await waitFor(() => expect(fetchMerchants).toHaveBeenLastCalledWith("PENDING", 1));
+
+    await user.click(screen.getByRole("button", { name: "REJECTED" }));
+    await waitFor(() => expect(fetchMerchants).toHaveBeenLastCalledWith("REJECTED", 0));
   });
 
   it("approves a merchant and displays the successful status notice", async () => {

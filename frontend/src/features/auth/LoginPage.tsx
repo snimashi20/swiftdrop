@@ -65,6 +65,10 @@ export function LoginPage() {
         navigate("/waiting-approval", { replace: true });
         return;
       }
+      if (user.status === "REJECTED" && user.role === "MERCHANT") {
+        navigate("/merchant/profile", { replace: true });
+        return;
+      }
       navigate(
         (location.state as { from?: string })?.from ||
           (user.role === "ADMIN" ? "/admin/overview" : "/dashboard"),

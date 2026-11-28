@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -138,5 +139,94 @@ class AuthServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unauthorized self-registration role");
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void logsInEnabledRejectedMerchantWithRejectedStatus() {
+        User merchant = User.builder()
+                .id(11L)
+                .email("rejected-merchant@example.com")
+                .fullName("Rejected Shop")
+                .role("MERCHANT")
+                .status("REJECTED")
+                .enabled(true)
+                .passwordHash("encoded-password")
+                .build();
+        LoginRequest request = new LoginRequest("rejected-merchant@example.com", "password");
+        when(userRepository.findByEmailIgnoreCase(request.email())).thenReturn(java.util.Optional.of(merchant));
+        when(passwordEncoder.matches(request.password(), merchant.getPasswordHash())).thenReturn(true);
+        when(tokenProvider.generateToken(11L, "rejected-merchant@example.com", java.util.Set.of("MERCHANT"), "REJECTED"))
+                .thenReturn("rejected-merchant-token");
+
+        AuthResponse response = authService.login(request);
+
+        assertThat(response.token()).isEqualTo("rejected-merchant-token");
+        assertThat(response.roles()).containsExactly("MERCHANT");
+        assertThat(response.status()).isEqualTo("REJECTED");
+        verify(authenticationManager, never()).authenticate(any());
+    }
+
+    @Test
+    void rejectsDisabledRejectedMerchantLogin() {
+        User merchant = User.builder()
+                .id(12L)
+                .email("disabled-merchant@example.com")
+                .role("MERCHANT")
+                .status("REJECTED")
+                .enabled(false)
+                .passwordHash("encoded-password")
+                .build();
+        LoginRequest request = new LoginRequest("disabled-merchant@example.com", "password");
+        when(userRepository.findByEmailIgnoreCase(request.email())).thenReturn(java.util.Optional.of(merchant));
+        when(passwordEncoder.matches(request.password(), merchant.getPasswordHash())).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(DisabledException.class);
+        verify(tokenProvider, never()).generateToken(any(), any(), any(), any());
+    }
+
+    @Test
+    void rejectsRejectedCourierAndCustomerLogin() {
+        for (String role : java.util.List.of("COURIER", "CUSTOMER")) {
+            User user = User.builder()
+                    .id(13L)
+                    .email(role.toLowerCase() + "@example.com")
+                    .role(role)
+                    .status("REJECTED")
+                    .enabled(true)
+                    .passwordHash("encoded-password")
+                    .build();
+            LoginRequest request = new LoginRequest(user.getEmail(), "password");
+            when(userRepository.findByEmailIgnoreCase(request.email())).thenReturn(java.util.Optional.of(user));
+            when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(DisabledException.class);
+        }
+        verify(tokenProvider, never()).generateToken(any(), any(), any(), any());
+    }
+
+    @Test
+    void logsInPendingUserWithPendingApprovalStatus() {
+        User pendingUser = User.builder()
+                .id(14L)
+                .email("pending@example.com")
+                .fullName("Pending User")
+                .role("COURIER")
+                .status("PENDING_APPROVAL")
+                .enabled(false)
+                .passwordHash("encoded-password")
+                .build();
+        LoginRequest request = new LoginRequest("pending@example.com", "password");
+        when(userRepository.findByEmailIgnoreCase(request.email())).thenReturn(java.util.Optional.of(pendingUser));
+        when(passwordEncoder.matches(request.password(), pendingUser.getPasswordHash())).thenReturn(true);
+        when(tokenProvider.generateToken(14L, "pending@example.com", java.util.Set.of("COURIER"), "PENDING_APPROVAL"))
+                .thenReturn("pending-token");
+
+        AuthResponse response = authService.login(request);
+
+        assertThat(response.token()).isEqualTo("pending-token");
+        assertThat(response.status()).isEqualTo("PENDING_APPROVAL");
+        verify(authenticationManager, never()).authenticate(any());
     }
 }

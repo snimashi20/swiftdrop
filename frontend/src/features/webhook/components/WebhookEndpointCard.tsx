@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WebhookEndpoint, TestPingResponse } from '../types';
 
 interface WebhookEndpointCardProps {
@@ -14,14 +14,22 @@ export const WebhookEndpointCard: React.FC<WebhookEndpointCardProps> = ({
   onRegenerateSecret,
   onSendTestPing,
 }) => {
-  const [url, setUrl] = useState(endpoint?.url || 'http://localhost:8085/api/webhooks/orders');
+  const [url, setUrl] = useState(endpoint?.url || '');
   const [active, setActive] = useState(endpoint?.active ?? true);
-  const [secret, setSecret] = useState(endpoint?.secret || 'whsec_sample_secret_key_89234710');
+  const [secret, setSecret] = useState(endpoint?.secret || '');
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pinging, setPinging] = useState(false);
   const [pingResult, setPingResult] = useState<TestPingResponse | null>(null);
+
+  useEffect(() => {
+    if (endpoint) {
+      setUrl(endpoint.url || '');
+      setActive(endpoint.active);
+      setSecret(endpoint.secret || '');
+    }
+  }, [endpoint]);
 
   const handleCopySecret = async () => {
     try {

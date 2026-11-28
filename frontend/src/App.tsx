@@ -41,6 +41,7 @@ import { MerchantApprovalsPage } from "./features/merchants/pages/MerchantApprov
 import { MerchantRegisterPage } from "./features/merchants/pages/MerchantRegisterPage";
 import { MerchantApiKeysPage } from "./features/merchants/pages/MerchantApiKeysPage";
 import { MerchantOrdersPage } from "./features/merchants/pages/MerchantOrdersPage";
+import { MerchantProfilePage } from "./features/merchants/pages/MerchantProfilePage";
 import { RoleSelectionPage } from "./features/auth/RoleSelectionPage";
 import { WaitingApprovalPage } from "./features/auth/WaitingApprovalPage";
 import { MyNotificationsPage } from "./features/notifications/MyNotificationsPage";
@@ -51,6 +52,7 @@ function PublicRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.status === "PENDING_ROLE") return <Navigate to="/select-role" replace />;
   if (user.status === "PENDING_APPROVAL") return <Navigate to="/waiting-approval" replace />;
+  if (user.status === "REJECTED" && user.role === "MERCHANT") return <Navigate to="/merchant/profile" replace />;
   if (user.role === "ADMIN") return <Navigate to="/admin/overview" replace />;
   return <Navigate to="/dashboard" replace />;
 }
@@ -88,7 +90,9 @@ export function App() {
             <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminProfilePage />} />
             </Route>
-            <Route path="/webhooks" element={<WebhookSettingsPage />} />
+            <Route path="/webhooks" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<WebhookSettingsPage />} />
+            </Route>
             <Route path="/courier/today" element={<ProtectedRoute allowedRoles={["COURIER"]} />}>
               <Route index element={<TodayDeliveriesPage />} />
             </Route>
@@ -130,6 +134,9 @@ export function App() {
             </Route>
             <Route path="/merchant/orders" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
               <Route index element={<MerchantOrdersPage />} />
+            </Route>
+            <Route path="/merchant/profile" element={<ProtectedRoute allowedRoles={["MERCHANT"]} />}>
+              <Route index element={<MerchantProfilePage />} />
             </Route>
             <Route path="/admin/overview" element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route index element={<AdminOverviewPage />} />

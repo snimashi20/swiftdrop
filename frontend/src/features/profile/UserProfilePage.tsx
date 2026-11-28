@@ -65,8 +65,16 @@ function DocumentPreview({ url, alt }: { url: string; alt: string }) {
 export const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
 
-  if (user?.role === "CUSTOMER") return <Navigate to="/customer/profile" replace />;
-  if (user?.role === "ADMIN") return <Navigate to="/admin/profile" replace />;
+  // Each supported role uses its own dedicated profile page
+  if (user?.role === "CUSTOMER") {
+    return <Navigate to="/customer/profile" replace />;
+  }
+  if (user?.role === "ADMIN") {
+    return <Navigate to="/admin/profile" replace />;
+  }
+  if (user?.role === "MERCHANT") {
+    return <Navigate to="/merchant/profile" replace />;
+  }
 
   const [courierData, setCourierData] = useState<CourierFullProfile | null>(null);
   const [fullName, setFullName] = useState("");

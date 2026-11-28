@@ -1,3 +1,4 @@
+import { BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getApiErrorMessage } from "../../../lib/api";
@@ -53,6 +54,8 @@ export function ReportsPage() {
   return (
     <div>
       <PageHeader
+        icon={BarChart3}
+        badges={[{ label: "Last 7 or 30 days" }]}
         eyebrow="Operations desk"
         title="Reports"
         text="Parcels that were delivered, failed or cancelled, by day and by pickup area."
@@ -94,7 +97,7 @@ export function ReportsPage() {
             </p>
           )}
 
-          <section className="rounded-2xl border border-ink/10 bg-white p-5">
+          <section className="rounded-3xl border border-ink/10 bg-white p-6">
             <h2 className="mb-4 font-display text-xl font-bold">Deliveries per day</h2>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -112,7 +115,7 @@ export function ReportsPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-ink/10 bg-white p-5">
+          <section className="rounded-3xl border border-ink/10 bg-white p-6">
             <h2 className="mb-4 font-display text-xl font-bold">Deliveries per zone</h2>
             {report.perZone.length === 0 ? (
               <p className="text-sm text-ink/50">No zone data for this period.</p>

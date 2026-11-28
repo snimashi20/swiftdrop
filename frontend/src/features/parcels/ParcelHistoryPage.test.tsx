@@ -64,6 +64,21 @@ describe("ParcelHistoryPage", () => {
     expect(screen.getAllByText("Out for delivery").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("shows the town with its district when they differ", async () => {
+    vi.mocked(listParcels).mockResolvedValue(
+      pageOf(
+        parcel({
+          pickup: { line1: "1 Road", city: "Moratuwa", district: "Colombo" },
+          dropoff: { line1: "2 Road", city: "Kelaniya", district: "Gampaha" },
+        }),
+      ),
+    );
+    renderPage();
+
+    expect(await screen.findByText(/Moratuwa, Colombo/)).toBeInTheDocument();
+    expect(screen.getByText(/Kelaniya, Gampaha/)).toBeInTheDocument();
+  });
+
   it("filters by the chosen status and starts again from the first page", async () => {
     vi.mocked(listParcels).mockResolvedValue(pageOf(parcel({})));
     renderPage();

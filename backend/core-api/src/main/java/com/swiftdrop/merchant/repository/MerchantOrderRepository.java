@@ -9,12 +9,16 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface MerchantOrderRepository extends JpaRepository<MerchantOrder, Long> {
 
     Optional<MerchantOrder> findByMerchantIdAndIdempotencyKey(Long merchantId, String idempotencyKey);
+
+    List<MerchantOrder> findByMerchantIdAndIdempotencyKeyStartingWithOrderByIdAsc(
+            Long merchantId, String idempotencyKeyPrefix);
 
     Optional<MerchantOrder> findByMerchantIdAndParcelId(Long merchantId, Long parcelId);
 
@@ -32,9 +36,23 @@ public interface MerchantOrderRepository extends JpaRepository<MerchantOrder, Lo
             join Parcel p on p.id = o.parcelId
             where o.merchant.id = :merchantId
               and (:status is null or p.status = :status)
-            order by o.createdAt desc
             """)
-    Page<MerchantOrder> findDashboardOrders(Long merchantId, ParcelStatus status, Pageable pageable);
+    Page<MerchantOrder> findDashboardOrders(@Param("merchantId") Long merchantId,
+                                            @Param("status") ParcelStatus status,
+                                            Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("""
+            select o from MerchantOrder o
+            join Parcel p on p.id = o.parcelId
+            where o.merchant.id = :merchantId
+              and (:status is null or p.status = :status)
+              and (lower(coalesce(o.externalOrderId, '')) like lower(concat('%', :search, '%')) escape '!'
+                   or lower(p.trackingNumber) like lower(concat('%', :search, '%')) escape '!')
+            """)
+    Page<MerchantOrder> searchDashboardOrders(@Param("merchantId") Long merchantId,
+                                              @Param("status") ParcelStatus status,
+                                              @Param("search") String search,
+                                              Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("""
             select p.status, count(o) from MerchantOrder o

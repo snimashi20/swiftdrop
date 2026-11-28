@@ -10,6 +10,13 @@ const statusStyle: Record<MerchantStatus, string> = {
   REJECTED: "bg-ink/10 text-ink/60",
 };
 
+const businessTypeLabel: Record<NonNullable<Merchant["businessType"]>, string> = {
+  SOLE_PROPRIETORSHIP: "Sole proprietorship",
+  PARTNERSHIP: "Partnership",
+  PRIVATE_LIMITED_COMPANY: "Private limited company",
+  OTHER: "Other registered business",
+};
+
 export function MerchantApprovalsPage() {
   const [status, setStatus] = useState<MerchantStatus | "ALL">("PENDING");
   const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -103,7 +110,7 @@ export function MerchantApprovalsPage() {
       <button onClick={() => void load()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/10 bg-white px-4 py-2.5 text-sm font-semibold"><RefreshCw size={16} />Refresh</button>
     </header>
     <div className="flex flex-wrap gap-2">
-      {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((item) => <button key={item} onClick={() => setStatus(item)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${status === item ? "bg-ink text-white" : "bg-white text-ink/60 hover:bg-ink/5"}`}>{item === "ALL" ? "All merchants" : item}</button>)}
+      {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((item) => <button key={item} onClick={() => { setPage(0); setStatus(item); }} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${status === item ? "bg-ink text-white" : "bg-white text-ink/60 hover:bg-ink/5"}`}>{item === "ALL" ? "All merchants" : item}</button>)}
     </div>
     {notice && <p role="status" className="rounded-xl bg-mint px-4 py-3 text-sm text-ink">{notice}</p>}
     {error && <p role="alert" className="rounded-xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</p>}
@@ -114,6 +121,12 @@ export function MerchantApprovalsPage() {
             <div className="flex flex-wrap items-center gap-2"><h2 className="font-display text-xl font-bold">{merchant.businessName}</h2><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide ${statusStyle[merchant.status]}`}>{merchant.status}</span></div>
             <p className="mt-1 text-sm text-ink/65">{merchant.contactName} · {merchant.contactEmail} · {merchant.contactPhone}</p>
             <p className="mt-1 text-xs text-ink/45">Registration {merchant.registrationNumber} · Applied {new Date(merchant.createdAt).toLocaleDateString()}</p>
+            {(merchant.businessType || merchant.businessAddress || merchant.businessDescription) && <div className="mt-3 grid gap-2 rounded-xl bg-mist/70 p-3 text-sm sm:grid-cols-2">
+              {merchant.businessType && <p><span className="font-semibold text-ink/70">Business structure:</span> {businessTypeLabel[merchant.businessType]}</p>}
+              {merchant.businessAddress && <p><span className="font-semibold text-ink/70">Business address:</span> {merchant.businessAddress}</p>}
+              {merchant.businessDescription && <p className="sm:col-span-2"><span className="font-semibold text-ink/70">Business activity:</span> {merchant.businessDescription}</p>}
+              {merchant.verificationDeclarationAccepted != null && <p><span className="font-semibold text-ink/70">Applicant confirmation:</span> {merchant.verificationDeclarationAccepted ? "Confirmed" : "Not confirmed"}</p>}
+            </div>}
             {merchant.rejectionReason && <p className="mt-2 text-sm text-ink/60">Reason: {merchant.rejectionReason}</p>}
           </div>
           {merchant.status === "PENDING" && <div className="flex gap-2">

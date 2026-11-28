@@ -20,6 +20,11 @@ export function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
     return <Navigate to="/waiting-approval" replace />;
   }
 
+  // Rejected merchants can only access their merchant profile to view feedback and resubmit
+  if (user.status === "REJECTED" && user.role === "MERCHANT" && location.pathname !== "/merchant/profile") {
+    return <Navigate to="/merchant/profile" replace />;
+  }
+
   // If role not permitted for this route, redirect to general dashboard
   if (allowedRoles && !allowedRoles.includes(user.role as Role)) {
     return <Navigate to="/dashboard" replace />;

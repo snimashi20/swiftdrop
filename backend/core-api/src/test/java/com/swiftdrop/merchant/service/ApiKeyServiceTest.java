@@ -326,6 +326,31 @@ class ApiKeyServiceTest {
 
             verify(apiKeyRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Revoking an already-revoked API key is idempotent and preserves original revokedAt")
+        void revoke_whenAlreadyRevoked_doesNotOverwriteRevokedAt() {
+            Instant originalRevokedAt = Instant.parse("2026-11-01T00:00:00Z");
+            Merchant merchant = Merchant.builder().id(1L).build();
+            ApiKey apiKey = ApiKey.builder()
+                    .id(20L)
+                    .merchant(merchant)
+                    .label("Old Key")
+                    .keyPrefix("sdk_xyz98765")
+                    .keyHash("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+                    .active(false)
+                    .createdAt(Instant.now().minusSeconds(3600))
+                    .revokedAt(originalRevokedAt)
+                    .build();
+
+            when(apiKeyRepository.findByIdAndMerchantId(20L, 1L)).thenReturn(Optional.of(apiKey));
+
+            ApiKeyResponse response = apiKeyService.revoke(1L, 20L);
+
+            assertThat(response.active()).isFalse();
+            assertThat(response.revokedAt()).isEqualTo(originalRevokedAt);
+            verify(apiKeyRepository, never()).save(any());
+        }
     }
 
     @Nested

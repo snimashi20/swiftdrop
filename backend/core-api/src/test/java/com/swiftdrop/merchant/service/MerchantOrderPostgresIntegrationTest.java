@@ -16,6 +16,7 @@ import com.swiftdrop.common.exception.ValidationException;
 import com.swiftdrop.merchant.domain.Merchant;
 import com.swiftdrop.merchant.domain.MerchantStatus;
 import com.swiftdrop.merchant.domain.ApiKey;
+import com.swiftdrop.merchant.domain.MerchantOrder;
 import com.swiftdrop.merchant.repository.MerchantOrderRepository;
 import com.swiftdrop.merchant.repository.MerchantRepository;
 import com.swiftdrop.merchant.repository.ApiKeyRepository;
@@ -25,6 +26,8 @@ import com.swiftdrop.parcel.domain.ParcelSize;
 import com.swiftdrop.parcel.repository.ParcelRepository;
 import com.swiftdrop.parcel.service.TrackingNumberGenerator;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -88,6 +94,7 @@ class MerchantOrderPostgresIntegrationTest {
     @Autowired ParcelRepository parcelRepository;
     @Autowired ApiKeyRepository apiKeyRepository;
     @Autowired ApiKeyService apiKeyService;
+    @Autowired JdbcTemplate jdbcTemplate;
     @Autowired WebApplicationContext applicationContext;
     private MockMvc mockMvc;
 
@@ -224,6 +231,43 @@ class MerchantOrderPostgresIntegrationTest {
                 merchantId, "bulk-failure:2").stream().count());
         assertEquals(0, parcelRepository.findAll().stream()
                 .filter(parcel -> merchantId.equals(parcel.getMerchantId())).count());
+    }
+
+    @Test
+    void dashboardSearchesStoreAndTrackingIdsAndSortsAcrossPages() {
+        MerchantOrderRequest olderRequest = request();
+        olderRequest.setExternalOrderId("STORE-ORDER-OLD");
+        MerchantOrderRequest newerRequest = request();
+        newerRequest.setExternalOrderId("STORE-ORDER-NEW");
+
+        var olderResult = orderService.create(merchantId, "dashboard-order-old", olderRequest);
+        var newerResult = orderService.create(merchantId, "dashboard-order-new", newerRequest);
+        MerchantOrder olderOrder = orderRepository
+                .findByMerchantIdAndIdempotencyKey(merchantId, "dashboard-order-old").orElseThrow();
+        MerchantOrder newerOrder = orderRepository
+                .findByMerchantIdAndIdempotencyKey(merchantId, "dashboard-order-new").orElseThrow();
+        jdbcTemplate.update("UPDATE merchant_orders SET created_at = ? WHERE id = ?",
+                Timestamp.from(Instant.parse("2026-11-20T10:00:00Z")), olderOrder.getId());
+        jdbcTemplate.update("UPDATE merchant_orders SET created_at = ? WHERE id = ?",
+                Timestamp.from(Instant.parse("2026-11-21T10:00:00Z")), newerOrder.getId());
+
+        var byStoreOrderId = orderService.listDashboard(merchantId, null, "STORE-ORDER-OLD",
+                PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt")));
+        var byTrackingNumber = orderService.listDashboard(merchantId, null,
+                newerResult.response().getTrackingNumber(), PageRequest.of(0, 20));
+        var newestFirst = orderService.listDashboard(merchantId, null, null,
+                PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt")));
+        var oldestFirst = orderService.listDashboard(merchantId, null, null,
+                PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "createdAt")));
+
+        assertEquals(1, byStoreOrderId.getTotalElements());
+        assertEquals(olderResult.response().getTrackingNumber(),
+                byStoreOrderId.getContent().get(0).getTrackingNumber());
+        assertEquals(1, byTrackingNumber.getTotalElements());
+        assertEquals(newerResult.response().getTrackingNumber(),
+                byTrackingNumber.getContent().get(0).getTrackingNumber());
+        assertEquals(newerResult.response().getTrackingNumber(), newestFirst.getContent().get(0).getTrackingNumber());
+        assertEquals(olderResult.response().getTrackingNumber(), oldestFirst.getContent().get(0).getTrackingNumber());
     }
 
     private String createAtSameMoment(CountDownLatch ready, CountDownLatch start) throws Exception {
